@@ -1,7 +1,12 @@
+@import './styles/dashboard.css';
+
 :root {
   color-scheme: light;
-  --bg: #f3f4f6;
-  --text: #111827;
+  --bg: #eeeedd;
+  --panel: #ffffff;
+  --border: #cccccc;
+  --text: #111111;
+  --muted: #777777;
 }
 
 * {
@@ -18,17 +23,11 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: Arial, sans-serif;
+  font-family: Inter, Segoe UI, Arial, sans-serif;
   line-height: 1.5;
 }
 
 #app {
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  padding-top: 1.5rem;
-}
-
-.tools-title {
-  margin: 0;
+  padding: 2rem 1rem;
 }
