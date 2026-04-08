@@ -1,0 +1,89 @@
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.breadcrumbs a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+
+.back-button {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.8rem;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  border-color: #2563eb;
+}
+
+.category-tools {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--panel);
+  padding: 1rem;
+}
+
+.category-tools h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.category-tools ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.tool-link-card {
+  display: grid;
+  gap: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  padding: 0.8rem;
+  background: #fafafa;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.tool-link-card:hover {
+  border-color: #2563eb;
+}
+
+.tool-link-card:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.tool-link-title {
+  font-weight: 600;
+}
+
+.tool-link-description {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+

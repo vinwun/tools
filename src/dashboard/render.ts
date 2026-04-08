@@ -1,30 +1,27 @@
 import { dashboardCategories, type DashboardCategory } from './categories'
-import { localeOptions, messagesByLocale, type Locale } from '../i18n'
+import { messagesByLocale, type Locale } from '../i18n'
+import { renderLanguageOptions } from '../i18n/render.ts'
+import { buildCategoryPath } from '../navigation/router.ts'
+import { getToolsForCategory } from '../tools/catalog'
 
 export const LOCALE_SELECT_ID = 'locale-select'
 
-const renderToolList = (tools: string[]) =>
-  tools.map((tool) => `<li>${tool}</li>`).join('')
+const renderToolList = (tools: string[]) => tools.map((tool) => `<li>${tool}</li>`).join('')
 
-const renderLanguageOptions = (activeLocale: Locale) =>
-  localeOptions
-    .map(
-      (locale) =>
-        `<option value="${locale.code}" ${locale.code === activeLocale ? 'selected' : ''}>${locale.flag} ${locale.code.toUpperCase()}</option>`,
-    )
-    .join('')
 
 const renderCategoryCard = (category: DashboardCategory, locale: Locale) => {
-  const localizedCategory = messagesByLocale[locale].categories[category.id]
+  const messages = messagesByLocale[locale]
+  const localizedCategory = messages.categories[category.id]
+  const localizedTools = getToolsForCategory(category.id).map((toolId) => messages.tools[toolId].name)
 
   return `
-    <article class="dashboard-card" style="--card-accent: ${category.color};">
+    <a class="dashboard-card dashboard-card-link" href="${buildCategoryPath(category.id)}" style="--card-accent: ${category.color};" data-category-link="${category.id}">
       <h2>${localizedCategory.name}</h2>
       <p>${localizedCategory.description}</p>
       <ul>
-        ${renderToolList(localizedCategory.tools)}
+        ${renderToolList(localizedTools)}
       </ul>
-    </article>
+    </a>
   `
 }
 

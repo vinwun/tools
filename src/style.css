@@ -1,4 +1,7 @@
+@import './styles/layout.css';
 @import './styles/dashboard.css';
+@import './styles/category.css';
+@import './styles/tool.css';
 
 :root {
   color-scheme: light;
@@ -31,3 +34,10 @@ body {
   min-height: 100vh;
   padding: 2rem 1rem;
 }
+
+@media (max-width: 600px) {
+  #app {
+    padding: 1.25rem 0.75rem;
+  }
+}
+

@@ -1,0 +1,19 @@
+.tool-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.tool-page .dashboard-header {
+  margin-bottom: 0.5rem;
+}
+
+.tool-page .back-button {
+  justify-self: start;
+}
+
+.tool-description {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  max-width: 60ch;
+}
+

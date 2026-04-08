@@ -15,6 +15,9 @@ export type DashboardCategory = {
   color: string
 }
 
+export const isCategoryId = (value: string): value is CategoryId =>
+  dashboardCategoryIds.includes(value as CategoryId)
+
 export const dashboardCategories: DashboardCategory[] = [
   { id: 'image', color: '#2563eb' },
   { id: 'pdf', color: '#dc2626' },
