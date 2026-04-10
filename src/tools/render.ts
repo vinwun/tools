@@ -1,9 +1,10 @@
-import type { CategoryId } from '../dashboard/categories'
+import type { CategoryId } from '../dashboard/category-data.ts'
 import { LOCALE_SELECT_ID } from '../dashboard/render.ts'
 import { messagesByLocale, type Locale } from '../i18n'
 import { renderLanguageOptions } from '../i18n/render.ts'
 import { buildCategoryPath, buildDashboardPath } from '../navigation/router.ts'
 import type { ToolId } from './catalog'
+import { renderToolContent } from './registry'
 
 export const renderToolPage = (
   locale: Locale,
@@ -13,11 +14,12 @@ export const renderToolPage = (
   const messages = messagesByLocale[locale]
   const category = messages.categories[categoryId]
   const tool = messages.tools[toolId]
+  const toolContent = renderToolContent(toolId, locale)
 
   return `
-    <main class="dashboard-page tool-page">
-      <header class="dashboard-header">
-        <div class="dashboard-header-top">
+    <main class="page-shell tool-page">
+      <header class="page-header">
+        <div class="page-header-top">
           <div>
             <nav class="breadcrumbs" aria-label="${messages.navigation.breadcrumbAriaLabel}">
               <a href="${buildDashboardPath()}" data-dashboard-link>${messages.navigation.toolsSegment}</a>
@@ -40,6 +42,10 @@ export const renderToolPage = (
       </header>
 
       <button type="button" class="back-button" data-category-link="${categoryId}">${messages.navigation.backToCategory} \"${category.name}\"</button>
+
+      <div data-tool-content-root>
+        ${toolContent}
+      </div>
     </main>
   `
 }

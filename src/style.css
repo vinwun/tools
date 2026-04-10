@@ -1,7 +1,10 @@
-@import './styles/layout.css';
-@import './styles/dashboard.css';
-@import './styles/category.css';
-@import './styles/tool.css';
+@import 'page.css';
+@import 'dashboard/dashboard.css';
+@import 'categories/categories.css';
+@import 'tools/tool.css';
+@import 'tools/foundations/file-converter/file-converter.css';
+@import './tools/image/color-picker/color-picker.css';
+@import 'tools/audio/audio-trimmer/audio-trimmer.css';
 
 :root {
   color-scheme: light;

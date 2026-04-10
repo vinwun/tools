@@ -1,9 +1,10 @@
-import { renderCategoryPage } from '../category/render.ts'
-import { isCategoryId } from '../dashboard/categories.ts'
+import { renderCategoryPage } from '../categories/render.ts'
+import { isCategoryId } from '../dashboard/category-data.ts'
 import { LOCALE_SELECT_ID, renderDashboard } from '../dashboard/render.ts'
 import { hasLocale, type Locale } from '../i18n'
 import { initLocale, persistLocale, resolveInitialLocale } from '../i18n/manager.ts'
 import { isToolIdForCategory } from '../tools/catalog.ts'
+import { mountToolContent } from '../tools/registry.ts'
 import { renderToolPage } from '../tools/render.ts'
 import { navigateToRoute, resolveCurrentRoute, type Route } from './router.ts'
 
@@ -24,6 +25,10 @@ export const bootstrapApp = (): void => {
           : renderToolPage(currentLocale, route.categoryId, route.toolId)
 
     bindLocaleSelector()
+
+    if (route.type === 'tool') {
+      mountToolContent(route.toolId, currentLocale)
+    }
   }
 
   const goToRoute = (route: Route) => {

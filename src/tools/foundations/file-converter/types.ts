@@ -1,0 +1,40 @@
+export type ConverterResultData = {
+  blob: Blob
+  fileName: string
+  mimeType: string
+  previewKind: 'image' | 'audio' | 'none'
+}
+
+export type ConverterResult =
+  | { ok: true; data: ConverterResultData }
+  | { ok: false; reason: 'unsupportedOutput' | 'conversionFailed'; details?: string }
+
+export type ConverterOutputFormat = {
+  id: string
+  label: string
+}
+
+export type ConverterMessages = {
+  uploadLabel: string
+  uploadHintLabel: string
+  browseAction: string
+  noFileSelected: string
+  selectedFilesLabel: string
+  outputLabel: string
+  converting: string
+  statusNoFile: string
+  statusUnsupported: string
+  statusFailed: string
+  downloadAllAction: string
+  removePreviewItemAction: string
+  previewTitle: string
+  previewUnavailable: string
+}
+
+export type FileConverterConfig = {
+  id: string
+  inputAccept: string
+  outputFormats: readonly ConverterOutputFormat[]
+  convert: (file: File, outputFormatId: string) => Promise<ConverterResult>
+}
+

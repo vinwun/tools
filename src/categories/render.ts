@@ -1,4 +1,4 @@
-import type { CategoryId } from '../dashboard/categories'
+import type { CategoryId } from '../dashboard/category-data.ts'
 import { LOCALE_SELECT_ID } from '../dashboard/render'
 import { messagesByLocale, type Locale } from '../i18n'
 import { renderLanguageOptions } from '../i18n/render.ts'
@@ -36,9 +36,9 @@ export const renderCategoryPage = (locale: Locale, categoryId: CategoryId) => {
   const dashboardPath = buildDashboardPath()
 
   return `
-    <main class="dashboard-page category-page">
-      <header class="dashboard-header">
-        <div class="dashboard-header-top">
+    <main class="page-shell category-page">
+      <header class="page-header">
+        <div class="page-header-top">
           <div>
             <nav class="breadcrumbs" aria-label="${messages.navigation.breadcrumbAriaLabel}">
               <a href="${dashboardPath}" data-dashboard-link>${messages.navigation.toolsSegment}</a>

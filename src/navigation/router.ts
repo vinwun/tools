@@ -1,4 +1,4 @@
-import { isCategoryId, type CategoryId } from '../dashboard/categories'
+import { isCategoryId, type CategoryId } from '../dashboard/category-data.ts'
 import { isToolIdForCategory, type ToolId } from '../tools/catalog'
 
 const BASE_URL = import.meta.env.BASE_URL || '/'

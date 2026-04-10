@@ -1,4 +1,4 @@
-import { dashboardCategories, type DashboardCategory } from './categories'
+import { dashboardCategories, type DashboardCategory } from './category-data.ts'
 import { messagesByLocale, type Locale } from '../i18n'
 import { renderLanguageOptions } from '../i18n/render.ts'
 import { buildCategoryPath } from '../navigation/router.ts'
@@ -32,9 +32,9 @@ export const renderDashboard = (locale: Locale) => {
     .join('')
 
   return `
-    <main class="dashboard-page">
-      <header class="dashboard-header">
-        <div class="dashboard-header-top">
+    <main class="page-shell">
+      <header class="page-header">
+        <div class="page-header-top">
           <div>
             <h1>${messages.dashboard.title}</h1>
             <p>${messages.dashboard.subtitle}</p>

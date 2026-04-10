@@ -1,0 +1,77 @@
+.tool-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.tool-page .page-header {
+  margin-bottom: 0.5rem;
+}
+
+.tool-page .back-button {
+  justify-self: start;
+}
+
+.tool-description {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.tool-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.tool-panel {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 1rem;
+  background: var(--panel);
+  box-shadow: 0 10px 20px -18px rgba(17, 24, 39, 0.5);
+}
+
+.tool-panel h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.tool-field {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.tool-field input,
+.tool-field select,
+.tool-action {
+  font: inherit;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.tool-action {
+  cursor: pointer;
+}
+
+.tool-action:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.tool-status,
+.tool-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.tool-placeholder {
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.75rem;
+  background: var(--panel);
+}

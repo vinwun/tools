@@ -1,9 +1,9 @@
-import type { CategoryId } from '../dashboard/categories'
+import type { CategoryId } from '../dashboard/category-data.ts'
 
 export const toolsByCategory = {
   image: ['imageConverter', 'colorPicker'],
   pdf: ['pdfMergeReorder', 'pdfSplit', 'pdfTextExtractor'],
-  audio: ['audioTrim', 'audioConverter'],
+  audio: ['audioConverter', 'audioTrimmer'],
   rng: ['numberGenerator', 'stringGenerator'],
   time: ['timer', 'timezoneConverter', 'stopwatch'],
   math: ['primeFactorizer', 'baseConverter', 'aspectRatioCalculator'],
