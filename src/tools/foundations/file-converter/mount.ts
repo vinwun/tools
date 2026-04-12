@@ -1,5 +1,7 @@
 import type { ConverterMessages, FileConverterConfig, ConverterResultData } from './types.ts'
 
+const fileConverterLocaleSyncers = new WeakMap<HTMLElement, (messages: ConverterMessages) => void>()
+
 type PreviewItem =
   | { kind: 'success'; data: ConverterResultData }
   | { kind: 'error'; fileName: string; message: string }
@@ -70,7 +72,7 @@ const createPreviewListMarkup = (items: readonly PreviewItem[], messages: Conver
     .join('')}</div>`
 
 const createPreviewMessageMarkup = (message: string): string =>
-  `<p class="file-converter-preview-message">${message}</p>`
+  `<p class="file-converter-preview-message" data-file-converter-preview-message>${message}</p>`
 
 const revokePreviewUrls = (previewElement: HTMLElement): void => {
   previewElement.querySelectorAll<HTMLElement>('[data-preview-url]').forEach((element) => {
@@ -84,7 +86,7 @@ const revokePreviewUrls = (previewElement: HTMLElement): void => {
 export const mountFileConverter = (
   root: HTMLElement,
   config: FileConverterConfig,
-  messages: ConverterMessages,
+  initialMessages: ConverterMessages,
 ): void => {
   const fileInput = root.querySelector<HTMLInputElement>('[data-file-converter-file]')
   const fileButton = root.querySelector<HTMLButtonElement>('[data-file-converter-file-button]')
@@ -98,6 +100,7 @@ export const mountFileConverter = (
     return
   }
 
+  let messages = initialMessages
   let downloadableResults: ConverterResultData[] = []
   let currentPreviewItems: PreviewItem[] = []
   let selectedFiles: File[] = []
@@ -203,6 +206,53 @@ export const mountFileConverter = (
   downloadLink.textContent = messages.downloadAllAction
   setDownloadDisabled()
   setSelectedFileLabel([])
+
+  const syncStaticTexts = (): void => {
+    const uploadLabel = root.querySelector<HTMLElement>('[data-file-converter-upload-label]')
+    const uploadHint = root.querySelector<HTMLElement>('[data-file-converter-upload-hint]')
+    const fileButton = root.querySelector<HTMLButtonElement>('[data-file-converter-file-button]')
+    const outputLabel = root.querySelector<HTMLElement>('[data-file-converter-output-label]')
+    const previewTitle = root.querySelector<HTMLElement>('[data-file-converter-preview-title]')
+
+    if (uploadLabel) uploadLabel.textContent = messages.uploadLabel
+    if (uploadHint) uploadHint.textContent = `${messages.uploadHintLabel}: ${config.inputAccept.replaceAll(',', ' / ')}`
+    if (fileButton) fileButton.textContent = messages.browseAction
+    if (outputLabel) outputLabel.textContent = messages.outputLabel
+    if (previewTitle) previewTitle.textContent = messages.previewTitle
+    downloadLink.textContent = messages.downloadAllAction
+  }
+
+  const syncLocale = (nextMessages: ConverterMessages): void => {
+    const previousMessages = messages
+    messages = nextMessages
+    syncStaticTexts()
+    setSelectedFileLabel(selectedFiles)
+
+    if (currentPreviewItems.length === 0) {
+      const previewMessage = previewElement.querySelector<HTMLElement>('[data-file-converter-preview-message]')
+      if (previewMessage) {
+        const currentMessage = previewMessage.textContent ?? ''
+        if (currentMessage === previousMessages.statusNoFile) {
+          setPreviewMessage(messages.statusNoFile)
+        } else if (currentMessage === previousMessages.converting) {
+          setPreviewMessage(messages.converting)
+        } else if (currentMessage === previousMessages.previewUnavailable) {
+          setPreviewMessage(messages.previewUnavailable)
+        } else if (currentMessage === previousMessages.statusUnsupported) {
+          setPreviewMessage(messages.statusUnsupported)
+        } else if (currentMessage.startsWith(previousMessages.statusFailed)) {
+          const details = currentMessage.slice(previousMessages.statusFailed.length).trimStart().replace(/^:\s*/, '')
+          setPreviewMessage(details ? `${messages.statusFailed}: ${details}` : messages.statusFailed)
+        }
+      }
+      return
+    }
+
+    setPreviewItems(currentPreviewItems)
+    syncDownloadFromPreviewItems()
+  }
+
+  fileConverterLocaleSyncers.set(root, syncLocale)
 
   downloadLink.addEventListener('click', (event) => {
     event.preventDefault()
@@ -348,3 +398,16 @@ export const mountFileConverter = (
   })
 }
 
+export const syncFileConverterLocale = (root: HTMLElement, messages: ConverterMessages): void => {
+  const targetRoot = root.matches('[data-file-converter-root]')
+    ? root
+    : fileConverterLocaleSyncers.has(root)
+      ? root
+      : root.querySelector<HTMLElement>('[data-file-converter-root]') ?? root.closest<HTMLElement>('[data-file-converter-root]')
+
+  if (!targetRoot) {
+    return
+  }
+
+  fileConverterLocaleSyncers.get(targetRoot)?.(messages)
+}

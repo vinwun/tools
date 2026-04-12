@@ -5,6 +5,7 @@
 @import 'tools/foundations/file-converter/file-converter.css';
 @import './tools/image/color-picker/color-picker.css';
 @import 'tools/audio/audio-trimmer/audio-trimmer.css';
+@import 'tools/pdf/pdf-tools/pdf-tools.css';
 
 :root {
   color-scheme: light;
@@ -43,4 +44,3 @@ body {
     padding: 1.25rem 0.75rem;
   }
 }
-

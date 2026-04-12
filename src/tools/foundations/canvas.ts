@@ -14,4 +14,3 @@ export const setCanvasSize = (canvas: HTMLCanvasElement): { width: number; heigh
 
   return { width, height }
 }
-

@@ -90,6 +90,58 @@
   pointer-events: none;
 }
 
+.audio-trimmer-waveform-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.15rem;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: grab;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  touch-action: none;
+  z-index: 2;
+}
+
+.audio-trimmer-waveform-playhead::before {
+  content: '';
+  position: absolute;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  left: 50%;
+  width: 2px;
+  border-radius: 999px;
+  background: #0f172a;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+  transform: translateX(-50%);
+}
+
+.audio-trimmer-waveform-playhead::after {
+  content: '';
+  position: absolute;
+  top: 0.38rem;
+  left: 50%;
+  width: 0.68rem;
+  height: 0.68rem;
+  border-radius: 50%;
+  background: #0f172a;
+  box-shadow: 0 0 0 2px var(--panel);
+  transform: translate(-50%, 0);
+}
+
+.audio-trimmer-waveform-playhead:active,
+.audio-trimmer-waveform-playhead:focus-visible {
+  cursor: grabbing;
+}
+
+.audio-trimmer-waveform-playhead:focus-visible::after,
+.audio-trimmer-waveform-playhead:hover::after {
+  background: #1d4ed8;
+}
+
 .audio-trimmer-waveform-handle {
   position: absolute;
   top: 0;
@@ -228,6 +280,3 @@
     height: 17rem;
   }
 }
-
-
-

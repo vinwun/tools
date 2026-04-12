@@ -22,6 +22,7 @@ export const renderAudioTrimmer = (messages: Messages): string => `
         <div class="audio-trimmer-waveform-shell">
           <canvas class="audio-trimmer-waveform-canvas" data-audio-trimmer-waveform aria-label="${messages.audioTrimmer.waveformLabel}"></canvas>
           <div class="audio-trimmer-waveform-selection" data-audio-trimmer-selection></div>
+          <button type="button" class="audio-trimmer-waveform-handle audio-trimmer-waveform-playhead" data-audio-trimmer-playhead aria-label="${messages.audioTrimmer.playheadLabel}"></button>
           <button type="button" class="audio-trimmer-waveform-handle audio-trimmer-waveform-handle-start" data-audio-trimmer-start-handle aria-label="${messages.audioTrimmer.startLabel}"></button>
           <button type="button" class="audio-trimmer-waveform-handle audio-trimmer-waveform-handle-end" data-audio-trimmer-end-handle aria-label="${messages.audioTrimmer.endLabel}"></button>
         </div>

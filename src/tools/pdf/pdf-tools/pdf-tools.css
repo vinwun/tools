@@ -1,0 +1,241 @@
+.pdf-tools-layout {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.pdf-tools-panel {
+  min-width: 0;
+}
+
+.pdf-tools-visible-on-pages {
+  display: none;
+}
+
+.pdf-tools-has-pages .pdf-tools-visible-on-pages {
+  display: block;
+}
+
+.pdf-tools-panel-header,
+.pdf-tools-workspace-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.pdf-tools-panel-header h2,
+.pdf-tools-workspace-header h2 {
+  margin: 0;
+}
+
+.pdf-tools-panel .tool-action {
+  padding: 0.75rem 2.75rem;
+  min-height: 2.65rem;
+}
+
+.pdf-tools-upload-actions,
+.pdf-tools-action-bar {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.pdf-tools-action-bar {
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.pdf-tools-action-group {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.pdf-tools-action-group-right {
+  margin-left: auto;
+}
+
+.pdf-tools-dropzone,
+.pdf-tools-drop-end {
+  border: 1px dashed var(--border);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.pdf-tools-dropzone.is-dragover,
+.pdf-tools-drop-end.is-dragover {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--text);
+}
+
+.pdf-tools-list-shell {
+  --pdf-tools-page-width: clamp(180px, 19vw, 230px);
+  display: none;
+  gap: 0.85rem;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overflow-anchor: none;
+  padding-bottom: 0.8rem;
+}
+
+.pdf-tools-has-pages .pdf-tools-list-shell {
+  display: flex;
+}
+
+.pdf-tools-page-list {
+  display: flex;
+  gap: 0.85rem;
+  align-items: stretch;
+  flex: 0 0 auto;
+  width: max-content;
+}
+
+.pdf-tools-drop-end {
+  flex: 0 0 var(--pdf-tools-page-width);
+  width: var(--pdf-tools-page-width);
+  min-width: var(--pdf-tools-page-width);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.pdf-tools-page-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(180px, 1fr) auto;
+  gap: 0.7rem;
+  align-items: stretch;
+  flex: 0 0 var(--pdf-tools-page-width);
+  width: var(--pdf-tools-page-width);
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pdf-tools-page-card:hover,
+.pdf-tools-page-card:focus-visible {
+  border-color: #94a3b8;
+  box-shadow: 0 10px 20px -18px rgba(17, 24, 39, 0.4);
+  outline: none;
+}
+
+.pdf-tools-page-card.is-selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15), 0 12px 22px -18px rgba(37, 99, 235, 0.5);
+}
+
+.pdf-tools-page-card.is-drop-target {
+  transform: translateY(-1px);
+}
+
+.pdf-tools-page-thumbnail {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  border-radius: 0.65rem;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.pdf-tools-page-thumbnail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.pdf-tools-page-thumbnail-fallback {
+  padding: 0.75rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.pdf-tools-page-thumbnail-fallback-failed {
+  color: #b91c1c;
+}
+
+.pdf-tools-page-meta {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.pdf-tools-page-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.pdf-tools-selection-summary {
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pdf-tools-guidance,
+.pdf-tools-reorder-hint {
+  max-width: 70ch;
+}
+
+.pdf-tools-guidance {
+  max-width: none;
+  white-space: nowrap;
+}
+
+.pdf-tools-reorder-hint {
+  white-space: nowrap;
+}
+
+.pdf-tools-panel-upload {
+  gap: 0.9rem;
+}
+
+.pdf-tools-panel-workspace {
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.pdf-tools-panel-actions {
+  gap: 0.75rem;
+}
+
+@media (max-width: 920px) {
+  .pdf-tools-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-tools-panel-header,
+  .pdf-tools-workspace-header {
+    flex-direction: column;
+  }
+
+  .pdf-tools-page-card {
+    width: clamp(160px, 44vw, 220px);
+    flex-basis: clamp(160px, 44vw, 220px);
+  }
+
+  .pdf-tools-list-shell {
+    --pdf-tools-page-width: clamp(160px, 44vw, 220px);
+  }
+
+  .pdf-tools-page-thumbnail {
+    min-height: 150px;
+  }
+}

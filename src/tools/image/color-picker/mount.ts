@@ -18,6 +18,8 @@ import {
   round,
 } from './utils.ts'
 
+const colorPickerLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+
 const queryColorPickerElements = (container: HTMLElement): ColorPickerElements | null => {
   const spectrumCanvas = container.querySelector<HTMLCanvasElement>('[data-color-picker-spectrum]')
   const spectrumHandle = container.querySelector<HTMLElement>('[data-color-picker-spectrum-handle]')
@@ -68,12 +70,14 @@ const queryColorPickerElements = (container: HTMLElement): ColorPickerElements |
   }
 }
 
-export const mountColorPicker = (container: HTMLElement, messages: Messages): void => {
+export const mountColorPicker = (container: HTMLElement, initialMessages: Messages): void => {
+  const root = container.querySelector<HTMLElement>('[data-color-picker-root]') ?? container
   const elements = queryColorPickerElements(container)
   if (!elements) {
     return
   }
 
+  let messages = initialMessages
   let state: ColorState = {
     rgb: DEFAULT_COLOR,
     hsl: rgbToHsl(DEFAULT_COLOR),
@@ -115,6 +119,39 @@ export const mountColorPicker = (container: HTMLElement, messages: Messages): vo
     syncInputs()
     redrawCanvases()
   }
+
+  const syncLocalizedText = (): void => {
+    const heading = root.querySelector<HTMLElement>('.color-picker-text-block h2')
+    const hint = root.querySelector<HTMLElement>('.color-picker-hint')
+    const legends = root.querySelectorAll<HTMLElement>('.color-picker-fieldset legend')
+    const hexInputLabel = root.querySelector<HTMLElement>('.color-picker-hex-input-field > span')
+    const rgbLabels = root.querySelectorAll<HTMLElement>('.color-picker-panel-right .color-picker-grid .tool-field > span')
+    const copyButton = elements.hexCopyButton
+
+    if (heading) heading.textContent = messages.colorPicker.squareLabel
+    if (hint) hint.textContent = messages.colorPicker.squareHint
+    if (legends[0]) legends[0].textContent = messages.colorPicker.hexLabel
+    if (legends[1]) legends[1].textContent = messages.colorPicker.rgbGroupLabel
+    if (legends[2]) legends[2].textContent = messages.colorPicker.hslGroupLabel
+    if (hexInputLabel) hexInputLabel.textContent = messages.colorPicker.hexInputLabel
+    if (rgbLabels[0]) rgbLabels[0].textContent = messages.colorPicker.redLabel
+    if (rgbLabels[1]) rgbLabels[1].textContent = messages.colorPicker.greenLabel
+    if (rgbLabels[2]) rgbLabels[2].textContent = messages.colorPicker.blueLabel
+    if (rgbLabels[3]) rgbLabels[3].textContent = messages.colorPicker.hueLabel
+    if (rgbLabels[4]) rgbLabels[4].textContent = messages.colorPicker.saturationLabel
+    if (rgbLabels[5]) rgbLabels[5].textContent = messages.colorPicker.lightnessLabel
+    copyButton.textContent = messages.colorPicker.copyHexAction
+    elements.spectrumCanvas.setAttribute('aria-label', messages.colorPicker.squareLabel)
+    elements.hueCanvas.setAttribute('aria-label', messages.colorPicker.hueBarLabel)
+  }
+
+  const syncLocale = (nextMessages: Messages): void => {
+    messages = nextMessages
+    syncLocalizedText()
+    syncAll()
+  }
+
+  colorPickerLocaleSyncers.set(root, syncLocale)
 
   const setPopupMessage = (message: string): void => {
     if (copyPopupTimer !== undefined) {
@@ -300,4 +337,9 @@ export const mountColorPicker = (container: HTMLElement, messages: Messages): vo
 
   window.addEventListener('resize', refresh)
   window.requestAnimationFrame(refresh)
+}
+
+export const syncColorPickerLocale = (container: HTMLElement, messages: Messages): void => {
+  const root = container.querySelector<HTMLElement>('[data-color-picker-root]') ?? container
+  colorPickerLocaleSyncers.get(root)?.(messages)
 }

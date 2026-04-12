@@ -29,4 +29,3 @@ export const persistLocale = (locale: Locale): void => {
 export const initLocale = (locale: Locale): void => {
   document.documentElement.lang = locale
 }
-

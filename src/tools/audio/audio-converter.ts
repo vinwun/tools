@@ -62,3 +62,6 @@ const audioConverterTool = createFileConverterTool(audioConverterConfig)
 
 export const renderAudioConverter = audioConverterTool.render
 export const mountAudioConverter = audioConverterTool.mount
+export function updateAudioConverterLocale(container: HTMLElement, messages: import('../../i18n/schema.ts').Messages): void {
+  audioConverterTool.updateLocale(container, messages)
+}

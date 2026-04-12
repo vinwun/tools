@@ -109,6 +109,3 @@ export const navigateToRoute = (route: Route): void => {
 
   window.history.pushState({}, '', targetPath)
 }
-
-
-

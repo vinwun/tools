@@ -1,7 +1,8 @@
 import { messagesByLocale, type Locale } from '../../../i18n'
+import type { Messages } from '../../../i18n/schema.ts'
 import { setCanvasSize } from '../../foundations/canvas.ts'
 import { stripExtension } from '../../foundations/file-converter/utils'
-import { decodeAudioFile, encodeWav, readAudioSampleRate, resampleChannelData } from '../audio-utils.ts'
+import { ACCEPTED_AUDIO_TYPES, decodeAudioFile, encodeWav, readAudioSampleRate, resampleChannelData } from '../audio-utils.ts'
 import type { AudioTrimmerElements, AudioTrimmerHandle, AudioTrimmerMode, AudioTrimmerState } from './types.ts'
 import {
   buildTrimmerChannelData,
@@ -16,8 +17,13 @@ import {
   renderTrimmerSelectionLabel,
 } from './utils.ts'
 
+const audioTrimmerLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+
+const isEditableTarget = (target: EventTarget | null): boolean =>
+  target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable)
+
 export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void => {
-  const messages = messagesByLocale[locale]
+  let messages = messagesByLocale[locale]
   const root = container.querySelector<HTMLElement>('[data-audio-trimmer-root]')
   if (!root) {
     return
@@ -32,6 +38,7 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
     summary: root.querySelector<HTMLElement>('[data-audio-trimmer-summary]') as HTMLElement,
     waveformCanvas: root.querySelector<HTMLCanvasElement>('[data-audio-trimmer-waveform]') as HTMLCanvasElement,
     selectionOverlay: root.querySelector<HTMLElement>('[data-audio-trimmer-selection]') as HTMLElement,
+    playhead: root.querySelector<HTMLButtonElement>('[data-audio-trimmer-playhead]') as HTMLButtonElement,
     startHandle: root.querySelector<HTMLElement>('[data-audio-trimmer-start-handle]') as HTMLElement,
     endHandle: root.querySelector<HTMLElement>('[data-audio-trimmer-end-handle]') as HTMLElement,
     modeInputs: Array.from(root.querySelectorAll<HTMLInputElement>('[data-audio-trimmer-mode]')),
@@ -50,6 +57,7 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
     !elements.summary ||
     !elements.waveformCanvas ||
     !elements.selectionOverlay ||
+    !elements.playhead ||
     !elements.startHandle ||
     !elements.endHandle ||
     elements.modeInputs.length === 0 ||
@@ -69,14 +77,18 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
     mode: 'keep',
     start: 0,
     end: 0,
+    playhead: 0,
     peaks: [],
+    sourceUrl: null,
     previewUrl: null,
+    downloadUrl: null,
   }
 
   const dragState: { handle: AudioTrimmerHandle | null; pointerId: number | null } = {
     handle: null,
     pointerId: null,
   }
+  let hasLoadError = false
 
   const setDownloadState = (enabled: boolean): void => {
     elements.downloadLink.classList.toggle('is-disabled', !enabled)
@@ -90,6 +102,101 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
 
     URL.revokeObjectURL(state.previewUrl)
     state.previewUrl = null
+  }
+
+  const revokeDownloadUrl = (): void => {
+    if (!state.downloadUrl) {
+      return
+    }
+
+    URL.revokeObjectURL(state.downloadUrl)
+    state.downloadUrl = null
+  }
+
+  const buildSelectionBlob = (mode: AudioTrimmerMode): Blob | null => {
+    const audioBuffer = state.audioBuffer
+    if (!audioBuffer) {
+      return null
+    }
+
+    const trimmerChannelData = buildTrimmerChannelData(audioBuffer, state.start, state.end, mode)
+    const wavChannelData =
+      state.outputSampleRate > 0 && state.outputSampleRate !== audioBuffer.sampleRate
+        ? trimmerChannelData.map((channelData) => resampleChannelData(channelData, audioBuffer.sampleRate, state.outputSampleRate))
+        : trimmerChannelData
+
+    return new Blob([encodeWav(wavChannelData, state.outputSampleRate || audioBuffer.sampleRate)], { type: 'audio/wav' })
+  }
+
+  const getPreviewDuration = (): number =>
+    state.mode === 'keep'
+      ? Math.max(0, state.end - state.start)
+      : Math.max(0, state.duration - (state.end - state.start))
+
+  const clampToPlayableSourceTime = (time: number): number => {
+    const safeTime = clamp(time, 0, state.duration)
+
+    if (state.mode === 'keep') {
+      return clamp(safeTime, state.start, state.end)
+    }
+
+    if (safeTime <= state.start || safeTime >= state.end) {
+      return safeTime
+    }
+
+    const distanceToStart = safeTime - state.start
+    const distanceToEnd = state.end - safeTime
+    return distanceToStart <= distanceToEnd ? state.start : state.end
+  }
+
+  const sourceTimeToPreviewTime = (time: number): number => {
+    const safeTime = clampToPlayableSourceTime(time)
+
+    if (state.mode === 'keep') {
+      return clamp(safeTime - state.start, 0, getPreviewDuration())
+    }
+
+    const removedSpan = Math.max(0, state.end - state.start)
+    return safeTime <= state.start ? clamp(safeTime, 0, state.start) : clamp(safeTime - removedSpan, state.start, getPreviewDuration())
+  }
+
+  const previewTimeToSourceTime = (time: number): number => {
+    const previewDuration = getPreviewDuration()
+    const safeTime = clamp(time, 0, previewDuration)
+
+    if (state.mode === 'keep') {
+      return clamp(state.start + safeTime, state.start, state.end)
+    }
+
+    const removedSpan = Math.max(0, state.end - state.start)
+    return safeTime < state.start ? clamp(safeTime, 0, state.start) : clamp(safeTime + removedSpan, state.end, state.duration)
+  }
+
+  const syncSelectionPreview = (): void => {
+    if (!state.audioBuffer) {
+      revokePreviewUrl()
+      elements.preview.removeAttribute('src')
+      elements.preview.load()
+      return
+    }
+
+    const wasPlaying = !elements.preview.paused && !elements.preview.ended
+    const nextBlob = buildSelectionBlob(state.mode)
+    if (!nextBlob) {
+      return
+    }
+
+    state.playhead = clampToPlayableSourceTime(state.playhead)
+    revokePreviewUrl()
+    state.previewUrl = URL.createObjectURL(nextBlob)
+    elements.preview.src = state.previewUrl
+    elements.preview.load()
+
+    elements.preview.currentTime = sourceTimeToPreviewTime(state.playhead)
+
+    if (wasPlaying) {
+      void elements.preview.play()
+    }
   }
 
   const syncTimeFields = (): void => {
@@ -111,15 +218,17 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
     elements.summary.textContent = renderTrimmerSelectionLabel(messages, state.mode, state.start, state.end, state.duration)
   }
 
-  const updateWaveformSelection = (): void => {
+  const updateWaveformMarkers = (): void => {
     const duration = Math.max(state.duration, 0)
     const startRatio = duration === 0 ? 0 : clamp(state.start / duration, 0, 1)
     const endRatio = duration === 0 ? 1 : clamp(state.end / duration, 0, 1)
+    const playheadRatio = duration === 0 ? 0 : clamp(state.playhead / duration, 0, 1)
 
     elements.selectionOverlay.style.left = `${startRatio * 100}%`
     elements.selectionOverlay.style.width = `${Math.max(0, (endRatio - startRatio) * 100)}%`
     elements.startHandle.style.left = `${startRatio * 100}%`
     elements.endHandle.style.left = `${endRatio * 100}%`
+    elements.playhead.style.left = `${playheadRatio * 100}%`
   }
 
   const drawCurrentWaveform = (): void => {
@@ -131,7 +240,7 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
         context.fillStyle = '#F9FAFB'
         context.fillRect(0, 0, width, height)
       }
-      updateWaveformSelection()
+      updateWaveformMarkers()
       return
     }
 
@@ -144,42 +253,68 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
       },
       state.mode,
     )
-    updateWaveformSelection()
+    updateWaveformMarkers()
   }
 
-  const updatePreview = (): void => {
+  const syncPlaybackEnd = (): void => {
+    if (!state.audioBuffer || elements.preview.paused) {
+      return
+    }
+
+    const previewDuration = getPreviewDuration()
+    if (elements.preview.currentTime >= previewDuration) {
+      elements.preview.pause()
+      elements.preview.currentTime = previewDuration
+      state.playhead = previewTimeToSourceTime(previewDuration)
+      updateWaveformMarkers()
+    }
+  }
+
+  const syncPlayheadFromPlayer = (): void => {
+    if (!state.audioBuffer) {
+      return
+    }
+
+    state.playhead = previewTimeToSourceTime(elements.preview.currentTime)
+    updateWaveformMarkers()
+    syncPlaybackEnd()
+  }
+
+  const syncDownloadPreview = (): void => {
     const audioBuffer = state.audioBuffer
 
     if (!audioBuffer) {
-      revokePreviewUrl()
-      elements.preview.removeAttribute('src')
-      elements.preview.load()
+      revokeDownloadUrl()
       elements.downloadLink.removeAttribute('href')
       elements.downloadLink.removeAttribute('download')
       setDownloadState(false)
       return
     }
 
-    revokePreviewUrl()
+    revokeDownloadUrl()
 
-    const trimmerChannelData = buildTrimmerChannelData(audioBuffer, state.start, state.end, state.mode)
-    const wavChannelData =
-      state.outputSampleRate > 0 && state.outputSampleRate !== audioBuffer.sampleRate
-        ? trimmerChannelData.map((channelData) =>
-            resampleChannelData(channelData, audioBuffer.sampleRate, state.outputSampleRate),
-          )
-        : trimmerChannelData
-    const wavBuffer = encodeWav(wavChannelData, state.outputSampleRate || audioBuffer.sampleRate)
-    const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' })
-    state.previewUrl = URL.createObjectURL(wavBlob)
+    const downloadBlob = buildSelectionBlob(state.mode)
+    if (!downloadBlob) {
+      return
+    }
 
-    elements.preview.src = state.previewUrl
-    elements.preview.load()
+    state.downloadUrl = URL.createObjectURL(downloadBlob)
 
     const downloadSuffix = state.mode === 'keep' ? 'trimmed' : 'removed'
-    elements.downloadLink.href = state.previewUrl
+    elements.downloadLink.href = state.downloadUrl
     elements.downloadLink.download = `${stripExtension(state.fileName || 'audio')}_${downloadSuffix}.wav`
     setDownloadState(true)
+
+    const selectedDuration = state.mode === 'keep' ? Math.max(0, state.end - state.start) : Math.max(0, state.duration - (state.end - state.start))
+    const isSilent = state.mode === 'remove' && selectedDuration === 0
+    elements.status.textContent = isSilent ? messages.audioTrimmer.emptySelectionWarning : messages.audioTrimmer.statusReady
+  }
+
+  const syncStatusText = (): void => {
+    if (!state.audioBuffer) {
+      elements.status.textContent = hasLoadError ? messages.audioTrimmer.statusError : messages.audioTrimmer.statusNoFile
+      return
+    }
 
     const selectedDuration = state.mode === 'keep' ? Math.max(0, state.end - state.start) : Math.max(0, state.duration - (state.end - state.start))
     const isSilent = state.mode === 'remove' && selectedDuration === 0
@@ -190,10 +325,24 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
     const normalized = normalizeSelection(start, end, state.duration)
     state.start = normalized.start
     state.end = normalized.end
+    state.playhead = clampToPlayableSourceTime(state.playhead)
     syncTimeFields()
     updateTimeReadouts()
+    syncSelectionPreview()
     drawCurrentWaveform()
-    updatePreview()
+    syncDownloadPreview()
+    syncPlaybackEnd()
+  }
+
+  const setPlayhead = (time: number, syncAudio = false): void => {
+    state.playhead = clampToPlayableSourceTime(time)
+    updateWaveformMarkers()
+
+    if (syncAudio) {
+      elements.preview.currentTime = sourceTimeToPreviewTime(state.playhead)
+    }
+
+    syncPlaybackEnd()
   }
 
   const setSelectionForHandle = (handle: AudioTrimmerHandle, nextTime: number): void => {
@@ -242,6 +391,11 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
       return
     }
 
+    if (dragState.handle === 'playhead') {
+      setPlayhead(getTimeFromPointerX(clientX), true)
+      return
+    }
+
     setSelectionForHandle(dragState.handle, getTimeFromPointerX(clientX))
   }
 
@@ -249,12 +403,77 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
     state.mode = mode
     updateTimeReadouts()
     drawCurrentWaveform()
-    updatePreview()
+    syncSelectionPreview()
+    syncDownloadPreview()
+    syncPlaybackEnd()
   }
+
+  const syncLocalizedText = (): void => {
+    const uploadLabel = root.querySelector<HTMLElement>('.audio-trimmer-panel-main .tool-field > span')
+    const uploadHint = root.querySelectorAll<HTMLElement>('.audio-trimmer-panel-main .tool-hint')[0]
+    const waveformHeading = root.querySelector<HTMLElement>('.audio-trimmer-waveform-header h2')
+    const waveformHint = root.querySelectorAll<HTMLElement>('.audio-trimmer-panel-main .tool-hint, .audio-trimmer-waveform-block .tool-hint')[1]
+    const modeLegend = root.querySelector<HTMLElement>('.audio-trimmer-mode-fieldset legend')
+    const modeLabels = root.querySelectorAll<HTMLElement>('.audio-trimmer-mode-option span')
+    const timeLabels = root.querySelectorAll<HTMLElement>('.audio-trimmer-time-grid .tool-field > span')
+
+    if (uploadLabel) uploadLabel.textContent = messages.audioTrimmer.uploadLabel
+    if (uploadHint) uploadHint.textContent = `${messages.audioTrimmer.uploadHintLabel}: ${ACCEPTED_AUDIO_TYPES.replaceAll(',', ' / ')}`
+    if (waveformHeading) waveformHeading.textContent = messages.audioTrimmer.waveformLabel
+    if (waveformHint) waveformHint.textContent = messages.audioTrimmer.waveformHint
+    if (modeLegend) modeLegend.textContent = messages.audioTrimmer.selectionModeLabel
+    if (modeLabels[0]) modeLabels[0].textContent = messages.audioTrimmer.keepModeLabel
+    if (modeLabels[1]) modeLabels[1].textContent = messages.audioTrimmer.removeModeLabel
+    if (timeLabels[0]) timeLabels[0].textContent = messages.audioTrimmer.startLabel
+    if (timeLabels[1]) timeLabels[1].textContent = messages.audioTrimmer.endLabel
+    elements.browseButton.textContent = messages.audioTrimmer.browseAction
+    elements.waveformCanvas.setAttribute('aria-label', messages.audioTrimmer.waveformLabel)
+    elements.playhead.setAttribute('aria-label', messages.audioTrimmer.playheadLabel)
+    elements.startHandle.setAttribute('aria-label', messages.audioTrimmer.startLabel)
+    elements.endHandle.setAttribute('aria-label', messages.audioTrimmer.endLabel)
+    elements.downloadLink.textContent = messages.audioTrimmer.downloadAction
+  }
+
+  const syncLocale = (nextMessages: Messages): void => {
+    messages = nextMessages
+    syncLocalizedText()
+
+    if (state.audioBuffer) {
+      syncTimeFields()
+      updateTimeReadouts()
+      drawCurrentWaveform()
+      syncStatusText()
+      syncSelectionPreview()
+      return
+    }
+
+    elements.fileName.textContent = messages.audioTrimmer.noFileSelected
+    revokePreviewUrl()
+    revokeDownloadUrl()
+    elements.preview.removeAttribute('src')
+    elements.preview.load()
+    elements.downloadLink.removeAttribute('href')
+    elements.downloadLink.removeAttribute('download')
+    setDownloadState(false)
+    setControlsEnabled(false)
+
+    if (hasLoadError) {
+      elements.summary.textContent = messages.audioTrimmer.statusError
+      elements.status.textContent = messages.audioTrimmer.statusError
+    } else {
+      elements.summary.textContent = messages.audioTrimmer.statusNoFile
+      elements.status.textContent = messages.audioTrimmer.statusNoFile
+    }
+
+    drawCurrentWaveform()
+  }
+
+  audioTrimmerLocaleSyncers.set(root, syncLocale)
 
   const setControlsEnabled = (enabled: boolean): void => {
     elements.startInput.disabled = !enabled
     elements.endInput.disabled = !enabled
+    elements.playhead.disabled = !enabled
     elements.modeInputs.forEach((input) => {
       input.disabled = !enabled
     })
@@ -265,6 +484,8 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
     elements.status.textContent = messages.audioTrimmer.statusLoading
     setDownloadState(false)
     setControlsEnabled(false)
+    hasLoadError = false
+    elements.preview.pause()
 
     try {
       const targetSampleRate = await readAudioSampleRate(file)
@@ -276,6 +497,7 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
       state.mode = 'keep'
       state.start = 0
       state.end = audioBuffer.duration
+      state.playhead = 0
       state.peaks = computePeaks(audioBuffer, getWaveformBarCount(elements.waveformCanvas))
 
       elements.modeInputs.forEach((input) => {
@@ -290,16 +512,21 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
       setControlsEnabled(true)
       updateTimeReadouts()
       drawCurrentWaveform()
-      updatePreview()
+      syncSelectionPreview()
+      syncDownloadPreview()
+      syncPlaybackEnd()
     } catch {
+      hasLoadError = true
       state.fileName = ''
       state.audioBuffer = null
       state.duration = 0
       state.outputSampleRate = 0
       state.peaks = []
+      state.playhead = 0
       state.start = 0
       state.end = 0
       revokePreviewUrl()
+      revokeDownloadUrl()
       elements.preview.removeAttribute('src')
       elements.preview.load()
       elements.downloadLink.removeAttribute('href')
@@ -413,16 +640,65 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
     updateDragSelection(event.clientX)
   })
 
+  elements.playhead.addEventListener('pointerdown', (event) => {
+    event.preventDefault()
+    elements.playhead.setPointerCapture(event.pointerId)
+    beginDrag('playhead', event.pointerId)
+    setPlayhead(getTimeFromPointerX(event.clientX), true)
+  })
+
   elements.waveformCanvas.addEventListener('pointerdown', (event) => {
     if (state.duration <= 0) {
       return
     }
 
-    const time = getTimeFromPointerX(event.clientX)
-    const startDistance = Math.abs(time - state.start)
-    const endDistance = Math.abs(time - state.end)
-    beginDrag(startDistance <= endDistance ? 'start' : 'end', event.pointerId)
-    updateDragSelection(event.clientX)
+    beginDrag('playhead', event.pointerId)
+    setPlayhead(getTimeFromPointerX(event.clientX), true)
+  })
+
+  elements.preview.addEventListener('play', () => {
+    if (!state.audioBuffer) {
+      return
+    }
+
+    elements.preview.currentTime = sourceTimeToPreviewTime(state.playhead)
+  })
+
+  elements.preview.addEventListener('timeupdate', () => {
+    syncPlayheadFromPlayer()
+  })
+
+  elements.preview.addEventListener('seeked', () => {
+    syncPlayheadFromPlayer()
+  })
+
+  elements.preview.addEventListener('ended', () => {
+    if (!state.audioBuffer) {
+      return
+    }
+
+    state.playhead = previewTimeToSourceTime(getPreviewDuration())
+    updateWaveformMarkers()
+  })
+
+  document.addEventListener('keydown', (event) => {
+    if (!root.isConnected || isEditableTarget(event.target) || (event.key !== ' ' && event.code !== 'Space')) {
+      return
+    }
+
+    event.preventDefault()
+
+    if (!state.audioBuffer) {
+      return
+    }
+
+    if (elements.preview.paused) {
+      elements.preview.currentTime = sourceTimeToPreviewTime(state.playhead)
+      void elements.preview.play()
+      return
+    }
+
+    elements.preview.pause()
   })
 
   window.addEventListener('pointermove', (event) => {
@@ -464,4 +740,13 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
   setDownloadState(false)
   setControlsEnabled(false)
   drawCurrentWaveform()
+}
+
+export const syncAudioTrimmerLocale = (container: HTMLElement, messages: Messages): void => {
+  const root = container.querySelector<HTMLElement>('[data-audio-trimmer-root]')
+  if (!root) {
+    return
+  }
+
+  audioTrimmerLocaleSyncers.get(root)?.(messages)
 }

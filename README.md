@@ -13,6 +13,8 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
 - `Image Tools`:
   - `Image Converter`: image conversion into `png` / `jpg` / `webp`
   - `Color Picker`: color field and Hex / RGB / HSL sync with copy-on-click
+- `PDF Tools`:
+  - `PDF Merge & Reorder & Split`: merge PDFs, move pages, extract pages / ranges
 - `Audio Tools`:
   - `Audio Converter`: audio conversion into `wav`
   - `Audio Trimmer`: audio trimmer with keep/remove mode and `wav` download

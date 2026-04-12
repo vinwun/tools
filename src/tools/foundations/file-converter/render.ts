@@ -13,7 +13,7 @@ export const renderFileConverter = (
     <div class="tool-panel file-converter-panel file-converter-panel-input">
       <div class="file-converter-input-header">
         <label class="tool-field">
-          <span>${messages.uploadLabel}</span>
+          <span data-file-converter-upload-label>${messages.uploadLabel}</span>
           <div class="file-converter-file-picker" data-file-converter-dropzone>
             <button type="button" class="file-converter-file-button" data-file-converter-file-button>${messages.browseAction}</button>
             <span class="file-converter-file-name" data-file-converter-file-name aria-live="polite">${messages.noFileSelected}</span>
@@ -24,7 +24,7 @@ export const renderFileConverter = (
       </div>
 
       <label class="tool-field">
-        <span>${messages.outputLabel}</span>
+        <span data-file-converter-output-label>${messages.outputLabel}</span>
         <select data-file-converter-output>
           ${renderOutputOptions(config)}
         </select>
@@ -32,7 +32,7 @@ export const renderFileConverter = (
     </div>
 
     <div class="tool-panel file-converter-panel file-converter-panel-result">
-      <h2>${messages.previewTitle}</h2>
+      <h2 data-file-converter-preview-title>${messages.previewTitle}</h2>
       <div class="file-converter-preview" data-file-converter-preview>
         <p class="file-converter-preview-message" data-file-converter-preview-message>${messages.statusNoFile}</p>
       </div>
@@ -40,4 +40,3 @@ export const renderFileConverter = (
     </div>
   </section>
 `
-

@@ -133,6 +133,8 @@ export const drawWaveform = (
   const baselineColor = '#CBD5E1'
   const barGap = Math.max(1, Math.round(width / Math.max(peaks.length, 1) * 0.14))
   const barWidth = Math.max(1, Math.floor(width / Math.max(peaks.length, 1)) - barGap)
+  const tallestPeak = Math.max(...peaks, 0)
+  const maxBarHeight = tallestPeak > 0 ? (height * 0.72) / tallestPeak : height * 0.72
 
   context.fillStyle = `${selectedColor}1A`
   context.fillRect(selectionStartX, 0, Math.max(0, selectionEndX - selectionStartX), height)
@@ -145,7 +147,6 @@ export const drawWaveform = (
   context.stroke()
 
   const centerY = height / 2
-  const maxBarHeight = height * 3
 
   peaks.forEach((peak, barIndex) => {
     const x = (barIndex / peaks.length) * width

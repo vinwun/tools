@@ -123,3 +123,6 @@ const imageConverterTool = createFileConverterTool(imageConverterConfig)
 
 export const renderImageConverter = imageConverterTool.render
 export const mountImageConverter = imageConverterTool.mount
+export function updateImageConverterLocale(container: HTMLElement, messages: import('../../i18n/schema.ts').Messages): void {
+  imageConverterTool.updateLocale(container, messages)
+}

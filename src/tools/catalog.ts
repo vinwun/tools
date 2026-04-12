@@ -2,7 +2,7 @@ import type { CategoryId } from '../dashboard/category-data.ts'
 
 export const toolsByCategory = {
   image: ['imageConverter', 'colorPicker'],
-  pdf: ['pdfMergeReorder', 'pdfSplit', 'pdfTextExtractor'],
+  pdf: ['pdfMergeReorderSplit', 'pdfTextExtractor'],
   audio: ['audioConverter', 'audioTrimmer'],
   rng: ['numberGenerator', 'stringGenerator'],
   time: ['timer', 'timezoneConverter', 'stopwatch'],
@@ -24,5 +24,3 @@ export const isToolIdForCategory = (
   const tools = toolsByCategory[categoryId] as readonly string[]
   return tools.includes(value)
 }
-
-

@@ -1,3 +1,5 @@
+import type { Messages } from '../../../i18n/schema.ts'
+
 export type ConverterResultData = {
   blob: Blob
   fileName: string
@@ -38,3 +40,8 @@ export type FileConverterConfig = {
   convert: (file: File, outputFormatId: string) => Promise<ConverterResult>
 }
 
+export type FileConverterTool = {
+  render: (messages: Messages) => string
+  mount: (container: HTMLElement, messages: Messages) => void
+  updateLocale: (container: HTMLElement, messages: Messages) => void
+}

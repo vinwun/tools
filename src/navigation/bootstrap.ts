@@ -4,19 +4,33 @@ import { LOCALE_SELECT_ID, renderDashboard } from '../dashboard/render.ts'
 import { hasLocale, type Locale } from '../i18n'
 import { initLocale, persistLocale, resolveInitialLocale } from '../i18n/manager.ts'
 import { isToolIdForCategory } from '../tools/catalog.ts'
-import { mountToolContent } from '../tools/registry.ts'
+import { hasMountedToolContent, mountToolContent, updateMountedToolLocale } from '../tools/registry.ts'
 import { renderToolPage } from '../tools/render.ts'
 import { navigateToRoute, resolveCurrentRoute, type Route } from './router.ts'
 
 export const bootstrapApp = (): void => {
   const app = document.querySelector<HTMLDivElement>('#app')
   let currentLocale: Locale = resolveInitialLocale()
+  let currentRoute: Route = resolveCurrentRoute()
 
-  const mount = () => {
+  const mount = (preserveMountedToolContent = false): void => {
     if (!app) return
 
+    const scrollRestorationTarget =
+      preserveMountedToolContent && currentRoute.type === 'tool'
+        ? app.querySelector<HTMLElement>('.pdf-tools-list-shell')
+        : null
+    const savedScrollLeft = scrollRestorationTarget?.scrollLeft ?? 0
+    const savedScrollTop = scrollRestorationTarget?.scrollTop ?? 0
+
+    const preservedToolContentRoot =
+      preserveMountedToolContent && currentRoute.type === 'tool' && hasMountedToolContent(currentRoute.toolId)
+        ? app.querySelector<HTMLElement>('[data-tool-content-root]')
+        : null
+
+    currentRoute = resolveCurrentRoute()
     initLocale(currentLocale)
-    const route = resolveCurrentRoute()
+    const route = currentRoute
     app.innerHTML =
       route.type === 'dashboard'
         ? renderDashboard(currentLocale)
@@ -24,10 +38,35 @@ export const bootstrapApp = (): void => {
           ? renderCategoryPage(currentLocale, route.categoryId)
           : renderToolPage(currentLocale, route.categoryId, route.toolId)
 
+    if (preservedToolContentRoot) {
+      const toolContentRoot = app.querySelector<HTMLElement>('[data-tool-content-root]')
+      if (toolContentRoot) {
+        toolContentRoot.replaceWith(preservedToolContentRoot)
+      }
+    }
+
+    if (route.type === 'tool' && preservedToolContentRoot) {
+      updateMountedToolLocale(route.toolId, currentLocale)
+    }
+
     bindLocaleSelector()
 
-    if (route.type === 'tool') {
+    if (route.type === 'tool' && !preservedToolContentRoot) {
       mountToolContent(route.toolId, currentLocale)
+    }
+
+    if (scrollRestorationTarget) {
+      const restoredScrollTarget = app.querySelector<HTMLElement>('.pdf-tools-list-shell')
+      if (restoredScrollTarget) {
+        const restoreScroll = (): void => {
+          restoredScrollTarget.scrollLeft = savedScrollLeft
+          restoredScrollTarget.scrollTop = savedScrollTop
+        }
+
+        restoreScroll()
+        window.requestAnimationFrame(restoreScroll)
+        window.setTimeout(restoreScroll, 0)
+      }
     }
   }
 
@@ -45,7 +84,7 @@ export const bootstrapApp = (): void => {
       if (!hasLocale(selectedLocale)) return
       currentLocale = selectedLocale
       persistLocale(currentLocale)
-      mount()
+      mount(true)
     })
   }
 
@@ -83,8 +122,11 @@ export const bootstrapApp = (): void => {
     })
   }
 
+  const handlePopState = (): void => {
+    mount()
+  }
+
   bindNavigation()
-  window.addEventListener('popstate', mount)
+  window.addEventListener('popstate', handlePopState)
   mount()
 }
-

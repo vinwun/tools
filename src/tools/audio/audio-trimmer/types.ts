@@ -8,8 +8,11 @@ export type AudioTrimmerState = {
   mode: AudioTrimmerMode
   start: number
   end: number
+  playhead: number
   peaks: number[]
+  sourceUrl: string | null
   previewUrl: string | null
+  downloadUrl: string | null
 }
 
 export type AudioTrimmerElements = {
@@ -21,6 +24,7 @@ export type AudioTrimmerElements = {
   summary: HTMLElement
   waveformCanvas: HTMLCanvasElement
   selectionOverlay: HTMLElement
+  playhead: HTMLButtonElement
   startHandle: HTMLElement
   endHandle: HTMLElement
   modeInputs: HTMLInputElement[]
@@ -30,4 +34,4 @@ export type AudioTrimmerElements = {
   downloadLink: HTMLAnchorElement
 }
 
-export type AudioTrimmerHandle = 'start' | 'end'
+export type AudioTrimmerHandle = 'start' | 'end' | 'playhead'

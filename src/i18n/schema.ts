@@ -28,29 +28,6 @@ export type Messages = {
   toolPage: {
     comingSoon: string
   }
-  colorPicker: {
-    heading: string
-    selectedColorLabel: string
-    openPickerAction: string
-    squareLabel: string
-    squareHint: string
-    hueBarLabel: string
-    hueBarHint: string
-    hexLabel: string
-    hexInputLabel: string
-    hexInputPlaceholder: string
-    copyHexAction: string
-    copiedMessage: string
-    copyFailedMessage: string
-    rgbGroupLabel: string
-    hslGroupLabel: string
-    redLabel: string
-    greenLabel: string
-    blueLabel: string
-    hueLabel: string
-    saturationLabel: string
-    lightnessLabel: string
-  }
   fileConverter: {
     uploadLabel: string
     uploadHintLabel: string
@@ -67,6 +44,46 @@ export type Messages = {
     previewTitle: string
     previewUnavailable: string
   }
+  colorPicker: {
+    squareLabel: string
+    squareHint: string
+    hueBarLabel: string
+    hexLabel: string
+    hexInputLabel: string
+    hexInputPlaceholder: string
+    copyHexAction: string
+    copiedMessage: string
+    copyFailedMessage: string
+    rgbGroupLabel: string
+    hslGroupLabel: string
+    redLabel: string
+    greenLabel: string
+    blueLabel: string
+    hueLabel: string
+    saturationLabel: string
+    lightnessLabel: string
+  }
+  pdfTools: {
+    uploadLabel: string
+    uploadHintLabel: string
+    browseAction: string
+    clearAction: string
+    dropHint: string
+    pageListTitle: string
+    emptyState: string
+    documentsSummary: string
+    selectedSummary: string
+    keepSelectedAction: string
+    removeSelectedAction: string
+    downloadAction: string
+    selectionHint: string
+    reorderHint: string
+    moveToEndHint: string
+    pageEntryLabel: string
+    thumbnailLoading: string
+    thumbnailFailed: string
+    uploadingStatus: string
+  }
   audioTrimmer: {
     uploadLabel: string
     uploadHintLabel: string
@@ -77,6 +94,7 @@ export type Messages = {
     removeModeLabel: string
     waveformLabel: string
     waveformHint: string
+    playheadLabel: string
     startLabel: string
     endLabel: string
     previewTitle: string
@@ -90,4 +108,3 @@ export type Messages = {
   categories: Record<CategoryId, CategoryTranslation>
   tools: Record<ToolId, ToolTranslation>
 }
-
