@@ -18,3 +18,6 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
 - `Audio Tools`:
   - `Audio Converter`: audio conversion into `wav`
   - `Audio Trimmer`: audio trimmer with keep/remove mode and `wav` download
+- `RNG Tools`:
+  - `Number Generator`: random numbers in a min/max range with integer / decimal mode
+  - `String Generator`: pick from a list of strings with optional per-entry weights and unique mode

@@ -28,6 +28,27 @@ export type Messages = {
   toolPage: {
     comingSoon: string
   }
+  rngNumberGenerator: {
+    settingsLegend: string
+    minLabel: string
+    maxLabel: string
+    integerModeLabel: string
+    decimalModeLabel: string
+    generateAction: string
+  }
+  rngStringGenerator: {
+    listLegend: string
+    listHint: string
+    optionsLegend: string
+    uniqueModeLabel: string
+    uniqueModeHint: string
+    resetAction: string
+    generateAction: string
+    readyMessage: string
+    uniqueStatusMessage: string
+    emptyStateMessage: string
+    exhaustedMessage: string
+  }
   fileConverter: {
     uploadLabel: string
     uploadHintLabel: string

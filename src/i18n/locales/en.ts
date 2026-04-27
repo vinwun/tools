@@ -17,6 +17,27 @@ export const enMessages: Messages = {
   toolPage: {
     comingSoon: 'This tool page is prepared and will be implemented next.',
   },
+  rngNumberGenerator: {
+    settingsLegend: 'Settings',
+    minLabel: 'Min',
+    maxLabel: 'Max',
+    integerModeLabel: 'Integer',
+    decimalModeLabel: 'Decimal',
+    generateAction: 'Generate',
+  },
+  rngStringGenerator: {
+    listLegend: 'String list',
+    listHint: 'Weights can be added using "value | weight".',
+    optionsLegend: 'Options',
+    uniqueModeLabel: 'Unique mode',
+    uniqueModeHint: 'Picked entries are removed until you reset the pool.',
+    resetAction: 'Reset pool',
+    generateAction: 'Pick string',
+    readyMessage: '{count} entries ready to pick.',
+    uniqueStatusMessage: '{count} unique entries remaining.',
+    emptyStateMessage: 'Add at least one string to start.',
+    exhaustedMessage: 'All entries were picked. Reset the pool to continue.',
+  },
   fileConverter: {
     uploadLabel: 'Input file(s)',
     uploadHintLabel: 'Accepted input',
@@ -151,7 +172,7 @@ export const enMessages: Messages = {
     },
     numberGenerator: {
       name: 'Number Generator',
-      description: 'Generate random numbers in a range.',
+      description: 'Generate random numbers in a min/max range.',
     },
     stringGenerator: {
       name: 'String Generator',

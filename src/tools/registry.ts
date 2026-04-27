@@ -8,6 +8,12 @@ import { renderAudioTrimmer } from './audio/audio-trimmer/render.ts'
 import { mountAudioTrimmer, syncAudioTrimmerLocale } from './audio/audio-trimmer/mount.ts'
 import { renderPdfMergeReorderSplit } from './pdf/pdf-tools/render.ts'
 import { mountPdfMergeReorderSplit, syncPdfLocale } from './pdf/pdf-tools/mount.ts'
+import { renderNumberGenerator } from './rng/number-generator/render.ts'
+import { createInitialNumberGeneratorState } from './rng/number-generator/utils.ts'
+import { mountNumberGenerator, updateNumberGeneratorLocale } from './rng/number-generator/mount.ts'
+import { renderStringGenerator } from './rng/string-generator/render.ts'
+import { createInitialStringGeneratorState } from './rng/string-generator/utils.ts'
+import { mountStringGenerator, updateStringGeneratorLocale } from './rng/string-generator/mount.ts'
 
 type ToolRenderer = {
   render: (locale: Locale) => string
@@ -40,6 +46,16 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     render: (locale) => renderPdfMergeReorderSplit(messagesByLocale[locale]),
     mount: (container, locale) => mountPdfMergeReorderSplit(container, locale),
     updateLocale: (container, locale) => syncPdfLocale(container, locale),
+  },
+  numberGenerator: {
+    render: (locale) => renderNumberGenerator(messagesByLocale[locale], createInitialNumberGeneratorState()),
+    mount: (container, locale) => mountNumberGenerator(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateNumberGeneratorLocale(container, messagesByLocale[locale]),
+  },
+  stringGenerator: {
+    render: (locale) => renderStringGenerator(messagesByLocale[locale], createInitialStringGeneratorState()),
+    mount: (container, locale) => mountStringGenerator(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateStringGeneratorLocale(container, messagesByLocale[locale]),
   },
 }
 

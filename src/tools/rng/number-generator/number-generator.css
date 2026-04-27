@@ -1,0 +1,119 @@
+.rng-number-generator-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.rng-number-generator-panel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.rng-number-generator-result {
+  display: grid;
+  place-items: center;
+  min-height: 5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  color: #111827;
+  font-size: clamp(5rem, 7.5vw, 10rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.rng-number-generator-fieldset {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.9rem;
+}
+
+.rng-number-generator-fieldset legend {
+  padding: 0 0.25rem;
+  font-weight: 700;
+}
+
+.rng-number-generator-fieldset {
+  grid-template-columns: minmax(8rem, 1fr) auto minmax(8rem, 1fr);
+  align-items: center;
+}
+
+.rng-number-generator-grid {
+  display: grid;
+  gap: 0.2rem;
+  justify-self: start;
+  width: min(100%, 6.5rem);
+}
+
+.rng-number-generator-grid .tool-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.rng-number-generator-grid .tool-field > span {
+  min-width: 2.75rem;
+  white-space: nowrap;
+}
+
+.rng-number-generator-mode-options {
+  display: grid;
+  justify-self: center;
+  align-content: center;
+}
+
+.rng-number-generator-mode-option {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.25rem 0.1rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.rng-number-generator-mode-option input {
+  width: 1.45rem;
+  height: 1.45rem;
+  margin: 0;
+}
+
+.rng-number-generator-generate {
+  justify-self: center;
+  min-height: 5rem;
+  padding-inline: 3rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .rng-number-generator-fieldset {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .rng-number-generator-grid {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .rng-number-generator-grid .tool-field {
+    justify-content: space-between;
+  }
+
+  .rng-number-generator-mode-options,
+  .rng-number-generator-generate {
+    justify-self: stretch;
+  }
+
+  .rng-number-generator-mode-option {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rng-number-generator-generate {
+    width: 100%;
+  }
+}

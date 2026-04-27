@@ -17,6 +17,27 @@ export const deMessages: Messages = {
   toolPage: {
     comingSoon: 'Diese Tool-Seite ist vorbereitet und wird als Nächstes umgesetzt.',
   },
+  rngNumberGenerator: {
+    settingsLegend: 'Einstellungen',
+    minLabel: 'Min',
+    maxLabel: 'Max',
+    integerModeLabel: 'Ganzzahl',
+    decimalModeLabel: 'Dezimalzahl',
+    generateAction: 'Erzeugen',
+  },
+  rngStringGenerator: {
+    listLegend: 'Zeichenketten-Liste',
+    listHint: 'Gewichte werden mit "Wert | Gewicht" angegeben.',
+    optionsLegend: 'Optionen',
+    uniqueModeLabel: 'Einmalig-Modus',
+    uniqueModeHint: 'Ausgewählte Einträge werden entfernt, bis du den Pool zurücksetzt.',
+    resetAction: 'Pool zurücksetzen',
+    generateAction: 'Zeichenkette ziehen',
+    readyMessage: '{count} Einträge sind bereit.',
+    uniqueStatusMessage: '{count} einmalige Einträge verbleiben.',
+    emptyStateMessage: 'Füge mindestens eine Zeichenkette hinzu, um zu starten.',
+    exhaustedMessage: 'Alle Einträge wurden gezogen. Setze den Pool zurück, um fortzufahren.',
+  },
   fileConverter: {
     uploadLabel: 'Eingabedatei(en)',
     uploadHintLabel: 'Akzeptierte Eingabe',
@@ -151,7 +172,7 @@ export const deMessages: Messages = {
     },
     numberGenerator: {
       name: 'Zahlen-Generator',
-      description: 'Zufällige Zahlen in einem Intervall generieren.',
+      description: 'Zufällige Zahlen in einem Min/Max-Bereich generieren.',
     },
     stringGenerator: {
       name: 'Wort-Generator',
