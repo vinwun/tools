@@ -8,6 +8,9 @@
 @import 'tools/pdf/pdf-tools/pdf-tools.css';
 @import 'tools/rng/number-generator/number-generator.css';
 @import 'tools/rng/string-generator/string-generator.css';
+@import 'tools/time/stopwatch/stopwatch.css';
+@import './tools/time/timer/timer.css';
+@import './tools/time/timezone-converter/timezone-converter.css';
 
 :root {
   color-scheme: light;

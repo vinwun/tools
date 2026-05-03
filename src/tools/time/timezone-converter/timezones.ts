@@ -1,0 +1,40 @@
+import type { TimezoneDefinition } from './types.ts'
+
+export const TIMEZONE_GROUPS: TimezoneDefinition[][] = [
+  [
+    { id: 'akst', offsetMinutes: -9 * 60 },
+    { id: 'akdt', offsetMinutes: -8 * 60 },
+    { id: 'pst', offsetMinutes: -8 * 60 },
+    { id: 'pdt', offsetMinutes: -7 * 60 },
+    { id: 'mst', offsetMinutes: -7 * 60 },
+    { id: 'mdt', offsetMinutes: -6 * 60 },
+    { id: 'cst-winter', offsetMinutes: -6 * 60 },
+    { id: 'cdt', offsetMinutes: -5 * 60 },
+    { id: 'est-winter', offsetMinutes: -5 * 60 },
+    { id: 'edt', offsetMinutes: -4 * 60 },
+  ],
+  [
+    { id: 'ast', offsetMinutes: -4 * 60 },
+    { id: 'art-brt', offsetMinutes: -3 * 60 },
+    { id: 'wet', offsetMinutes: 0 },
+    { id: 'west', offsetMinutes: 1 * 60 },
+    { id: 'utc', offsetMinutes: 0 },
+    { id: 'bst', offsetMinutes: 1 * 60 },
+    { id: 'cet-winter', offsetMinutes: 1 * 60 },
+    { id: 'cest', offsetMinutes: 2 * 60 },
+    { id: 'eet-winter', offsetMinutes: 2 * 60 },
+    { id: 'eest', offsetMinutes: 3 * 60 },
+  ],
+  [
+    { id: 'msk', offsetMinutes: 3 * 60 },
+    { id: 'gst', offsetMinutes: 4 * 60 },
+    { id: 'ist', offsetMinutes: 5 * 60 + 30 },
+    { id: 'pkt', offsetMinutes: 5 * 60 },
+    { id: 'cst-beijing', offsetMinutes: 8 * 60 },
+    { id: 'jst', offsetMinutes: 9 * 60 },
+    { id: 'aest', offsetMinutes: 10 * 60 },
+    { id: 'aedt', offsetMinutes: 11 * 60 },
+    { id: 'nzst', offsetMinutes: 12 * 60 },
+    { id: 'nzdt', offsetMinutes: 13 * 60 },
+  ],
+]

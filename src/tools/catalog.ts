@@ -2,10 +2,10 @@ import type { CategoryId } from '../dashboard/category-data.ts'
 
 export const toolsByCategory = {
   image: ['imageConverter', 'colorPicker'],
-  pdf: ['pdfMergeReorderSplit', 'pdfTextExtractor'],
+  pdf: ['pdfMergeReorderSplit', 'pdfConverter', 'pdfTextExtractor'],
   audio: ['audioConverter', 'audioTrimmer'],
   rng: ['numberGenerator', 'stringGenerator'],
-  time: ['timer', 'timezoneConverter', 'stopwatch'],
+  time: ['stopwatch', 'timer', 'timezoneConverter'],
   math: ['primeFactorizer', 'baseConverter', 'aspectRatioCalculator'],
   text: ['jsonValidatorPrettyPrinter', 'csvValidatorPrettyPrinter', 'jsonCsvConverter', 'markdownPreview', 'textCounters'],
 } as const satisfies Record<CategoryId, readonly string[]>

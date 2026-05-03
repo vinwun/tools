@@ -1,0 +1,111 @@
+.stopwatch-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.stopwatch-panel {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.stopwatch-display {
+  display: grid;
+  place-items: center;
+  min-height: 15rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  color: #111827;
+  font-size: clamp(4rem, 8vw, 8rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.stopwatch-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.stopwatch-primary,
+.stopwatch-secondary {
+  flex: 1 1 8rem;
+  font-weight: 600;
+  min-height: 3.5rem;
+  font-size: 1.5rem;
+}
+
+.stopwatch-laps-panel {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.stopwatch-laps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.stopwatch-laps-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.stopwatch-laps-count {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.stopwatch-laps-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.stopwatch-lap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.15rem 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.stopwatch-lap-label {
+  font-weight: 600;
+}
+
+.stopwatch-lap-metrics {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+}
+
+.stopwatch-lap-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.stopwatch-lap-delta {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.stopwatch-laps-empty {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .stopwatch-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -126,6 +126,34 @@ export type Messages = {
     statusError: string
     emptySelectionWarning: string
   }
+  stopwatch: {
+    elapsedLabel: string
+    startAction: string
+    pauseAction: string
+    resumeAction: string
+    resetAction: string
+    lapAction: string
+    lapsTitle: string
+    lapsCountLabel: string
+    lapEntryLabel: string
+    lapsEmpty: string
+  }
+  timer: {
+    remainingLabel: string
+    startAction: string
+    pauseAction: string
+    resumeAction: string
+    resetAction: string
+  }
+  timezoneConverter: {
+    localTimeLabel: string
+    localTimeHint: string
+    timeInputLabel: string
+    statusCurrent: string
+    statusOutdated: string
+    setCurrentAction: string
+    zones: Record<string, string>
+  }
   categories: Record<CategoryId, CategoryTranslation>
   tools: Record<ToolId, ToolTranslation>
 }

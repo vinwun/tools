@@ -21,3 +21,7 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
 - `RNG Tools`:
   - `Number Generator`: random numbers in a min/max range with integer / decimal mode
   - `String Generator`: pick from a list of strings with optional per-entry weights and unique mode
+- `Time Tools`:
+  - `Stopwatch`: measure elapsed time with lap controls
+  - `Timer`: count down from a duration with completion alert
+  - `Timezone Converter`: convert times between different time zones

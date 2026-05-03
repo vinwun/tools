@@ -14,6 +14,12 @@ import { mountNumberGenerator, updateNumberGeneratorLocale } from './rng/number-
 import { renderStringGenerator } from './rng/string-generator/render.ts'
 import { createInitialStringGeneratorState } from './rng/string-generator/utils.ts'
 import { mountStringGenerator, updateStringGeneratorLocale } from './rng/string-generator/mount.ts'
+import { renderStopwatch } from './time/stopwatch/render.ts'
+import { mountStopwatch, updateStopwatchLocale } from './time/stopwatch/mount.ts'
+import { renderTimer } from './time/timer/render.ts'
+import { mountTimer, updateTimerLocale } from './time/timer/mount.ts'
+import { renderTimezoneConverter } from './time/timezone-converter/render.ts'
+import { mountTimezoneConverter, updateTimezoneConverterLocale } from './time/timezone-converter/mount.ts'
 
 type ToolRenderer = {
   render: (locale: Locale) => string
@@ -56,6 +62,21 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     render: (locale) => renderStringGenerator(messagesByLocale[locale], createInitialStringGeneratorState()),
     mount: (container, locale) => mountStringGenerator(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateStringGeneratorLocale(container, messagesByLocale[locale]),
+  },
+  stopwatch: {
+    render: (locale) => renderStopwatch(messagesByLocale[locale]),
+    mount: (container, locale) => mountStopwatch(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateStopwatchLocale(container, messagesByLocale[locale]),
+  },
+  timer: {
+    render: (locale) => renderTimer(messagesByLocale[locale]),
+    mount: (container, locale) => mountTimer(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateTimerLocale(container, messagesByLocale[locale]),
+  },
+  timezoneConverter: {
+    render: (locale) => renderTimezoneConverter(messagesByLocale[locale]),
+    mount: (container, locale) => mountTimezoneConverter(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateTimezoneConverterLocale(container, messagesByLocale[locale]),
   },
 }
 
