@@ -174,6 +174,46 @@ export const deMessages: Messages = {
       nzdt: 'NZDT (Auckland – Sommer)',
     },
   },
+  primeFactorizer: {
+    decimalLabel: 'Dezimalwert',
+    decimalHint: 'Gib eine ganze Zahl ein (negative Zahlen unterstützt).',
+    expandedLabel: 'Primfaktoren',
+    expandedHint: 'Nutze "*" zwischen Faktoren, z. B. -1 * 2 * 2 * 3.',
+    exponentLabel: 'Primfaktoren mit Exponent',
+    exponentHint: 'Nutze Exponenten, z. B. -1 * 2^2 * 3.',
+  },
+  numericalConverter: {
+    binaryLabel: 'Binär (Basis 2)',
+    octalLabel: 'Oktal (Basis 8)',
+    decimalLabel: 'Dezimal (Basis 10)',
+    hexLabel: 'Hexadezimal (Basis 16)',
+    customBaseLabel: 'Eigene Basis',
+    customValueLabel: 'Eigener Wert',
+    romanLabel: 'Römische Zahlen',
+  },
+  aspectRatioCalculator: {
+    widthLabel: 'Breite',
+    heightLabel: 'Höhe',
+    reducedLabel: 'Seitenverhältnis',
+    decimalLabel: 'Dezimalwert',
+  },
+  floatingPointInspector: {
+    decimalLabel: 'Dezimalwert',
+    formatHalfTitle: 'Halbe Genauigkeit (16-bit)',
+    formatFloatTitle: 'Einfache Genauigkeit (32-bit)',
+    formatDoubleTitle: 'Doppelte Genauigkeit (64-bit)',
+    signLabel: 'Vorzeichen',
+    exponentLabel: 'Exponent',
+    mantissaLabel: 'Mantisse',
+    valueLabel: 'Wert',
+    deltaLabel: 'Abweichung',
+    interpretationLabel: 'Interpretation',
+    interpretationZero: 'Null',
+    interpretationSubnormal: 'Subnormal',
+    interpretationNormal: 'Normal',
+    interpretationInfinity: 'Unendlich',
+    interpretationNaN: 'NaN',
+  },
   categories: {
     image: {
       name: 'Bild',
@@ -197,7 +237,7 @@ export const deMessages: Messages = {
     },
     math: {
       name: 'Mathe',
-      description: 'Mathematische Berechnungen und Umwandlungen durchführen.',
+      description: 'Zahlen-Analyse und Umrechnungen.',
     },
     text: {
       name: 'Text',
@@ -257,13 +297,17 @@ export const deMessages: Messages = {
       name: 'Primfaktorzerlegung',
       description: 'Zahlen in ihre Primfaktoren zerlegen.',
     },
-    baseConverter: {
-      name: 'Basis-Konverter',
+    numericalConverter: {
+      name: 'Zahlensystem‑Umrechner',
       description: 'Zahlen zwischen Zahlensystemen umrechnen.',
     },
     aspectRatioCalculator: {
       name: 'Seitenverhältnis-Rechner',
       description: 'Bild- und Displayformate schnell bestimmen.',
+    },
+    floatingPointInspector: {
+      name: 'Gleitkomma-Inspektor',
+      description: 'Gleitkommazahlen und deren Bitdarstellung umrechnen.',
     },
     jsonValidatorPrettyPrinter: {
       name: 'JSON-Syntaxprüfung & Darsteller',

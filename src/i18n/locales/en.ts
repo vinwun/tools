@@ -174,6 +174,46 @@ export const enMessages: Messages = {
       nzdt: 'NZDT (Auckland – Summer)',
     },
   },
+  primeFactorizer: {
+    decimalLabel: 'Decimal value',
+    decimalHint: 'Enter an integer (negative numbers supported).',
+    expandedLabel: 'Prime factors',
+    expandedHint: 'Use "*" between factors, e.g. -1 * 2 * 2 * 3.',
+    exponentLabel: 'Prime factors with exponent',
+    exponentHint: 'Use exponent notation, e.g. -1 * 2^2 * 3.',
+  },
+  numericalConverter: {
+    binaryLabel: 'Binary (base 2)',
+    octalLabel: 'Octal (base 8)',
+    decimalLabel: 'Decimal (base 10)',
+    hexLabel: 'Hexadecimal (base 16)',
+    customBaseLabel: 'Custom base',
+    customValueLabel: 'Custom value',
+    romanLabel: 'Roman numerals',
+  },
+  aspectRatioCalculator: {
+    widthLabel: 'Width',
+    heightLabel: 'Height',
+    reducedLabel: 'Aspect ratio',
+    decimalLabel: 'Decimal value',
+  },
+  floatingPointInspector: {
+    decimalLabel: 'Decimal value',
+    formatHalfTitle: 'Half precision (16-bit)',
+    formatFloatTitle: 'Single precision (32-bit)',
+    formatDoubleTitle: 'Double precision (64-bit)',
+    signLabel: 'Sign',
+    exponentLabel: 'Exponent',
+    mantissaLabel: 'Mantissa',
+    valueLabel: 'Value',
+    deltaLabel: 'Difference',
+    interpretationLabel: 'Interpretation',
+    interpretationZero: 'Zero',
+    interpretationSubnormal: 'Subnormal',
+    interpretationNormal: 'Normal',
+    interpretationInfinity: 'Infinity',
+    interpretationNaN: 'NaN',
+  },
   categories: {
     image: {
       name: 'Image',
@@ -197,7 +237,7 @@ export const enMessages: Messages = {
     },
     math: {
       name: 'Math',
-      description: 'Solve mathematical calculations and transformations.',
+      description: 'Number analysis and conversions.',
     },
     text: {
       name: 'Text',
@@ -257,13 +297,17 @@ export const enMessages: Messages = {
       name: 'Prime Factorizer',
       description: 'Break numbers into their prime factors.',
     },
-    baseConverter: {
-      name: 'Base Converter',
+    numericalConverter: {
+      name: 'Numeral System Converter',
       description: 'Convert numbers between numeral systems.',
     },
     aspectRatioCalculator: {
       name: 'Aspect Ratio Calculator',
-      description: 'Determine screen and image aspect ratios quickly.',
+      description: 'Determine screen and image aspect ratios.',
+    },
+    floatingPointInspector: {
+      name: 'Floating-Point Inspector',
+      description: 'Convert floating-point numbers and their bit representations.',
     },
     jsonValidatorPrettyPrinter: {
       name: 'JSON Validator & Pretty Printer',

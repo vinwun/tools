@@ -1,0 +1,27 @@
+.base-converter-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.base-converter-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.base-converter-panel .tool-field input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.base-converter-custom {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+@media (max-width: 720px) {
+  .base-converter-custom {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+

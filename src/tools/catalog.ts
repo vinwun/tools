@@ -6,7 +6,7 @@ export const toolsByCategory = {
   audio: ['audioConverter', 'audioTrimmer'],
   rng: ['numberGenerator', 'stringGenerator'],
   time: ['stopwatch', 'timer', 'timezoneConverter'],
-  math: ['primeFactorizer', 'baseConverter', 'aspectRatioCalculator'],
+  math: ['primeFactorizer', 'numericalConverter', 'aspectRatioCalculator', 'floatingPointInspector'],
   text: ['jsonValidatorPrettyPrinter', 'csvValidatorPrettyPrinter', 'jsonCsvConverter', 'markdownPreview', 'textCounters'],
 } as const satisfies Record<CategoryId, readonly string[]>
 

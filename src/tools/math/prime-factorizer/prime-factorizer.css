@@ -1,0 +1,13 @@
+.prime-factorizer-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.prime-factorizer-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.prime-factorizer-panel .tool-field input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}

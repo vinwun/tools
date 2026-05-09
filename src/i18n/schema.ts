@@ -154,6 +154,46 @@ export type Messages = {
     setCurrentAction: string
     zones: Record<string, string>
   }
+  primeFactorizer: {
+    decimalLabel: string
+    decimalHint: string
+    expandedLabel: string
+    expandedHint: string
+    exponentLabel: string
+    exponentHint: string
+  }
+  numericalConverter: {
+    binaryLabel: string
+    octalLabel: string
+    decimalLabel: string
+    hexLabel: string
+    customBaseLabel: string
+    customValueLabel: string
+    romanLabel: string
+  }
+  aspectRatioCalculator: {
+    widthLabel: string
+    heightLabel: string
+    reducedLabel: string
+    decimalLabel: string
+  }
+  floatingPointInspector: {
+    decimalLabel: string
+    formatHalfTitle: string
+    formatFloatTitle: string
+    formatDoubleTitle: string
+    signLabel: string
+    exponentLabel: string
+    mantissaLabel: string
+    valueLabel: string
+    deltaLabel: string
+    interpretationLabel: string
+    interpretationZero: string
+    interpretationSubnormal: string
+    interpretationNormal: string
+    interpretationInfinity: string
+    interpretationNaN: string
+  }
   categories: Record<CategoryId, CategoryTranslation>
   tools: Record<ToolId, ToolTranslation>
 }

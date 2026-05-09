@@ -25,3 +25,8 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Stopwatch`: measure elapsed time with lap controls
   - `Timer`: count down from a duration with completion alert
   - `Timezone Converter`: convert times between different time zones
+- `Math Tools`:
+  - `Prime Factorizer`: factor integers into primes with expanded and exponent forms
+  - `Base Converter`: convert numbers between numeral systems
+  - `Aspect Ratio Calculator`: convert width and height into aspect ratio and decimal
+  - `Floating-Point Inspector`: convert floating-point numbers and their bit representations

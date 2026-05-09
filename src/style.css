@@ -8,6 +8,10 @@
 @import 'tools/pdf/pdf-tools/pdf-tools.css';
 @import 'tools/rng/number-generator/number-generator.css';
 @import 'tools/rng/string-generator/string-generator.css';
+@import 'tools/math/prime-factorizer/prime-factorizer.css';
+@import 'tools/math/base-converter/base-converter.css';
+@import 'tools/math/aspect-ratio-calculator/aspect-ratio-calculator.css';
+@import 'tools/math/floating-point-inspector/floating-point-inspector.css';
 @import 'tools/time/stopwatch/stopwatch.css';
 @import './tools/time/timer/timer.css';
 @import './tools/time/timezone-converter/timezone-converter.css';

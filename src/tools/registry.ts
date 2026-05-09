@@ -20,6 +20,18 @@ import { renderTimer } from './time/timer/render.ts'
 import { mountTimer, updateTimerLocale } from './time/timer/mount.ts'
 import { renderTimezoneConverter } from './time/timezone-converter/render.ts'
 import { mountTimezoneConverter, updateTimezoneConverterLocale } from './time/timezone-converter/mount.ts'
+import { renderPrimeFactorizer } from './math/prime-factorizer/render.ts'
+import { mountPrimeFactorizer, updatePrimeFactorizerLocale } from './math/prime-factorizer/mount.ts'
+import { createInitialPrimeFactorizerState } from './math/prime-factorizer/utils.ts'
+import { renderBaseConverter } from './math/base-converter/render.ts'
+import { mountBaseConverter, updateBaseConverterLocale } from './math/base-converter/mount.ts'
+import { createInitialBaseConverterState } from './math/base-converter/utils.ts'
+import { renderAspectRatioCalculator } from './math/aspect-ratio-calculator/render.ts'
+import { mountAspectRatioCalculator, updateAspectRatioCalculatorLocale } from './math/aspect-ratio-calculator/mount.ts'
+import { createInitialAspectRatioCalculatorState } from './math/aspect-ratio-calculator/utils.ts'
+import { renderFloatingPointInspector } from './math/floating-point-inspector/render.ts'
+import { mountFloatingPointInspector, updateFloatingPointInspectorLocale } from './math/floating-point-inspector/mount.ts'
+import { createInitialFloatingPointInspectorState } from './math/floating-point-inspector/utils.ts'
 
 type ToolRenderer = {
   render: (locale: Locale) => string
@@ -77,6 +89,29 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     render: (locale) => renderTimezoneConverter(messagesByLocale[locale]),
     mount: (container, locale) => mountTimezoneConverter(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateTimezoneConverterLocale(container, messagesByLocale[locale]),
+  },
+  primeFactorizer: {
+    render: (locale) => renderPrimeFactorizer(messagesByLocale[locale], createInitialPrimeFactorizerState()),
+    mount: (container, locale) => mountPrimeFactorizer(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updatePrimeFactorizerLocale(container, messagesByLocale[locale]),
+  },
+  numericalConverter: {
+    render: (locale) => renderBaseConverter(messagesByLocale[locale], createInitialBaseConverterState()),
+    mount: (container, locale) => mountBaseConverter(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateBaseConverterLocale(container, messagesByLocale[locale]),
+  },
+  aspectRatioCalculator: {
+    render: (locale) =>
+      renderAspectRatioCalculator(messagesByLocale[locale], createInitialAspectRatioCalculatorState()),
+    mount: (container, locale) => mountAspectRatioCalculator(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) =>
+      updateAspectRatioCalculatorLocale(container, messagesByLocale[locale]),
+  },
+  floatingPointInspector: {
+    render: (locale) =>
+      renderFloatingPointInspector(messagesByLocale[locale], createInitialFloatingPointInspectorState()),
+    mount: (container, locale) => mountFloatingPointInspector(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateFloatingPointInspectorLocale(container, messagesByLocale[locale]),
   },
 }
 
