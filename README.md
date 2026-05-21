@@ -15,6 +15,7 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Color Picker`: color field and Hex / RGB / HSL sync with copy-on-click
 - `PDF Tools`:
   - `PDF Merge & Reorder & Split`: merge PDFs, move pages, extract pages / ranges
+  - `PDF Text Extractor`: extract text from PDF documents as .md or .txt
 - `Audio Tools`:
   - `Audio Converter`: audio conversion into `wav`
   - `Audio Trimmer`: audio trimmer with keep/remove mode and `wav` download

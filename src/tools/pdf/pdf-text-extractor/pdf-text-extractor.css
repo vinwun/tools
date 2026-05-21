@@ -1,0 +1,171 @@
+.pdf-text-extractor-layout {
+  grid-template-columns: minmax(0, 40%) minmax(0, 60%);
+  align-items: start;
+  gap: 1rem;
+}
+
+.pdf-text-extractor-panel {
+  min-width: 0;
+}
+
+.pdf-text-extractor-panel-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pdf-text-extractor-output-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.pdf-text-extractor-upload-actions,
+.pdf-text-extractor-output-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.pdf-text-extractor-upload-actions {
+  justify-content: flex-start;
+}
+
+.pdf-text-extractor-output-controls {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  width: 100%;
+}
+
+.pdf-text-extractor-format-select {
+  font: inherit;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  flex: 0 0 45%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.pdf-text-extractor-output-actions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.pdf-text-extractor-output-actions .tool-action {
+  flex: 0 0 40%;
+  min-width: 9rem;
+  box-sizing: border-box;
+}
+
+.pdf-text-extractor-results {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.pdf-text-extractor-entry {
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.75rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pdf-text-extractor-entry:hover,
+.pdf-text-extractor-entry:focus-visible {
+  border-color: #94a3b8;
+  box-shadow: 0 10px 20px -18px rgba(17, 24, 39, 0.4);
+  outline: none;
+}
+
+.pdf-text-extractor-entry.is-selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15), 0 12px 22px -18px rgba(37, 99, 235, 0.5);
+}
+
+.pdf-text-extractor-entry-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pdf-text-extractor-entry-title {
+  margin: 0;
+  font-size: 1rem;
+  word-break: break-word;
+}
+
+.pdf-text-extractor-entry-meta {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.pdf-text-extractor-entry-status {
+  font-weight: 600;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+
+.pdf-text-extractor-entry-status.is-error {
+  color: #b91c1c;
+}
+
+.pdf-text-extractor-entry-preview {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.pdf-text-extractor-preview {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px dashed var(--border);
+  background: #f8fafc;
+  white-space: pre-wrap;
+  max-height: 260px;
+  overflow: auto;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+.pdf-text-extractor-panel-upload,
+.pdf-text-extractor-panel-output {
+  grid-column: 1;
+}
+
+.pdf-text-extractor-panel-results {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+@media (max-width: 960px) {
+  .pdf-text-extractor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-text-extractor-panel-results,
+  .pdf-text-extractor-panel-upload,
+  .pdf-text-extractor-panel-output {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .pdf-text-extractor-output-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pdf-text-extractor-output-actions .tool-action {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}

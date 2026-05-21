@@ -105,6 +105,28 @@ export type Messages = {
     thumbnailFailed: string
     uploadingStatus: string
   }
+  pdfTextExtractor: {
+    uploadLabel: string
+    uploadHintLabel: string
+    browseAction: string
+    noFileSelected: string
+    dropHint: string
+    outputTitle: string
+    outputFormatMarkdown: string
+    outputFormatText: string
+    downloadAction: string
+    statusEmpty: string
+    statusExtracting: string
+    statusReady: string
+    statusReadySelect: string
+    statusFailed: string
+    resultsTitle: string
+    resultsEmpty: string
+    entryStatusReady: string
+    entryStatusExtracting: string
+    entryStatusFailed: string
+    previewUnavailable: string
+  }
   audioTrimmer: {
     uploadLabel: string
     uploadHintLabel: string

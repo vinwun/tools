@@ -6,6 +6,7 @@
 @import './tools/image/color-picker/color-picker.css';
 @import 'tools/audio/audio-trimmer/audio-trimmer.css';
 @import 'tools/pdf/pdf-tools/pdf-tools.css';
+@import 'tools/pdf/pdf-text-extractor/pdf-text-extractor.css';
 @import 'tools/rng/number-generator/number-generator.css';
 @import 'tools/rng/string-generator/string-generator.css';
 @import 'tools/math/prime-factorizer/prime-factorizer.css';

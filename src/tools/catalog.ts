@@ -2,7 +2,7 @@ import type { CategoryId } from '../dashboard/category-data.ts'
 
 export const toolsByCategory = {
   image: ['imageConverter', 'colorPicker'],
-  pdf: ['pdfMergeReorderSplit', 'pdfConverter', 'pdfTextExtractor'],
+  pdf: ['pdfMergeReorderSplit', 'pdfTextExtractor'],
   audio: ['audioConverter', 'audioTrimmer'],
   rng: ['numberGenerator', 'stringGenerator'],
   time: ['stopwatch', 'timer', 'timezoneConverter'],
