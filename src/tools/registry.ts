@@ -34,6 +34,9 @@ import { createInitialAspectRatioCalculatorState } from './math/aspect-ratio-cal
 import { renderFloatingPointInspector } from './math/floating-point-inspector/render.ts'
 import { mountFloatingPointInspector, updateFloatingPointInspectorLocale } from './math/floating-point-inspector/mount.ts'
 import { createInitialFloatingPointInspectorState } from './math/floating-point-inspector/utils.ts'
+import { renderMatrixMultiplier } from './math/matrix-multiplier/render.ts'
+import { mountMatrixMultiplier, updateMatrixMultiplierLocale } from './math/matrix-multiplier/mount.ts'
+import { createInitialMatrixMultiplierState } from './math/matrix-multiplier/utils.ts'
 
 type ToolRenderer = {
   render: (locale: Locale) => string
@@ -119,6 +122,11 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
       renderFloatingPointInspector(messagesByLocale[locale], createInitialFloatingPointInspectorState()),
     mount: (container, locale) => mountFloatingPointInspector(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateFloatingPointInspectorLocale(container, messagesByLocale[locale]),
+  },
+  matrixMultiplier: {
+    render: (locale) => renderMatrixMultiplier(messagesByLocale[locale], createInitialMatrixMultiplierState(messagesByLocale[locale])),
+    mount: (container, locale) => mountMatrixMultiplier(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateMatrixMultiplierLocale(container, messagesByLocale[locale]),
   },
 }
 

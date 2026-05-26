@@ -13,6 +13,7 @@
 @import 'tools/math/base-converter/base-converter.css';
 @import 'tools/math/aspect-ratio-calculator/aspect-ratio-calculator.css';
 @import 'tools/math/floating-point-inspector/floating-point-inspector.css';
+@import 'tools/math/matrix-multiplier/matrix-multiplier.css';
 @import 'tools/time/stopwatch/stopwatch.css';
 @import './tools/time/timer/timer.css';
 @import './tools/time/timezone-converter/timezone-converter.css';

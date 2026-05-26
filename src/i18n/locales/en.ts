@@ -236,6 +236,18 @@ export const enMessages: Messages = {
     interpretationInfinity: 'Infinity',
     interpretationNaN: 'NaN',
   },
+  matrixMultiplier: {
+    matrixALabel: 'Matrix A',
+    matrixBLabel: 'Matrix B',
+    matrixHint: 'Separate values using spaces and linebreaks.',
+    dimensionText: 'Dimension {rows} × {cols}',
+    dimensionPlaceholder: 'Dimension m × n (insert values)',
+    resultLabel: 'Result',
+    statusEmpty: 'Enter matrices A and B to multiply.',
+    statusInvalid: 'Matrix values must be numbers and each row must have the same length.',
+    statusMismatch: 'Matrix A column amount must match Matrix B rows amount.',
+    statusReady: 'Result dimension: {rRows} × {rCols}',
+  },
   categories: {
     image: {
       name: 'Image',
@@ -327,25 +339,29 @@ export const enMessages: Messages = {
       name: 'Floating-Point Inspector',
       description: 'Convert floating-point numbers and their bit representations.',
     },
-    jsonValidatorPrettyPrinter: {
-      name: 'JSON Validator & Pretty Printer',
-      description: 'Validate JSON and format it for readability.',
+    matrixMultiplier: {
+      name: 'Matrix Multiplier',
+      description: 'Multiply two matrices.',
     },
-    csvValidatorPrettyPrinter: {
-      name: 'CSV Validator & Pretty Printer',
-      description: 'Validate CSV data and format it cleanly.',
+    jsonPrettyPrinter: {
+      name: 'JSON Pretty Printer',
+      description: 'Validate and pretty-print JSON.',
     },
-    jsonCsvConverter: {
-      name: 'JSON-CSV Converter',
-      description: 'Convert JSON and CSV into each other.',
+    markdownDisplayer: {
+      name: 'Markdown Displayer',
+      description: 'Display Markdown and save it as HTML.',
     },
-    markdownPreview: {
-      name: 'Markdown Preview',
-      description: 'Preview Markdown content as you type.',
-    },
-    textCounters: {
-      name: 'Text Counters',
+    textCounter: {
+      name: 'Text Counter',
       description: 'Count characters, words, and other statistics of a text.',
+    },
+    loremIpsumGenerator: {
+      name: 'Lorem Ipsum Generator',
+      description: 'Generate placeholder lorem ipsum text.',
+    },
+    unicodeDisplayer: {
+      name: 'Unicode Displayer',
+      description: 'Display characters and code points for Unicode values.',
     },
   },
 }

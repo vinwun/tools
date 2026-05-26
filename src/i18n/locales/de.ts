@@ -236,6 +236,18 @@ export const deMessages: Messages = {
     interpretationInfinity: 'Unendlich',
     interpretationNaN: 'NaN',
   },
+  matrixMultiplier: {
+    matrixALabel: 'Matrix A',
+    matrixBLabel: 'Matrix B',
+    matrixHint: 'Trenne Werte mit Zeilumbrüchen und Leerzeichen.',
+    dimensionText: 'Dimension {rows} × {cols}',
+    dimensionPlaceholder: 'Dimension m × n (Werte eingeben)',
+    resultLabel: 'Ergebnis',
+    statusEmpty: 'Gib Matrix A und B ein, um zu multiplizieren.',
+    statusInvalid: 'Matrixwerte müssen Zahlen sein und jede Zeile muss die gleiche Länge haben.',
+    statusMismatch: 'Spaltenanzahl von Matrix A muss mit Zeilenanzahl von Matrix B übereinstimmen.',
+    statusReady: 'Ergebnisdimension: {rRows} × {rCols}',
+  },
   categories: {
     image: {
       name: 'Bild',
@@ -327,25 +339,29 @@ export const deMessages: Messages = {
       name: 'Gleitkomma-Inspektor',
       description: 'Gleitkommazahlen und deren Bitdarstellung umrechnen.',
     },
-    jsonValidatorPrettyPrinter: {
-      name: 'JSON-Syntaxprüfung & Darsteller',
-      description: 'JSON prüfen, formatieren und lesbar darstellen.',
+    matrixMultiplier: {
+      name: 'Matrix-Multiplizierer',
+      description: 'Zwei Matrizen multiplizieren.',
     },
-    csvValidatorPrettyPrinter: {
-      name: 'CSV-Syntaxprüfung & Darsteller',
-      description: 'CSV prüfen, formatieren und lesbar darstellen.',
+    jsonPrettyPrinter: {
+      name: 'JSON-Formatter',
+      description: 'JSON prüfen und leserlich formatieren.',
     },
-    jsonCsvConverter: {
-      name: 'JSON-CSV-Konverter',
-      description: 'JSON und CSV ineinander umwandeln.',
+    markdownDisplayer: {
+      name: 'Markdown-Anzeige',
+      description: 'Markdown darstellen und als HTML speichern.',
     },
-    markdownPreview: {
-      name: 'Markdown-Vorschau',
-      description: 'Markdown während des Tippens anzeigen.',
-    },
-    textCounters: {
+    textCounter: {
       name: 'Textzähler',
       description: 'Zeichen, Wörter und weitere Statistiken eines Textes zählen.',
+    },
+    loremIpsumGenerator: {
+      name: 'Lorem-Ipsum-Generator',
+      description: 'Platzhalter-Text im Lorem-Ipsum-Format erzeugen.',
+    },
+    unicodeDisplayer: {
+      name: 'Unicode-Anzeige',
+      description: 'Zeige Zeichen und Code-Punkte für Unicode-Werte an.',
     },
   },
 }

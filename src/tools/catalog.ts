@@ -6,8 +6,8 @@ export const toolsByCategory = {
   audio: ['audioConverter', 'audioTrimmer'],
   rng: ['numberGenerator', 'stringGenerator'],
   time: ['stopwatch', 'timer', 'timezoneConverter'],
-  math: ['primeFactorizer', 'numericalConverter', 'aspectRatioCalculator', 'floatingPointInspector'],
-  text: ['jsonValidatorPrettyPrinter', 'csvValidatorPrettyPrinter', 'jsonCsvConverter', 'markdownPreview', 'textCounters'],
+  math: ['primeFactorizer', 'numericalConverter', 'aspectRatioCalculator', 'floatingPointInspector', 'matrixMultiplier'],
+  text: ['jsonPrettyPrinter', 'markdownDisplayer', 'textCounter', 'loremIpsumGenerator', 'unicodeDisplayer'],
 } as const satisfies Record<CategoryId, readonly string[]>
 
 type ToolMap = typeof toolsByCategory

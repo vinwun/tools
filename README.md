@@ -31,3 +31,4 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Base Converter`: convert numbers between numeral systems
   - `Aspect Ratio Calculator`: convert width and height into aspect ratio and decimal
   - `Floating-Point Inspector`: convert floating-point numbers and their bit representations
+  - `Matrix Multiplier`: multiply two matrices

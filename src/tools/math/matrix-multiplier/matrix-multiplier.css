@@ -1,0 +1,65 @@
+.matrix-multiplier-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(22rem, 1.2fr) minmax(16rem, 0.8fr);
+  align-items: start;
+}
+
+.matrix-multiplier-panel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.matrix-multiplier-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.matrix-multiplier-sign {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.matrix-multiplier-input {
+  width: 100%;
+  min-height: 9rem;
+  resize: vertical;
+  font-size: 1.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.matrix-multiplier-dimension {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.matrix-multiplier-output {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  min-height: 13rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: #f8f8f8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 1.5rem;
+  white-space: pre;
+  overflow: auto;
+}
+
+@media (max-width: 720px) {
+  .matrix-multiplier-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .matrix-multiplier-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .matrix-multiplier-sign {
+    display: none;
+  }
+}

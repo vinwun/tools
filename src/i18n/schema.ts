@@ -216,6 +216,18 @@ export type Messages = {
     interpretationInfinity: string
     interpretationNaN: string
   }
+  matrixMultiplier: {
+    matrixALabel: string
+    matrixBLabel: string
+    matrixHint: string
+    dimensionText: string
+    dimensionPlaceholder: string
+    resultLabel: string
+    statusEmpty: string
+    statusInvalid: string
+    statusMismatch: string
+    statusReady: string
+  }
   categories: Record<CategoryId, CategoryTranslation>
   tools: Record<ToolId, ToolTranslation>
 }
