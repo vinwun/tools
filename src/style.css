@@ -17,6 +17,7 @@
 @import 'tools/time/stopwatch/stopwatch.css';
 @import './tools/time/timer/timer.css';
 @import './tools/time/timezone-converter/timezone-converter.css';
+@import 'tools/text/json-pretty-printer/json-pretty-printer.css';
 
 :root {
   color-scheme: light;

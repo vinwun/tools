@@ -32,3 +32,5 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Aspect Ratio Calculator`: convert width and height into aspect ratio and decimal
   - `Floating-Point Inspector`: convert floating-point numbers and their bit representations
   - `Matrix Multiplier`: multiply two matrices
+- `Text Tools`:
+  - `JSON Pretty Printer`: validate and pretty-print JSON with a collapsible preview and download

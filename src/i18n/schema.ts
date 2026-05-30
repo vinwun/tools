@@ -228,6 +228,26 @@ export type Messages = {
     statusMismatch: string
     statusReady: string
   }
+  jsonPrettyPrinter: {
+    uploadLabel: string
+    uploadHint: string
+    uploadAction: string
+    noFileSelected: string
+    inputLabel: string
+    inputPlaceholder: string
+    indentLabel: string
+    indentTwoLabel: string
+    indentFourLabel: string
+    formatAction: string
+    clearAction: string
+    downloadAction: string
+    statusEmpty: string
+    statusInvalid: string
+    statusReady: string
+    outputLabel: string
+    collapseAction: string
+    expandAction: string
+  }
   categories: Record<CategoryId, CategoryTranslation>
   tools: Record<ToolId, ToolTranslation>
 }

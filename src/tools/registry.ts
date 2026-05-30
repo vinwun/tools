@@ -37,6 +37,9 @@ import { createInitialFloatingPointInspectorState } from './math/floating-point-
 import { renderMatrixMultiplier } from './math/matrix-multiplier/render.ts'
 import { mountMatrixMultiplier, updateMatrixMultiplierLocale } from './math/matrix-multiplier/mount.ts'
 import { createInitialMatrixMultiplierState } from './math/matrix-multiplier/utils.ts'
+import { renderJsonPrettyPrinter } from './text/json-pretty-printer/render.ts'
+import { mountJsonPrettyPrinter, updateJsonPrettyPrinterLocale } from './text/json-pretty-printer/mount.ts'
+import { createInitialJsonPrettyPrinterState } from './text/json-pretty-printer/utils.ts'
 
 type ToolRenderer = {
   render: (locale: Locale) => string
@@ -127,6 +130,11 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     render: (locale) => renderMatrixMultiplier(messagesByLocale[locale], createInitialMatrixMultiplierState(messagesByLocale[locale])),
     mount: (container, locale) => mountMatrixMultiplier(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateMatrixMultiplierLocale(container, messagesByLocale[locale]),
+  },
+  jsonPrettyPrinter: {
+    render: (locale) => renderJsonPrettyPrinter(messagesByLocale[locale], createInitialJsonPrettyPrinterState()),
+    mount: (container, locale) => mountJsonPrettyPrinter(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateJsonPrettyPrinterLocale(container, messagesByLocale[locale]),
   },
 }
 

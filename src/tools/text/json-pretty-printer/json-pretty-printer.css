@@ -1,0 +1,91 @@
+.json-pretty-printer-layout {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+.json-pretty-printer-panel {
+  min-width: 0;
+}
+
+.json-pretty-printer-input {
+  width: 100%;
+  min-height: 16.5rem;
+  resize: vertical;
+  font: 0.95rem/1.5 Consolas, 'SFMono-Regular', Menlo, Monaco, monospace;
+  padding: 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.json-pretty-printer-controls,
+.json-pretty-printer-actions {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.json-pretty-printer-output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.json-pretty-printer-output {
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: #f8f8f8;
+  padding: 0.75rem;
+  font: 0.92rem/1.55 Consolas, 'SFMono-Regular', Menlo, Monaco, monospace;
+  overflow: auto;
+  min-height: 30.5rem;
+  height: 30.5rem;
+  resize: vertical;
+  overscroll-behavior: contain;
+}
+
+.json-pretty-printer-output {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.json-pretty-printer-line {
+  white-space: pre;
+}
+
+.json-pretty-printer-children {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.json-pretty-printer-node.is-collapsed > .json-pretty-printer-children,
+.json-pretty-printer-node.is-collapsed > .json-pretty-printer-close-line {
+  display: none;
+}
+
+.json-pretty-printer-inline-close {
+  display: none;
+}
+
+.json-pretty-printer-node.is-collapsed .json-pretty-printer-inline-close {
+  display: inline;
+}
+
+.json-pretty-printer-toggle {
+  margin-left: 0.35rem;
+  padding: 0 0.45rem;
+  height: 1.2rem;
+  border: 0;
+  border-radius: 0.2rem;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.json-pretty-printer-toggle:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
