@@ -34,3 +34,5 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Matrix Multiplier`: multiply two matrices
 - `Text Tools`:
   - `JSON Pretty Printer`: validate and pretty-print JSON with a collapsible preview and download
+  - `Markdown Displayer`: display Markdown and download as HTML
+  

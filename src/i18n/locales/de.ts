@@ -268,6 +268,20 @@ export const deMessages: Messages = {
     collapseAction: 'Bereich einklappen',
     expandAction: 'Bereich ausklappen',
   },
+  markdownDisplayer: {
+    uploadLabel: 'Markdown-Datei hochladen',
+    uploadHint: 'Akzeptierte Eingabe',
+    uploadAction: 'Dateien durchsuchen',
+    noFileSelected: 'Keine Datei ausgewählt',
+    inputLabel: 'Manuelle Eingabe',
+    inputPlaceholder: '# Titel\n\nDein Markdown hier...',
+    renderAction: 'Markdown rendern',
+    clearAction: 'Eingabe leeren',
+    downloadAction: 'HTML herunterladen',
+    statusEmpty: 'Markdown eingeben, um zu starten.',
+    statusReady: 'HTML ist bereit.',
+    outputLabel: 'Gerendertes HTML',
+  },
   categories: {
     image: {
       name: 'Bild',

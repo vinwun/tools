@@ -268,6 +268,20 @@ export const enMessages: Messages = {
     collapseAction: 'Collapse section',
     expandAction: 'Expand section',
   },
+  markdownDisplayer: {
+    uploadLabel: 'Upload Markdown file',
+    uploadHint: 'Accepted input',
+    uploadAction: 'Browse files',
+    noFileSelected: 'No file selected',
+    inputLabel: 'Manual input',
+    inputPlaceholder: '# Title\n\nYour markdown here...',
+    renderAction: 'Render Markdown',
+    clearAction: 'Clear input',
+    downloadAction: 'Download HTML',
+    statusEmpty: 'Enter Markdown to render.',
+    statusReady: 'Rendered HTML is ready.',
+    outputLabel: 'Rendered HTML',
+  },
   categories: {
     image: {
       name: 'Image',

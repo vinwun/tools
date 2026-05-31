@@ -248,6 +248,20 @@ export type Messages = {
     collapseAction: string
     expandAction: string
   }
+  markdownDisplayer: {
+    uploadLabel: string
+    uploadHint: string
+    uploadAction: string
+    noFileSelected: string
+    inputLabel: string
+    inputPlaceholder: string
+    renderAction: string
+    clearAction: string
+    downloadAction: string
+    statusEmpty: string
+    statusReady: string
+    outputLabel: string
+  }
   categories: Record<CategoryId, CategoryTranslation>
   tools: Record<ToolId, ToolTranslation>
 }

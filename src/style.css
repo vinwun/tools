@@ -18,6 +18,7 @@
 @import './tools/time/timer/timer.css';
 @import './tools/time/timezone-converter/timezone-converter.css';
 @import 'tools/text/json-pretty-printer/json-pretty-printer.css';
+@import 'tools/text/markdown-displayer/markdown-displayer.css';
 
 :root {
   color-scheme: light;

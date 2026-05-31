@@ -289,6 +289,7 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
 
   let messages = initialMessages
   const state = createInitialJsonPrettyPrinterState()
+  let validateDelayId: number | null = null
 
   const syncUi = (): void => {
     syncLocalizedText(elements, messages, state)
@@ -329,8 +330,19 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
     }
   }
 
+  const scheduleValidation = (): void => {
+    if (validateDelayId !== null) {
+      window.clearTimeout(validateDelayId)
+    }
+    validateDelayId = window.setTimeout(() => {
+      formatJsonInput(elements, state, messages)
+      updateStatus(elements, messages, state)
+    }, 50)
+  }
+
   elements.input.addEventListener('input', () => {
     state.inputValue = elements.input.value
+    scheduleValidation()
   })
 
   elements.uploadInput.addEventListener('change', async () => {

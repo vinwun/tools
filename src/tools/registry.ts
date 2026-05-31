@@ -40,6 +40,9 @@ import { createInitialMatrixMultiplierState } from './math/matrix-multiplier/uti
 import { renderJsonPrettyPrinter } from './text/json-pretty-printer/render.ts'
 import { mountJsonPrettyPrinter, updateJsonPrettyPrinterLocale } from './text/json-pretty-printer/mount.ts'
 import { createInitialJsonPrettyPrinterState } from './text/json-pretty-printer/utils.ts'
+import { renderMarkdownDisplayer } from './text/markdown-displayer/render.ts'
+import { mountMarkdownDisplayer, updateMarkdownDisplayerLocale } from './text/markdown-displayer/mount.ts'
+import { createInitialMarkdownDisplayerState } from './text/markdown-displayer/utils.ts'
 
 type ToolRenderer = {
   render: (locale: Locale) => string
@@ -135,6 +138,11 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     render: (locale) => renderJsonPrettyPrinter(messagesByLocale[locale], createInitialJsonPrettyPrinterState()),
     mount: (container, locale) => mountJsonPrettyPrinter(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateJsonPrettyPrinterLocale(container, messagesByLocale[locale]),
+  },
+  markdownDisplayer: {
+    render: (locale) => renderMarkdownDisplayer(messagesByLocale[locale], createInitialMarkdownDisplayerState()),
+    mount: (container, locale) => mountMarkdownDisplayer(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateMarkdownDisplayerLocale(container, messagesByLocale[locale]),
   },
 }
 
