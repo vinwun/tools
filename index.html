@@ -8,6 +8,18 @@
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      // Restore clean URL from 404.html redirect
+      {
+        const l = window.location;
+        if (l.search[1] === '/') {
+          const decoded = l.search.slice(1).split('&').map((s) => s.replace(/~and~/g, '&')).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
