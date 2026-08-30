@@ -43,6 +43,18 @@ import { createInitialJsonPrettyPrinterState } from './text/json-pretty-printer/
 import { renderMarkdownDisplayer } from './text/markdown-displayer/render.ts'
 import { mountMarkdownDisplayer, updateMarkdownDisplayerLocale } from './text/markdown-displayer/mount.ts'
 import { createInitialMarkdownDisplayerState } from './text/markdown-displayer/utils.ts'
+import { renderTextCounter } from './text/text-counter/render.ts'
+import { mountTextCounter, updateTextCounterLocale } from './text/text-counter/mount.ts'
+import { createInitialTextCounterState } from './text/text-counter/utils.ts'
+import { renderLoremIpsumGenerator } from './text/lorem-ipsum-generator/render.ts'
+import { mountLoremIpsumGenerator, updateLoremIpsumGeneratorLocale } from './text/lorem-ipsum-generator/mount.ts'
+import { createInitialLoremIpsumGeneratorState } from './text/lorem-ipsum-generator/utils.ts'
+import { renderUnicodeDisplayer } from './text/unicode-displayer/render.ts'
+import { mountUnicodeDisplayer, updateUnicodeDisplayerLocale } from './text/unicode-displayer/mount.ts'
+import { createInitialUnicodeDisplayerState } from './text/unicode-displayer/utils.ts'
+import { renderHiddenCharactersInspector } from './text/hidden-characters-inspector/render.ts'
+import { mountHiddenCharactersInspector, updateHiddenCharactersInspectorLocale } from './text/hidden-characters-inspector/mount.ts'
+import { createInitialHiddenCharactersInspectorState } from './text/hidden-characters-inspector/utils.ts'
 
 type ToolRenderer = {
   render: (locale: Locale) => string
@@ -143,6 +155,26 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     render: (locale) => renderMarkdownDisplayer(messagesByLocale[locale], createInitialMarkdownDisplayerState()),
     mount: (container, locale) => mountMarkdownDisplayer(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateMarkdownDisplayerLocale(container, messagesByLocale[locale]),
+  },
+  textCounter: {
+    render: (locale) => renderTextCounter(messagesByLocale[locale], createInitialTextCounterState()),
+    mount: (container, locale) => mountTextCounter(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateTextCounterLocale(container, messagesByLocale[locale]),
+  },
+  loremIpsumGenerator: {
+    render: (locale) => renderLoremIpsumGenerator(messagesByLocale[locale], createInitialLoremIpsumGeneratorState()),
+    mount: (container, locale) => mountLoremIpsumGenerator(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateLoremIpsumGeneratorLocale(container, messagesByLocale[locale]),
+  },
+  unicodeDisplayer: {
+    render: (locale) => renderUnicodeDisplayer(messagesByLocale[locale], createInitialUnicodeDisplayerState()),
+    mount: (container, locale) => mountUnicodeDisplayer(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateUnicodeDisplayerLocale(container, messagesByLocale[locale]),
+  },
+  hiddenCharactersInspector: {
+    render: (locale) => renderHiddenCharactersInspector(messagesByLocale[locale], createInitialHiddenCharactersInspectorState()),
+    mount: (container, locale) => mountHiddenCharactersInspector(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateHiddenCharactersInspectorLocale(container, messagesByLocale[locale]),
   },
 }
 

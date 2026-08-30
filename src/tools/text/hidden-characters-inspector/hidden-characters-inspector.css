@@ -1,0 +1,114 @@
+.hidden-characters-inspector-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.hidden-characters-inspector-panel {
+  min-width: 0;
+}
+
+.hidden-characters-inspector-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.hidden-characters-inspector-head-label {
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.hidden-characters-inspector-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hidden-characters-inspector-input {
+  width: 100%;
+  min-height: 24rem;
+  resize: vertical;
+  font: inherit;
+  padding: 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+.hidden-characters-inspector-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.hidden-characters-inspector-count-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #c53030;
+}
+
+.hidden-characters-inspector-count span:last-child {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.hidden-characters-inspector-panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.hidden-characters-inspector-preview {
+  min-height: 21.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: #fefefe;
+  font-size: 1rem;
+}
+
+.hidden-characters-inspector-hidden {
+  display: inline-block;
+  padding: 0 0.25rem;
+  margin: 0 0.05rem;
+  border-radius: 0.3rem;
+  background: #fecaca;
+  color: #b91c1c;
+  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: baseline;
+  cursor: help;
+}
+
+.hidden-characters-inspector-hidden--confusable {
+  background: #fbbf24;
+  color: #7c2d12;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0 0.15rem;
+  margin: 0 0.1rem;
+}
+
+.hidden-characters-inspector-empty {
+  display: none;
+  margin: 0;
+  color: var(--muted);
+}
+
+.hidden-characters-inspector-empty--visible {
+  display: block;
+}
+
+@media (max-width: 860px) {
+  .hidden-characters-inspector-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hidden-characters-inspector-input {
+    min-height: 12rem;
+  }
+}

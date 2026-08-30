@@ -1,0 +1,57 @@
+.text-counter-layout {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+}
+
+.text-counter-panel {
+  min-width: 0;
+}
+
+.text-counter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.text-counter-head-label {
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.text-counter-input {
+  width: 100%;
+  min-height: 30rem;
+  resize: vertical;
+  font: inherit;
+  padding: 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+.text-counter-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.text-counter-stat {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: #f8f8f8;
+}
+
+.text-counter-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.text-counter-stat-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}

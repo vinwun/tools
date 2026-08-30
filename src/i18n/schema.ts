@@ -262,6 +262,75 @@ export type Messages = {
     statusReady: string
     outputLabel: string
   }
+  textCounter: {
+    inputLabel: string
+    inputPlaceholder: string
+    clearAction: string
+    resultsTitle: string
+    words: string
+    characters: string
+    alphanumeric: string
+    letters: string
+    digits: string
+    numbers: string
+    punctuation: string
+    symbols: string
+    whitespace: string
+    lines: string
+    paragraphs: string
+    sentences: string
+  }
+  loremIpsumGenerator: {
+    settingsLegend: string
+    amountLabel: string
+    unitLabel: string
+    unitCharacters: string
+    unitWords: string
+    unitSentences: string
+    unitParagraphs: string
+    classicLabel: string
+    generateAction: string
+    copyAction: string
+    copiedMessage: string
+    copyFailedMessage: string
+    clearAction: string
+    outputLabel: string
+  }
+  unicodeDisplayer: {
+    characterLabel: string
+    codePointLabel: string
+    decimalLabel: string
+    binaryLabel: string
+    octalLabel: string
+    utf8Label: string
+    utf16Label: string
+    categoryLabel: string
+    asciiLabel: string
+    asciiYes: string
+    asciiNo: string
+    categoryLetter: string
+    categoryDigit: string
+    categoryPunctuation: string
+    categorySymbol: string
+    categoryWhitespace: string
+    categoryControl: string
+    categoryOther: string
+  }
+  hiddenCharactersInspector: {
+    inputLabel: string
+    inputPlaceholder: string
+    clearAction: string
+    insertExampleAction: string
+    countLabel: string
+    previewLabel: string
+    emptyLabel: string
+    bidiLabel: string
+    zeroWidthLabel: string
+    controlLabel: string
+    separatorLabel: string
+    confusableLabel: string
+    lookalikeMessage: string
+  }
   categories: Record<CategoryId, CategoryTranslation>
   tools: Record<ToolId, ToolTranslation>
 }

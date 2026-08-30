@@ -7,7 +7,7 @@ export const toolsByCategory = {
   rng: ['numberGenerator', 'stringGenerator'],
   time: ['stopwatch', 'timer', 'timezoneConverter'],
   math: ['primeFactorizer', 'numericalConverter', 'aspectRatioCalculator', 'floatingPointInspector', 'matrixMultiplier'],
-  text: ['jsonPrettyPrinter', 'markdownDisplayer', 'textCounter', 'loremIpsumGenerator', 'unicodeDisplayer'],
+  text: ['jsonPrettyPrinter', 'markdownDisplayer', 'textCounter', 'loremIpsumGenerator', 'unicodeDisplayer', 'hiddenCharactersInspector'],
 } as const satisfies Record<CategoryId, readonly string[]>
 
 type ToolMap = typeof toolsByCategory

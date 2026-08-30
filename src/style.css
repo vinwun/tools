@@ -19,6 +19,10 @@
 @import './tools/time/timezone-converter/timezone-converter.css';
 @import 'tools/text/json-pretty-printer/json-pretty-printer.css';
 @import 'tools/text/markdown-displayer/markdown-displayer.css';
+@import 'tools/text/text-counter/text-counter.css';
+@import 'tools/text/lorem-ipsum-generator/lorem-ipsum-generator.css';
+@import 'tools/text/unicode-displayer/unicode-displayer.css';
+@import 'tools/text/hidden-characters-inspector/hidden-characters-inspector.css';
 
 :root {
   color-scheme: light;

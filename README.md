@@ -35,4 +35,7 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
 - `Text Tools`:
   - `JSON Pretty Printer`: validate and pretty-print JSON with a collapsible preview and download
   - `Markdown Displayer`: display Markdown and download as HTML
-  
+  - `Text Counter`: count words, characters, and other statistics of a text
+  - `Lorem Ipsum Generator`: generate placeholder text with a specific length
+  - `Unicode Displayer`: display characters and code points for Unicode values
+  - `Hidden Characters Inspector`: find zero-width, bidi and confusable characters
