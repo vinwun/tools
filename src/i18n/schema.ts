@@ -148,6 +148,51 @@ export type Messages = {
     statusError: string
     emptySelectionWarning: string
   }
+  videoConverter: {
+    uploadLabel: string
+    uploadHintLabel: string
+    browseAction: string
+    noFileSelected: string
+    previewLabel: string
+    infoTitle: string
+    durationLabel: string
+    formatLabel: string
+    tracksLabel: string
+    formatStandard: string
+    formatFragmented: string
+    tracksValue: string
+    statusNoFile: string
+    statusLoading: string
+    statusReady: string
+    statusProcessing: string
+    statusError: string
+    statusUnsupported: string
+    alreadySilent: string
+    audioDownloadAction: string
+    silentDownloadAction: string
+  }
+  videoCutter: {
+    uploadLabel: string
+    uploadHintLabel: string
+    browseAction: string
+    noFileSelected: string
+    previewLabel: string
+    startLabel: string
+    endLabel: string
+    downloadAction: string
+    playSelectionAction: string
+    playEndingAction: string
+    previewDurationLabel: string
+    actualStartLabel: string
+    selectedSummary: string
+    statusNoFile: string
+    statusLoading: string
+    statusProcessing: string
+    statusFragmented: string
+    statusUnsupported: string
+    statusError: string
+    statusInvalidRange: string
+  }
   stopwatch: {
     elapsedLabel: string
     startAction: string

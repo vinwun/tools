@@ -6,6 +6,10 @@ import { renderColorPicker } from './image/color-picker/render.ts'
 import { mountColorPicker, syncColorPickerLocale } from './image/color-picker/mount.ts'
 import { renderAudioTrimmer } from './audio/audio-trimmer/render.ts'
 import { mountAudioTrimmer, syncAudioTrimmerLocale } from './audio/audio-trimmer/mount.ts'
+import { renderVideoConverter } from './video/video-converter/render.ts'
+import { mountVideoConverter, syncVideoConverterLocale } from './video/video-converter/mount.ts'
+import { renderVideoCutter } from './video/video-cutter/render.ts'
+import { mountVideoCutter, syncVideoCutterLocale } from './video/video-cutter/mount.ts'
 import { renderPdfMergeReorderSplit } from './pdf/pdf-tools/render.ts'
 import { mountPdfMergeReorderSplit, syncPdfLocale } from './pdf/pdf-tools/mount.ts'
 import { renderPdfTextExtractor } from './pdf/pdf-text-extractor/render.ts'
@@ -82,6 +86,16 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     render: (locale) => renderAudioTrimmer(messagesByLocale[locale]),
     mount: (container, locale) => mountAudioTrimmer(container, locale),
     updateLocale: (container, locale) => syncAudioTrimmerLocale(container, messagesByLocale[locale]),
+  },
+  videoConverter: {
+    render: (locale) => renderVideoConverter(messagesByLocale[locale]),
+    mount: (container, locale) => mountVideoConverter(container, locale),
+    updateLocale: (container, locale) => syncVideoConverterLocale(container, messagesByLocale[locale], locale),
+  },
+  videoCutter: {
+    render: (locale) => renderVideoCutter(messagesByLocale[locale]),
+    mount: (container, locale) => mountVideoCutter(container, locale),
+    updateLocale: (container, locale) => syncVideoCutterLocale(container, messagesByLocale[locale], locale),
   },
   pdfMergeReorderSplit: {
     render: (locale) => renderPdfMergeReorderSplit(messagesByLocale[locale]),

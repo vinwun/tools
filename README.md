@@ -4,7 +4,7 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
 
 ## Current Features
 
-- Home dashboard with tool category cards: Image, PDF, Audio, RNG, Time, Math, Text
+- Home dashboard with tool category cards: Image, PDF, Audio, Video, RNG, Time, Math, Text
 - Category pages and tool subpages with path (`tools/<category>/<tool>/`)
 - Internationalized UI text system with external dictionaries (`en`, `de`) and language switcher
 
@@ -19,6 +19,9 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
 - `Audio Tools`:
   - `Audio Converter`: audio conversion into `wav`
   - `Audio Trimmer`: audio trimmer with keep/remove mode and `wav` download
+- `Video Tools`:
+  - `Video Converter`: extract the audio track or strip it from videos
+  - `Video Cutter`: video cutter on keyframe boundaries
 - `RNG Tools`:
   - `Number Generator`: random numbers in a min/max range with integer / decimal mode
   - `String Generator`: pick from a list of strings with optional per-entry weights and unique mode

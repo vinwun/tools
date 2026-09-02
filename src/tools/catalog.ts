@@ -4,6 +4,7 @@ export const toolsByCategory = {
   image: ['imageConverter', 'colorPicker'],
   pdf: ['pdfMergeReorderSplit', 'pdfTextExtractor'],
   audio: ['audioConverter', 'audioTrimmer'],
+  video: ['videoConverter', 'videoCutter'],
   rng: ['numberGenerator', 'stringGenerator'],
   time: ['stopwatch', 'timer', 'timezoneConverter'],
   math: ['primeFactorizer', 'numericalConverter', 'aspectRatioCalculator', 'floatingPointInspector', 'matrixMultiplier'],
