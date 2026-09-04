@@ -398,7 +398,7 @@ export const mountFileConverter = (
   })
 }
 
-export const syncFileConverterLocale = (root: HTMLElement, messages: ConverterMessages): void => {
+export const updateFileConverterLocale = (root: HTMLElement, messages: ConverterMessages): void => {
   const targetRoot = root.matches('[data-file-converter-root]')
     ? root
     : fileConverterLocaleSyncers.has(root)

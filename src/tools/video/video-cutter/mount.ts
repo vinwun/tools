@@ -557,7 +557,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
   setControlsEnabled(false)
 }
 
-export const syncVideoCutterLocale = (container: HTMLElement, messages: Messages, locale: Locale): void => {
+export const updateVideoCutterLocale = (container: HTMLElement, messages: Messages, locale: Locale): void => {
   const root = container.querySelector<HTMLElement>('[data-video-cutter-root]')
   if (!root) {
     return

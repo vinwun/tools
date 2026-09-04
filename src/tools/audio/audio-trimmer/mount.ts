@@ -742,7 +742,7 @@ export const mountAudioTrimmer = (container: HTMLElement, locale: Locale): void 
   drawCurrentWaveform()
 }
 
-export const syncAudioTrimmerLocale = (container: HTMLElement, messages: Messages): void => {
+export const updateAudioTrimmerLocale = (container: HTMLElement, messages: Messages): void => {
   const root = container.querySelector<HTMLElement>('[data-audio-trimmer-root]')
   if (!root) {
     return

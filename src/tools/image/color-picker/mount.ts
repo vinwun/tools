@@ -339,7 +339,7 @@ export const mountColorPicker = (container: HTMLElement, initialMessages: Messag
   window.requestAnimationFrame(refresh)
 }
 
-export const syncColorPickerLocale = (container: HTMLElement, messages: Messages): void => {
+export const updateColorPickerLocale = (container: HTMLElement, messages: Messages): void => {
   const root = container.querySelector<HTMLElement>('[data-color-picker-root]') ?? container
   colorPickerLocaleSyncers.get(root)?.(messages)
 }

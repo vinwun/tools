@@ -294,7 +294,7 @@ export const mountVideoConverter = (container: HTMLElement, locale: Locale): voi
   setProcessing(false)
 }
 
-export const syncVideoConverterLocale = (container: HTMLElement, messages: Messages, locale: Locale): void => {
+export const updateVideoConverterLocale = (container: HTMLElement, messages: Messages, locale: Locale): void => {
   const root = container.querySelector<HTMLElement>('[data-video-converter-root]')
   if (!root) {
     return

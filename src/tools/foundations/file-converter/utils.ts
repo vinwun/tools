@@ -2,7 +2,7 @@ import type { Messages } from '../../../i18n/schema.ts'
 import type {ConverterMessages, FileConverterConfig, FileConverterTool} from './types.ts'
 import {mountFileConverter} from "./mount.ts";
 import {renderFileConverter} from "./render.ts";
-import {syncFileConverterLocale} from "./mount.ts";
+import {updateFileConverterLocale} from "./mount.ts";
 
 export const mapFileConverterMessages = (messages: Messages): ConverterMessages => ({
   uploadLabel: messages.fileConverter.uploadLabel,
@@ -27,7 +27,7 @@ export const createFileConverterTool = (config: FileConverterConfig): FileConver
     mountFileConverter(container, config, mapFileConverterMessages(messages))
   },
   updateLocale: (container: HTMLElement, messages: Messages): void => {
-    syncFileConverterLocale(container, mapFileConverterMessages(messages))
+    updateFileConverterLocale(container, mapFileConverterMessages(messages))
   },
 })
 

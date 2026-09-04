@@ -823,7 +823,7 @@ export const mountPdfMergeReorderSplit = (container: HTMLElement, locale: Locale
   sync()
 }
 
-export const syncPdfLocale = (container: HTMLElement, locale: Locale): void => {
+export const updatePdfMergeReorderSplitLocale = (container: HTMLElement, locale: Locale): void => {
   const root = container.querySelector<HTMLElement>('[data-pdf-tools-root]')
   if (!root) {
     return

@@ -3,17 +3,17 @@ import type { ToolId } from './catalog'
 import { renderAudioConverter, mountAudioConverter, updateAudioConverterLocale } from './audio/audio-converter.ts'
 import { renderImageConverter, mountImageConverter, updateImageConverterLocale } from './image/image-converter.ts'
 import { renderColorPicker } from './image/color-picker/render.ts'
-import { mountColorPicker, syncColorPickerLocale } from './image/color-picker/mount.ts'
+import { mountColorPicker, updateColorPickerLocale } from './image/color-picker/mount.ts'
 import { renderAudioTrimmer } from './audio/audio-trimmer/render.ts'
-import { mountAudioTrimmer, syncAudioTrimmerLocale } from './audio/audio-trimmer/mount.ts'
+import { mountAudioTrimmer, updateAudioTrimmerLocale } from './audio/audio-trimmer/mount.ts'
 import { renderVideoConverter } from './video/video-converter/render.ts'
-import { mountVideoConverter, syncVideoConverterLocale } from './video/video-converter/mount.ts'
+import { mountVideoConverter, updateVideoConverterLocale } from './video/video-converter/mount.ts'
 import { renderVideoCutter } from './video/video-cutter/render.ts'
-import { mountVideoCutter, syncVideoCutterLocale } from './video/video-cutter/mount.ts'
+import { mountVideoCutter, updateVideoCutterLocale } from './video/video-cutter/mount.ts'
 import { renderPdfMergeReorderSplit } from './pdf/pdf-tools/render.ts'
-import { mountPdfMergeReorderSplit, syncPdfLocale } from './pdf/pdf-tools/mount.ts'
+import { mountPdfMergeReorderSplit, updatePdfMergeReorderSplitLocale } from './pdf/pdf-tools/mount.ts'
 import { renderPdfTextExtractor } from './pdf/pdf-text-extractor/render.ts'
-import { mountPdfTextExtractor, syncPdfTextExtractorLocale } from './pdf/pdf-text-extractor/mount.ts'
+import { mountPdfTextExtractor, updatePdfTextExtractorLocale } from './pdf/pdf-text-extractor/mount.ts'
 import { renderNumberGenerator } from './rng/number-generator/render.ts'
 import { createInitialNumberGeneratorState } from './rng/number-generator/utils.ts'
 import { mountNumberGenerator, updateNumberGeneratorLocale } from './rng/number-generator/mount.ts'
@@ -75,7 +75,7 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
   colorPicker: {
     render: (locale) => renderColorPicker(messagesByLocale[locale]),
     mount: (container, locale) => mountColorPicker(container, messagesByLocale[locale]),
-    updateLocale: (container, locale) => syncColorPickerLocale(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateColorPickerLocale(container, messagesByLocale[locale]),
   },
   audioConverter: {
     render: (locale) => renderAudioConverter(messagesByLocale[locale]),
@@ -85,27 +85,27 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
   audioTrimmer: {
     render: (locale) => renderAudioTrimmer(messagesByLocale[locale]),
     mount: (container, locale) => mountAudioTrimmer(container, locale),
-    updateLocale: (container, locale) => syncAudioTrimmerLocale(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateAudioTrimmerLocale(container, messagesByLocale[locale]),
   },
   videoConverter: {
     render: (locale) => renderVideoConverter(messagesByLocale[locale]),
     mount: (container, locale) => mountVideoConverter(container, locale),
-    updateLocale: (container, locale) => syncVideoConverterLocale(container, messagesByLocale[locale], locale),
+    updateLocale: (container, locale) => updateVideoConverterLocale(container, messagesByLocale[locale], locale),
   },
   videoCutter: {
     render: (locale) => renderVideoCutter(messagesByLocale[locale]),
     mount: (container, locale) => mountVideoCutter(container, locale),
-    updateLocale: (container, locale) => syncVideoCutterLocale(container, messagesByLocale[locale], locale),
+    updateLocale: (container, locale) => updateVideoCutterLocale(container, messagesByLocale[locale], locale),
   },
   pdfMergeReorderSplit: {
     render: (locale) => renderPdfMergeReorderSplit(messagesByLocale[locale]),
     mount: (container, locale) => mountPdfMergeReorderSplit(container, locale),
-    updateLocale: (container, locale) => syncPdfLocale(container, locale),
+    updateLocale: (container, locale) => updatePdfMergeReorderSplitLocale(container, locale),
   },
   pdfTextExtractor: {
     render: (locale) => renderPdfTextExtractor(messagesByLocale[locale]),
     mount: (container, locale) => mountPdfTextExtractor(container, locale),
-    updateLocale: (container, locale) => syncPdfTextExtractorLocale(container, locale),
+    updateLocale: (container, locale) => updatePdfTextExtractorLocale(container, locale),
   },
   numberGenerator: {
     render: (locale) => renderNumberGenerator(messagesByLocale[locale], createInitialNumberGeneratorState()),

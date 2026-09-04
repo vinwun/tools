@@ -10,13 +10,12 @@ export type Locale = keyof typeof messagesByLocale
 
 export type LocaleOption = {
   code: Locale
-  flag: string
   label: string
 }
 
 export const localeOptions: LocaleOption[] = [
-  { code: 'de', flag: '🇩🇪', label: 'Deutsch' },
-  { code: 'en', flag: '🇬🇧', label: 'English' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'en', label: 'English' },
 ]
 
 export const defaultLocale: Locale = 'en'

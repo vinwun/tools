@@ -311,7 +311,7 @@ export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): v
   sync()
 }
 
-export const syncPdfTextExtractorLocale = (container: HTMLElement, locale: Locale): void => {
+export const updatePdfTextExtractorLocale = (container: HTMLElement, locale: Locale): void => {
   const root = container.querySelector<HTMLElement>('[data-pdf-text-extractor-root]')
   if (!root) {
     return
