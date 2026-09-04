@@ -16,6 +16,9 @@ export const deMessages: Messages = {
   },
   toolPage: {
     comingSoon: 'Diese Tool-Seite ist vorbereitet und wird als Nächstes umgesetzt.',
+    loading: 'Tool wird geladen…',
+    loadFailed: 'Das Tool konnte nicht geladen werden. Bitte prüfe die Verbindung.',
+    retryAction: 'Erneut versuchen',
   },
   rngNumberGenerator: {
     settingsLegend: 'Einstellungen',

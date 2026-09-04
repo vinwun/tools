@@ -11,9 +11,7 @@ import { mountVideoConverter, updateVideoConverterLocale } from './video/video-c
 import { renderVideoCutter } from './video/video-cutter/render.ts'
 import { mountVideoCutter, updateVideoCutterLocale } from './video/video-cutter/mount.ts'
 import { renderPdfMergeReorderSplit } from './pdf/pdf-tools/render.ts'
-import { mountPdfMergeReorderSplit, updatePdfMergeReorderSplitLocale } from './pdf/pdf-tools/mount.ts'
 import { renderPdfTextExtractor } from './pdf/pdf-text-extractor/render.ts'
-import { mountPdfTextExtractor, updatePdfTextExtractorLocale } from './pdf/pdf-text-extractor/mount.ts'
 import { renderNumberGenerator } from './rng/number-generator/render.ts'
 import { createInitialNumberGeneratorState } from './rng/number-generator/utils.ts'
 import { mountNumberGenerator, updateNumberGeneratorLocale } from './rng/number-generator/mount.ts'
@@ -60,10 +58,17 @@ import { renderHiddenCharactersInspector } from './text/hidden-characters-inspec
 import { mountHiddenCharactersInspector, updateHiddenCharactersInspectorLocale } from './text/hidden-characters-inspector/mount.ts'
 import { createInitialHiddenCharactersInspectorState } from './text/hidden-characters-inspector/utils.ts'
 
+type ToolModule = {
+  mount: (container: HTMLElement, locale: Locale) => void
+  updateLocale?: (container: HTMLElement, locale: Locale) => void
+}
+
 type ToolRenderer = {
   render: (locale: Locale) => string
   mount?: (container: HTMLElement, locale: Locale) => void
   updateLocale?: (container: HTMLElement, locale: Locale) => void
+  // Tools with heavy dependencies: fetch code the first time the tool is opened.
+  load?: () => Promise<ToolModule>
 }
 
 const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
@@ -99,13 +104,25 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
   },
   pdfMergeReorderSplit: {
     render: (locale) => renderPdfMergeReorderSplit(messagesByLocale[locale]),
-    mount: (container, locale) => mountPdfMergeReorderSplit(container, locale),
-    updateLocale: (container, locale) => updatePdfMergeReorderSplitLocale(container, locale),
+    load: async () => {
+      const { mountPdfMergeReorderSplit, updatePdfMergeReorderSplitLocale } = await import('./pdf/pdf-tools/mount.ts')
+
+      return {
+        mount: (container, locale) => mountPdfMergeReorderSplit(container, locale),
+        updateLocale: (container, locale) => updatePdfMergeReorderSplitLocale(container, locale),
+      }
+    },
   },
   pdfTextExtractor: {
     render: (locale) => renderPdfTextExtractor(messagesByLocale[locale]),
-    mount: (container, locale) => mountPdfTextExtractor(container, locale),
-    updateLocale: (container, locale) => updatePdfTextExtractorLocale(container, locale),
+    load: async () => {
+      const { mountPdfTextExtractor, updatePdfTextExtractorLocale } = await import('./pdf/pdf-text-extractor/mount.ts')
+
+      return {
+        mount: (container, locale) => mountPdfTextExtractor(container, locale),
+        updateLocale: (container, locale) => updatePdfTextExtractorLocale(container, locale),
+      }
+    },
   },
   numberGenerator: {
     render: (locale) => renderNumberGenerator(messagesByLocale[locale], createInitialNumberGeneratorState()),
@@ -201,32 +218,162 @@ export const renderToolContent = (toolId: ToolId, locale: Locale): string => {
   return `<section class="tool-layout tool-placeholder"><p>${messagesByLocale[locale].toolPage.comingSoon}</p></section>`
 }
 
-export const mountToolContent = (toolId: ToolId, locale: Locale): void => {
-  const renderer = toolRenderers[toolId]
-  if (!renderer?.mount) {
+const loadedToolModules = new Map<ToolId, ToolModule>()
+
+type PendingToolMount = {
+  generation: number
+  toolId: ToolId
+  locale: Locale
+}
+
+// Each mount attempt gets a generation so a chunk that arrives late can tell whether the
+// page it was requested for is still on screen.
+let mountGeneration = 0
+let pendingToolMount: PendingToolMount | null = null
+
+const findToolContainer = (): HTMLElement | null =>
+  document.querySelector<HTMLElement>('[data-tool-content-root]')
+
+const clearLoadStatus = (container: HTMLElement): void => {
+  container.removeAttribute('aria-busy')
+  container.querySelector('[data-tool-load-status]')?.remove()
+}
+
+const renderLoadStatus = (
+  container: HTMLElement,
+  toolId: ToolId,
+  locale: Locale,
+  kind: 'loading' | 'failed',
+): void => {
+  const messages = messagesByLocale[locale].toolPage
+  clearLoadStatus(container)
+
+  const status = document.createElement('p')
+  status.className = `tool-load-status tool-load-status-${kind}`
+  status.dataset.toolLoadStatus = kind
+  status.setAttribute('role', 'status')
+  status.textContent = kind === 'loading' ? messages.loading : messages.loadFailed
+
+  if (kind === 'loading') {
+    container.setAttribute('aria-busy', 'true')
+  } else {
+    const retryButton = document.createElement('button')
+    retryButton.type = 'button'
+    retryButton.className = 'tool-action tool-load-retry'
+    retryButton.textContent = messages.retryAction
+    retryButton.addEventListener('click', () => {
+      void mountToolContent(toolId, locale)
+    })
+    status.append(retryButton)
+  }
+
+  container.prepend(status)
+}
+
+const mountLoadedToolContent = async (
+  toolId: ToolId,
+  load: () => Promise<ToolModule>,
+  container: HTMLElement,
+  locale: Locale,
+): Promise<void> => {
+  const generation = mountGeneration
+  pendingToolMount = { generation, toolId, locale }
+  renderLoadStatus(container, toolId, locale, 'loading')
+
+  let toolModule: ToolModule
+  try {
+    toolModule = await load()
+  } catch {
+    if (generation === mountGeneration) {
+      renderLoadStatus(container, toolId, pendingToolMount?.locale ?? locale, 'failed')
+      pendingToolMount = null
+    }
+
     return
   }
 
-  const toolContainer = document.querySelector<HTMLElement>('[data-tool-content-root]')
+  loadedToolModules.set(toolId, toolModule)
+
+  // Navigating away replaces the container, switching locale can pick a different one.
+  if (generation !== mountGeneration || !container.isConnected) {
+    return
+  }
+
+  const mountLocale = pendingToolMount?.locale ?? locale
+  pendingToolMount = null
+  clearLoadStatus(container)
+  toolModule.mount(container, mountLocale)
+}
+
+export const mountToolContent = async (toolId: ToolId, locale: Locale): Promise<void> => {
+  mountGeneration += 1
+  pendingToolMount = null
+
+  const renderer = toolRenderers[toolId]
+  if (!renderer) {
+    return
+  }
+
+  const toolContainer = findToolContainer()
   if (!toolContainer) {
     return
   }
 
-  renderer.mount(toolContainer, locale)
+  if (renderer.mount) {
+    renderer.mount(toolContainer, locale)
+    return
+  }
+
+  const { load } = renderer
+  if (!load) {
+    return
+  }
+
+  const loadedModule = loadedToolModules.get(toolId)
+  if (loadedModule) {
+    loadedModule.mount(toolContainer, locale)
+    return
+  }
+
+  await mountLoadedToolContent(toolId, load, toolContainer, locale)
 }
 
-export const hasMountedToolContent = (toolId: ToolId): boolean => Boolean(toolRenderers[toolId]?.mount)
+export const hasMountedToolContent = (toolId: ToolId): boolean => {
+  const renderer = toolRenderers[toolId]
+
+  return Boolean(renderer?.mount ?? renderer?.load)
+}
 
 export const updateMountedToolLocale = (toolId: ToolId, locale: Locale): void => {
   const renderer = toolRenderers[toolId]
-  if (!renderer?.updateLocale) {
+  if (!renderer) {
     return
   }
 
-  const toolContainer = document.querySelector<HTMLElement>('[data-tool-content-root]')
+  const toolContainer = findToolContainer()
   if (!toolContainer) {
     return
   }
 
-  renderer.updateLocale(toolContainer, locale)
+  // Still downloading: mount with the locale picked in the meantime instead of the stale one.
+  if (pendingToolMount?.generation === mountGeneration && pendingToolMount.toolId === toolId) {
+    pendingToolMount = { ...pendingToolMount, locale }
+    renderLoadStatus(toolContainer, toolId, locale, 'loading')
+    return
+  }
+
+  const loadedModule = loadedToolModules.get(toolId)
+
+  // A failed load leaves its message on screen, so it has to follow the locale as well.
+  if (!loadedModule && toolContainer.querySelector('[data-tool-load-status="failed"]')) {
+    renderLoadStatus(toolContainer, toolId, locale, 'failed')
+    return
+  }
+
+  const updateLocale = renderer.updateLocale ?? loadedModule?.updateLocale
+  if (!updateLocale) {
+    return
+  }
+
+  updateLocale(toolContainer, locale)
 }

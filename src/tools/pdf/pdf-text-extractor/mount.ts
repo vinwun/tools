@@ -1,10 +1,8 @@
-import {GlobalWorkerOptions} from 'pdfjs-dist'
 import {type Locale, messagesByLocale} from '../../../i18n'
+import {configurePdfWorker} from '../pdf-worker.ts'
 import {ACCEPTED_PDF_TYPES, createUniqueId} from '../pdf-tools/utils.ts'
 import type {PdfTextExtractorEntry, PdfTextExtractorFormat} from './types.ts'
 import {buildDownloadFileName, extractPdfText, isPdfFile} from './utils.ts'
-
-GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
 type PdfTextExtractorState = {
   entries: PdfTextExtractorEntry[]
@@ -95,6 +93,7 @@ const resolveStatusText = (state: PdfTextExtractorState, locale: Locale): string
 }
 
 export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): void => {
+  configurePdfWorker()
   stateGeneration += 1
   const root = container.querySelector<HTMLElement>('[data-pdf-text-extractor-root]')
   if (!root) {

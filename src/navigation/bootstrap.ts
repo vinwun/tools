@@ -52,7 +52,8 @@ export const bootstrapApp = (): void => {
     bindLocaleSelector()
 
     if (route.type === 'tool' && !preservedToolContentRoot) {
-      mountToolContent(route.toolId, currentLocale)
+      // Tools with lazily loaded dependencies mount once their chunk arrives.
+      void mountToolContent(route.toolId, currentLocale)
     }
 
     if (scrollRestorationTarget) {

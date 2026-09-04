@@ -1,9 +1,8 @@
 import { PDFDocument } from 'pdf-lib'
-import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
+import { getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
 import { messagesByLocale, type Locale } from '../../../i18n'
+import { configurePdfWorker } from '../pdf-worker.ts'
 import { ACCEPTED_PDF_TYPES, keepSelectedEntries, moveSelectedEntries, removeSelectedEntries, type PdfPageEntry, PDF_THUMBNAIL_SCALE, buildSelectionRange, countSelectedEntries, createUniqueId, formatMessage } from './utils.ts'
-
-GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
 type PdfDropTarget =
   | { kind: 'none' }
@@ -310,6 +309,7 @@ const loadThumbnail = async (
 let stateGeneration = 0
 
 export const mountPdfMergeReorderSplit = (container: HTMLElement, locale: Locale): void => {
+  configurePdfWorker()
   stateGeneration += 1
   const root = container.querySelector<HTMLElement>('[data-pdf-tools-root]')
   if (!root) {

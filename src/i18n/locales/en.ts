@@ -16,6 +16,9 @@ export const enMessages: Messages = {
   },
   toolPage: {
     comingSoon: 'This tool page is prepared and will be implemented next.',
+    loading: 'Loading tool…',
+    loadFailed: 'The tool could not be loaded. Please check your connection.',
+    retryAction: 'Retry',
   },
   rngNumberGenerator: {
     settingsLegend: 'Settings',

@@ -76,3 +76,22 @@
   border-radius: 0.75rem;
   background: var(--panel);
 }
+
+.tool-load-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.75rem;
+  background: var(--panel);
+  color: var(--muted);
+}
+
+/* The tool markup is painted before its code arrives, so the controls stay inert until then. */
+[data-tool-content-root][aria-busy='true'] .tool-layout {
+  opacity: 0.55;
+  pointer-events: none;
+}

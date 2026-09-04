@@ -27,6 +27,9 @@ export type Messages = {
   }
   toolPage: {
     comingSoon: string
+    loading: string
+    loadFailed: string
+    retryAction: string
   }
   rngNumberGenerator: {
     settingsLegend: string
