@@ -2,7 +2,7 @@ import type { Messages } from '../../../i18n/schema.ts'
 import type { BaseConverterState } from './types.ts'
 
 export const renderBaseConverter = (messages: Messages, state: BaseConverterState): string => {
-  const baseMessages = messages.numericalConverter
+  const baseMessages = messages.baseConverter
 
   return `
     <section class="tool-layout base-converter-layout" data-base-converter-root>

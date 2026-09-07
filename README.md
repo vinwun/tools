@@ -14,13 +14,13 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Image Converter`: image conversion into `png` / `jpg` / `webp`
   - `Color Picker`: color field and Hex / RGB / HSL sync with copy-on-click
 - `PDF Tools`:
-  - `PDF Merge & Reorder & Split`: merge PDFs, move pages, extract pages / ranges
+  - `PDF Page Organizer`: merge PDFs, move pages, extract pages / ranges
   - `PDF Text Extractor`: extract text from PDF documents as .md or .txt
 - `Audio Tools`:
   - `Audio Converter`: audio conversion into `wav`
-  - `Audio Trimmer`: audio trimmer with keep/remove mode and `wav` download
+  - `Audio Cutter`: audio cutter with keep/remove mode and `wav` download
 - `Video Tools`:
-  - `Video Converter`: extract the audio track or strip it from videos
+  - `Video Audio Splitter`: extract the audio track or strip it from videos
   - `Video Cutter`: video cutter on keyframe boundaries
 - `RNG Tools`:
   - `Number Generator`: random numbers in a min/max range with integer / decimal mode
@@ -33,12 +33,12 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Prime Factorizer`: factor integers into primes with expanded and exponent forms
   - `Base Converter`: convert numbers between numeral systems
   - `Aspect Ratio Calculator`: convert width and height into aspect ratio and decimal
-  - `Floating-Point Inspector`: convert floating-point numbers and their bit representations
+  - `Floating-Point Converter`: convert floating-point numbers and their bit representations
   - `Matrix Multiplier`: multiply two matrices
 - `Text Tools`:
   - `JSON Pretty Printer`: validate and pretty-print JSON with a collapsible preview and download
-  - `Markdown Displayer`: display Markdown and download as HTML
+  - `Markdown Viewer`: display Markdown and download as HTML
   - `Text Counter`: count words, characters, and other statistics of a text
   - `Lorem Ipsum Generator`: generate placeholder text with a specific length
-  - `Unicode Displayer`: display characters and code points for Unicode values
+  - `Unicode Converter`: convert characters between code points and encodings
   - `Hidden Characters Inspector`: find zero-width, bidi and confusable characters

@@ -1,6 +1,6 @@
 import {type Locale, messagesByLocale} from '../../../i18n'
 import {configurePdfWorker} from '../pdf-worker.ts'
-import {ACCEPTED_PDF_TYPES, createUniqueId} from '../pdf-tools/utils.ts'
+import {ACCEPTED_PDF_TYPES, createUniqueId} from '../pdf-page-organizer/utils.ts'
 import type {PdfTextExtractorEntry, PdfTextExtractorFormat} from './types.ts'
 import {buildDownloadFileName, extractPdfText, isPdfFile} from './utils.ts'
 

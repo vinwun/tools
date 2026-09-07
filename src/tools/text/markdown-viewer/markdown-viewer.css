@@ -1,0 +1,112 @@
+.markdown-viewer-layout {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+.markdown-viewer-panel {
+  min-width: 0;
+}
+
+.markdown-viewer-input {
+  width: 100%;
+  min-height: 21.5rem;
+  resize: vertical;
+  font: 0.95rem/1.5 Consolas, 'SFMono-Regular', Menlo, Monaco, monospace;
+  padding: 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.markdown-viewer-actions {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.markdown-viewer-output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.markdown-viewer-output {
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: #f8f8f8;
+  padding: 0.85rem;
+  overflow: auto;
+  min-height: 30.5rem;
+  height: 30.5rem;
+  resize: vertical;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+}
+
+.markdown-viewer-output h1,
+.markdown-viewer-output h2,
+.markdown-viewer-output h3,
+.markdown-viewer-output h4,
+.markdown-viewer-output h5,
+.markdown-viewer-output h6 {
+  margin: 0.5rem 0 0.15rem;
+}
+
+.markdown-viewer-output p {
+  margin: 0;
+}
+
+.markdown-viewer-output ul,
+.markdown-viewer-output ol {
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.markdown-viewer-output code {
+  font-family: Consolas, 'SFMono-Regular', Menlo, Monaco, monospace;
+  font-size: 0.95em;
+  background: #e9e9e9;
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.3rem;
+}
+
+.markdown-viewer-output pre {
+  margin: 0;
+  background: #ededed;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow: auto;
+  line-height: 1.5;
+  min-height: 3rem;
+}
+
+.markdown-viewer-output blockquote {
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 4px solid #d0d0d0;
+  color: #555555;
+}
+
+.markdown-viewer-output hr {
+  border: 0;
+  border-top: 1px solid #d0d0d0;
+  width: 100%;
+}
+
+.markdown-viewer-output table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.markdown-viewer-output th,
+.markdown-viewer-output td {
+  border: 1px solid #d0d0d0;
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+}
+
+.markdown-viewer-output thead th {
+  background: #efefef;
+}

@@ -70,7 +70,7 @@ const queryBaseConverterElements = (container: HTMLElement): BaseConverterElemen
 }
 
 const syncLocalizedText = (elements: BaseConverterElements, messages: Messages): void => {
-  const baseMessages = messages.numericalConverter
+  const baseMessages = messages.baseConverter
   elements.binaryLabel.textContent = baseMessages.binaryLabel
   elements.octalLabel.textContent = baseMessages.octalLabel
   elements.decimalLabel.textContent = baseMessages.decimalLabel

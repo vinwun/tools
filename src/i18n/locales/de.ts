@@ -2,7 +2,7 @@ import type { Messages } from '../schema'
 
 export const deMessages: Messages = {
   dashboard: {
-    title: 'Werkzeug-Übersicht',
+    title: 'Werkzeugübersicht',
     subtitle: 'Wähle das passende Werkzeug für deine Aufgabe.',
     categoriesAriaLabel: 'Tool-Kategorien',
     languageLabel: 'Sprache',
@@ -29,7 +29,7 @@ export const deMessages: Messages = {
     generateAction: 'Erzeugen',
   },
   rngStringGenerator: {
-    listLegend: 'Zeichenketten-Liste',
+    listLegend: 'Zeichenkettenliste',
     listHint: 'Gewichte werden mit "Wert | Gewicht" angegeben.',
     optionsLegend: 'Optionen',
     uniqueModeLabel: 'Einmalig-Modus',
@@ -60,7 +60,7 @@ export const deMessages: Messages = {
   colorPicker: {
     squareLabel: 'Farbfeld',
     squareHint: 'Ziehe in den Feldern, um die Farbe zu ändern.',
-    hueBarLabel: 'Farbton-Balken',
+    hueBarLabel: 'Farbtonbalken',
     hexLabel: 'Hex',
     hexInputLabel: 'Hex-Wert',
     hexInputPlaceholder: '#RRGGBB',
@@ -76,7 +76,7 @@ export const deMessages: Messages = {
     saturationLabel: 'Sättigung',
     lightnessLabel: 'Helligkeit',
   },
-  pdfTools: {
+  pdfPageOrganizer: {
     uploadLabel: 'PDF-Upload',
     uploadHintLabel: 'Akzeptierte Eingabe',
     browseAction: 'PDFs durchsuchen',
@@ -119,7 +119,7 @@ export const deMessages: Messages = {
     entryStatusFailed: 'Extraktion fehlgeschlagen.',
     previewUnavailable: 'Vorschau ist nach der Extraktion verfügbar.',
   },
-  audioTrimmer: {
+  audioCutter: {
     uploadLabel: 'Audiodatei',
     uploadHintLabel: 'Akzeptierte Eingabe',
     browseAction: 'Dateien durchsuchen',
@@ -140,13 +140,13 @@ export const deMessages: Messages = {
     statusError: 'Diese Audiodatei konnte nicht geladen werden.',
     emptySelectionWarning: 'Die aktuelle Entfernen-Auswahl würde nur Stille exportieren.',
   },
-  videoConverter: {
+  videoAudioSplitter: {
     uploadLabel: 'Videoeingabe',
     uploadHintLabel: 'Akzeptierte Eingabe',
     browseAction: 'Datei auswählen',
     noFileSelected: 'Keine Datei ausgewählt',
     previewLabel: 'Vorschau',
-    infoTitle: 'Video-Informationen',
+    infoTitle: 'Videoinformationen',
     durationLabel: 'Dauer',
     formatLabel: 'Format',
     tracksLabel: 'Spuren',
@@ -252,7 +252,7 @@ export const deMessages: Messages = {
     exponentLabel: 'Primfaktoren mit Exponent',
     exponentHint: 'Nutze Exponenten, z. B. -1 * 2^2 * 3.',
   },
-  numericalConverter: {
+  baseConverter: {
     binaryLabel: 'Binär (Basis 2)',
     octalLabel: 'Oktal (Basis 8)',
     decimalLabel: 'Dezimal (Basis 10)',
@@ -267,7 +267,7 @@ export const deMessages: Messages = {
     reducedLabel: 'Seitenverhältnis',
     decimalLabel: 'Dezimalwert',
   },
-  floatingPointInspector: {
+  floatingPointConverter: {
     decimalLabel: 'Dezimalwert',
     formatHalfTitle: 'Halbe Genauigkeit (16-bit)',
     formatFloatTitle: 'Einfache Genauigkeit (32-bit)',
@@ -316,7 +316,7 @@ export const deMessages: Messages = {
     collapseAction: 'Bereich einklappen',
     expandAction: 'Bereich ausklappen',
   },
-  markdownDisplayer: {
+  markdownViewer: {
     uploadLabel: 'Markdown-Datei hochladen',
     uploadHint: 'Akzeptierte Eingabe',
     uploadAction: 'Dateien durchsuchen',
@@ -364,9 +364,9 @@ export const deMessages: Messages = {
     clearAction: 'Leeren',
     outputLabel: 'Generierter Text',
   },
-  unicodeDisplayer: {
+  unicodeConverter: {
     characterLabel: 'Zeichen',
-    codePointLabel: 'Code-Punkt (hex)',
+    codePointLabel: 'Codepunkt (hex)',
     decimalLabel: 'Dezimal',
     binaryLabel: 'Binär',
     octalLabel: 'Oktal',
@@ -414,11 +414,11 @@ export const deMessages: Messages = {
     },
     video: {
       name: 'Video',
-      description: 'Videos konvertieren und schneiden.',
+      description: 'Tonspuren trennen und Videos schneiden.',
     },
     rng: {
       name: 'Zufall',
-      description: 'Zufällige Zahlen und Wörter erzeugen.',
+      description: 'Zufällige Zahlen und Zeichenketten erzeugen.',
     },
     time: {
       name: 'Zeit',
@@ -426,7 +426,7 @@ export const deMessages: Messages = {
     },
     math: {
       name: 'Mathe',
-      description: 'Zahlen-Analyse und Umrechnungen.',
+      description: 'Zahlen analysieren und umrechnen.',
     },
     text: {
       name: 'Text',
@@ -435,35 +435,35 @@ export const deMessages: Messages = {
   },
   tools: {
     imageConverter: {
-      name: 'Bild-Konverter',
-      description: 'Bild-Dateien in .png / .jpg / .webp umwandeln.',
+      name: 'Bild-Konvertierer',
+      description: 'Bilddateien in .png / .jpg / .webp umwandeln.',
     },
     colorPicker: {
       name: 'Farbwähler',
       description: 'Farben auswählen und Werte direkt ablesen.',
     },
-    pdfMergeReorderSplit: {
-      name: 'PDFs zusammenführen & sortieren & kürzen',
-      description: 'Mehrere PDFs zusammenführen, Seiten-Reihenfolge anpassen, Seiten entfernen.',
+    pdfPageOrganizer: {
+      name: 'PDF-Seiten-Verwalter',
+      description: 'Mehrere PDFs zusammenführen, Seitenreihenfolge anpassen, Seiten entfernen.',
     },
     pdfTextExtractor: {
-      name: 'PDF-Text-Extraktor',
+      name: 'PDF-Text-Extrahierer',
       description: 'Text aus PDF-Dokumenten auslesen.',
     },
     audioConverter: {
-      name: 'Audio-Konverter',
-      description: 'Audio-Dateien in .wav umwandeln.',
+      name: 'Audio-Konvertierer',
+      description: 'Audiodateien in .wav umwandeln.',
     },
-    audioTrimmer: {
-      name: 'Audio zuschneiden',
-      description: 'Audioausschnitte präzise mit Start- und Endpunkt kürzen.',
+    audioCutter: {
+      name: 'Audio-Zuschneider',
+      description: 'Audioausschnitte präzise mit Start- und Endpunkt schneiden.',
     },
-    videoConverter: {
-      name: 'Video-Konverter',
+    videoAudioSplitter: {
+      name: 'Video-Ton-Trenner',
       description: 'Audiospur aus Videos extrahieren oder entfernen.',
     },
     videoCutter: {
-      name: 'Video-Schneider',
+      name: 'Video-Zuschneider',
       description: 'Videos an Keyframes schneiden.',
     },
     numberGenerator: {
@@ -471,12 +471,12 @@ export const deMessages: Messages = {
       description: 'Zufällige Zahlen in einem Min/Max-Bereich generieren.',
     },
     stringGenerator: {
-      name: 'Wort-Generator',
+      name: 'Zeichenketten-Generator',
       description: 'Zufällige Zeichenketten aus einer Liste auswählen.',
     },
     stopwatch: {
       name: 'Stoppuhr',
-      description: 'Messung verstrichener Zeit mit Rundenfunktion.',
+      description: 'Verstrichene Zeit mit Rundenfunktion messen.',
     },
     timer: {
       name: 'Timer',
@@ -490,16 +490,16 @@ export const deMessages: Messages = {
       name: 'Primfaktorzerlegung',
       description: 'Zahlen in ihre Primfaktoren zerlegen.',
     },
-    numericalConverter: {
-      name: 'Zahlensystem‑Umrechner',
+    baseConverter: {
+      name: 'Basis-Umrechner',
       description: 'Zahlen zwischen Zahlensystemen umrechnen.',
     },
     aspectRatioCalculator: {
       name: 'Seitenverhältnis-Rechner',
-      description: 'Bild- und Displayformate schnell bestimmen.',
+      description: 'Bild- und Displayformate bestimmen.',
     },
-    floatingPointInspector: {
-      name: 'Gleitkomma-Inspektor',
+    floatingPointConverter: {
+      name: 'Gleitkomma-Umrechner',
       description: 'Gleitkommazahlen und deren Bitdarstellung umrechnen.',
     },
     matrixMultiplier: {
@@ -507,10 +507,10 @@ export const deMessages: Messages = {
       description: 'Zwei Matrizen multiplizieren.',
     },
     jsonPrettyPrinter: {
-      name: 'JSON-Formatter',
+      name: 'JSON-Formatierer',
       description: 'JSON prüfen und leserlich formatieren.',
     },
-    markdownDisplayer: {
+    markdownViewer: {
       name: 'Markdown-Anzeige',
       description: 'Markdown darstellen und als HTML speichern.',
     },
@@ -520,15 +520,15 @@ export const deMessages: Messages = {
     },
     loremIpsumGenerator: {
       name: 'Lorem-Ipsum-Generator',
-      description: 'Platzhalter-Text im Lorem-Ipsum-Format erzeugen.',
+      description: 'Platzhaltertext im Lorem-Ipsum-Format erzeugen.',
     },
-    unicodeDisplayer: {
-      name: 'Unicode-Anzeige',
-      description: 'Zeige Zeichen und Code-Punkte für Unicode-Werte an.',
+    unicodeConverter: {
+      name: 'Unicode-Umrechner',
+      description: 'Zeichen zwischen Codepunkten und Kodierungen umrechnen.',
     },
     hiddenCharactersInspector: {
-      name: 'Versteckte-Zeichen-Inspector',
-      description: 'Finde Zero-Width-, Bidi- und Confusable-Zeichen.',
+      name: 'Versteckte-Zeichen-Prüfer',
+      description: 'Zero-Width-, Bidi- und Confusable-Zeichen finden.',
     },
   },
 }

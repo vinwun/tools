@@ -18,7 +18,7 @@ export const bootstrapApp = (): void => {
 
     const scrollRestorationTarget =
       preserveMountedToolContent && currentRoute.type === 'tool'
-        ? app.querySelector<HTMLElement>('.pdf-tools-list-shell')
+        ? app.querySelector<HTMLElement>('.pdf-page-organizer-list-shell')
         : null
     const savedScrollLeft = scrollRestorationTarget?.scrollLeft ?? 0
     const savedScrollTop = scrollRestorationTarget?.scrollTop ?? 0
@@ -57,7 +57,7 @@ export const bootstrapApp = (): void => {
     }
 
     if (scrollRestorationTarget) {
-      const restoredScrollTarget = app.querySelector<HTMLElement>('.pdf-tools-list-shell')
+      const restoredScrollTarget = app.querySelector<HTMLElement>('.pdf-page-organizer-list-shell')
       if (restoredScrollTarget) {
         const restoreScroll = (): void => {
           restoredScrollTarget.scrollLeft = savedScrollLeft

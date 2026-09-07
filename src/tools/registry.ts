@@ -4,13 +4,13 @@ import { renderAudioConverter, mountAudioConverter, updateAudioConverterLocale }
 import { renderImageConverter, mountImageConverter, updateImageConverterLocale } from './image/image-converter.ts'
 import { renderColorPicker } from './image/color-picker/render.ts'
 import { mountColorPicker, updateColorPickerLocale } from './image/color-picker/mount.ts'
-import { renderAudioTrimmer } from './audio/audio-trimmer/render.ts'
-import { mountAudioTrimmer, updateAudioTrimmerLocale } from './audio/audio-trimmer/mount.ts'
-import { renderVideoConverter } from './video/video-converter/render.ts'
-import { mountVideoConverter, updateVideoConverterLocale } from './video/video-converter/mount.ts'
+import { renderAudioCutter } from './audio/audio-cutter/render.ts'
+import { mountAudioCutter, updateAudioCutterLocale } from './audio/audio-cutter/mount.ts'
+import { renderVideoAudioSplitter } from './video/video-audio-splitter/render.ts'
+import { mountVideoAudioSplitter, updateVideoAudioSplitterLocale } from './video/video-audio-splitter/mount.ts'
 import { renderVideoCutter } from './video/video-cutter/render.ts'
 import { mountVideoCutter, updateVideoCutterLocale } from './video/video-cutter/mount.ts'
-import { renderPdfMergeReorderSplit } from './pdf/pdf-tools/render.ts'
+import { renderPdfPageOrganizer } from './pdf/pdf-page-organizer/render.ts'
 import { renderPdfTextExtractor } from './pdf/pdf-text-extractor/render.ts'
 import { renderNumberGenerator } from './rng/number-generator/render.ts'
 import { createInitialNumberGeneratorState } from './rng/number-generator/utils.ts'
@@ -33,27 +33,27 @@ import { createInitialBaseConverterState } from './math/base-converter/utils.ts'
 import { renderAspectRatioCalculator } from './math/aspect-ratio-calculator/render.ts'
 import { mountAspectRatioCalculator, updateAspectRatioCalculatorLocale } from './math/aspect-ratio-calculator/mount.ts'
 import { createInitialAspectRatioCalculatorState } from './math/aspect-ratio-calculator/utils.ts'
-import { renderFloatingPointInspector } from './math/floating-point-inspector/render.ts'
-import { mountFloatingPointInspector, updateFloatingPointInspectorLocale } from './math/floating-point-inspector/mount.ts'
-import { createInitialFloatingPointInspectorState } from './math/floating-point-inspector/utils.ts'
+import { renderFloatingPointConverter } from './math/floating-point-converter/render.ts'
+import { mountFloatingPointConverter, updateFloatingPointConverterLocale } from './math/floating-point-converter/mount.ts'
+import { createInitialFloatingPointConverterState } from './math/floating-point-converter/utils.ts'
 import { renderMatrixMultiplier } from './math/matrix-multiplier/render.ts'
 import { mountMatrixMultiplier, updateMatrixMultiplierLocale } from './math/matrix-multiplier/mount.ts'
 import { createInitialMatrixMultiplierState } from './math/matrix-multiplier/utils.ts'
 import { renderJsonPrettyPrinter } from './text/json-pretty-printer/render.ts'
 import { mountJsonPrettyPrinter, updateJsonPrettyPrinterLocale } from './text/json-pretty-printer/mount.ts'
 import { createInitialJsonPrettyPrinterState } from './text/json-pretty-printer/utils.ts'
-import { renderMarkdownDisplayer } from './text/markdown-displayer/render.ts'
-import { mountMarkdownDisplayer, updateMarkdownDisplayerLocale } from './text/markdown-displayer/mount.ts'
-import { createInitialMarkdownDisplayerState } from './text/markdown-displayer/utils.ts'
+import { renderMarkdownViewer } from './text/markdown-viewer/render.ts'
+import { mountMarkdownViewer, updateMarkdownViewerLocale } from './text/markdown-viewer/mount.ts'
+import { createInitialMarkdownViewerState } from './text/markdown-viewer/utils.ts'
 import { renderTextCounter } from './text/text-counter/render.ts'
 import { mountTextCounter, updateTextCounterLocale } from './text/text-counter/mount.ts'
 import { createInitialTextCounterState } from './text/text-counter/utils.ts'
 import { renderLoremIpsumGenerator } from './text/lorem-ipsum-generator/render.ts'
 import { mountLoremIpsumGenerator, updateLoremIpsumGeneratorLocale } from './text/lorem-ipsum-generator/mount.ts'
 import { createInitialLoremIpsumGeneratorState } from './text/lorem-ipsum-generator/utils.ts'
-import { renderUnicodeDisplayer } from './text/unicode-displayer/render.ts'
-import { mountUnicodeDisplayer, updateUnicodeDisplayerLocale } from './text/unicode-displayer/mount.ts'
-import { createInitialUnicodeDisplayerState } from './text/unicode-displayer/utils.ts'
+import { renderUnicodeConverter } from './text/unicode-converter/render.ts'
+import { mountUnicodeConverter, updateUnicodeConverterLocale } from './text/unicode-converter/mount.ts'
+import { createInitialUnicodeConverterState } from './text/unicode-converter/utils.ts'
 import { renderHiddenCharactersInspector } from './text/hidden-characters-inspector/render.ts'
 import { mountHiddenCharactersInspector, updateHiddenCharactersInspectorLocale } from './text/hidden-characters-inspector/mount.ts'
 import { createInitialHiddenCharactersInspectorState } from './text/hidden-characters-inspector/utils.ts'
@@ -87,29 +87,29 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     mount: (container, locale) => mountAudioConverter(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateAudioConverterLocale(container, messagesByLocale[locale]),
   },
-  audioTrimmer: {
-    render: (locale) => renderAudioTrimmer(messagesByLocale[locale]),
-    mount: (container, locale) => mountAudioTrimmer(container, locale),
-    updateLocale: (container, locale) => updateAudioTrimmerLocale(container, messagesByLocale[locale]),
+  audioCutter: {
+    render: (locale) => renderAudioCutter(messagesByLocale[locale]),
+    mount: (container, locale) => mountAudioCutter(container, locale),
+    updateLocale: (container, locale) => updateAudioCutterLocale(container, messagesByLocale[locale]),
   },
-  videoConverter: {
-    render: (locale) => renderVideoConverter(messagesByLocale[locale]),
-    mount: (container, locale) => mountVideoConverter(container, locale),
-    updateLocale: (container, locale) => updateVideoConverterLocale(container, messagesByLocale[locale], locale),
+  videoAudioSplitter: {
+    render: (locale) => renderVideoAudioSplitter(messagesByLocale[locale]),
+    mount: (container, locale) => mountVideoAudioSplitter(container, locale),
+    updateLocale: (container, locale) => updateVideoAudioSplitterLocale(container, messagesByLocale[locale], locale),
   },
   videoCutter: {
     render: (locale) => renderVideoCutter(messagesByLocale[locale]),
     mount: (container, locale) => mountVideoCutter(container, locale),
     updateLocale: (container, locale) => updateVideoCutterLocale(container, messagesByLocale[locale], locale),
   },
-  pdfMergeReorderSplit: {
-    render: (locale) => renderPdfMergeReorderSplit(messagesByLocale[locale]),
+  pdfPageOrganizer: {
+    render: (locale) => renderPdfPageOrganizer(messagesByLocale[locale]),
     load: async () => {
-      const { mountPdfMergeReorderSplit, updatePdfMergeReorderSplitLocale } = await import('./pdf/pdf-tools/mount.ts')
+      const { mountPdfPageOrganizer, updatePdfPageOrganizerLocale } = await import('./pdf/pdf-page-organizer/mount.ts')
 
       return {
-        mount: (container, locale) => mountPdfMergeReorderSplit(container, locale),
-        updateLocale: (container, locale) => updatePdfMergeReorderSplitLocale(container, locale),
+        mount: (container, locale) => mountPdfPageOrganizer(container, locale),
+        updateLocale: (container, locale) => updatePdfPageOrganizerLocale(container, locale),
       }
     },
   },
@@ -154,7 +154,7 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     mount: (container, locale) => mountPrimeFactorizer(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updatePrimeFactorizerLocale(container, messagesByLocale[locale]),
   },
-  numericalConverter: {
+  baseConverter: {
     render: (locale) => renderBaseConverter(messagesByLocale[locale], createInitialBaseConverterState()),
     mount: (container, locale) => mountBaseConverter(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateBaseConverterLocale(container, messagesByLocale[locale]),
@@ -166,11 +166,11 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     updateLocale: (container, locale) =>
       updateAspectRatioCalculatorLocale(container, messagesByLocale[locale]),
   },
-  floatingPointInspector: {
+  floatingPointConverter: {
     render: (locale) =>
-      renderFloatingPointInspector(messagesByLocale[locale], createInitialFloatingPointInspectorState()),
-    mount: (container, locale) => mountFloatingPointInspector(container, messagesByLocale[locale]),
-    updateLocale: (container, locale) => updateFloatingPointInspectorLocale(container, messagesByLocale[locale]),
+      renderFloatingPointConverter(messagesByLocale[locale], createInitialFloatingPointConverterState()),
+    mount: (container, locale) => mountFloatingPointConverter(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateFloatingPointConverterLocale(container, messagesByLocale[locale]),
   },
   matrixMultiplier: {
     render: (locale) => renderMatrixMultiplier(messagesByLocale[locale], createInitialMatrixMultiplierState(messagesByLocale[locale])),
@@ -182,10 +182,10 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     mount: (container, locale) => mountJsonPrettyPrinter(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateJsonPrettyPrinterLocale(container, messagesByLocale[locale]),
   },
-  markdownDisplayer: {
-    render: (locale) => renderMarkdownDisplayer(messagesByLocale[locale], createInitialMarkdownDisplayerState()),
-    mount: (container, locale) => mountMarkdownDisplayer(container, messagesByLocale[locale]),
-    updateLocale: (container, locale) => updateMarkdownDisplayerLocale(container, messagesByLocale[locale]),
+  markdownViewer: {
+    render: (locale) => renderMarkdownViewer(messagesByLocale[locale], createInitialMarkdownViewerState()),
+    mount: (container, locale) => mountMarkdownViewer(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateMarkdownViewerLocale(container, messagesByLocale[locale]),
   },
   textCounter: {
     render: (locale) => renderTextCounter(messagesByLocale[locale], createInitialTextCounterState()),
@@ -197,10 +197,10 @@ const toolRenderers: Partial<Record<ToolId, ToolRenderer>> = {
     mount: (container, locale) => mountLoremIpsumGenerator(container, messagesByLocale[locale]),
     updateLocale: (container, locale) => updateLoremIpsumGeneratorLocale(container, messagesByLocale[locale]),
   },
-  unicodeDisplayer: {
-    render: (locale) => renderUnicodeDisplayer(messagesByLocale[locale], createInitialUnicodeDisplayerState()),
-    mount: (container, locale) => mountUnicodeDisplayer(container, messagesByLocale[locale]),
-    updateLocale: (container, locale) => updateUnicodeDisplayerLocale(container, messagesByLocale[locale]),
+  unicodeConverter: {
+    render: (locale) => renderUnicodeConverter(messagesByLocale[locale], createInitialUnicodeConverterState()),
+    mount: (container, locale) => mountUnicodeConverter(container, messagesByLocale[locale]),
+    updateLocale: (container, locale) => updateUnicodeConverterLocale(container, messagesByLocale[locale]),
   },
   hiddenCharactersInspector: {
     render: (locale) => renderHiddenCharactersInspector(messagesByLocale[locale], createInitialHiddenCharactersInspectorState()),

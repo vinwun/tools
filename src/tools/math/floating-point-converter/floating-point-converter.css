@@ -1,0 +1,46 @@
+.floating-point-converter-layout {
+  grid-template-columns: 1fr;
+}
+
+.floating-point-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.floating-point-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.floating-point-fields {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.floating-point-metrics {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.floating-point-metric {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.floating-point-metric-sub {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+}
+
+.floating-point-metric-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.floating-point-mono {
+  font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+  word-break: break-all;
+}

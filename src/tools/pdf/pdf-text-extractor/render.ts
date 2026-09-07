@@ -1,5 +1,5 @@
 import type { Messages } from '../../../i18n/schema.ts'
-import { ACCEPTED_PDF_TYPES } from '../pdf-tools/utils.ts'
+import { ACCEPTED_PDF_TYPES } from '../pdf-page-organizer/utils.ts'
 
 export const renderPdfTextExtractor = (messages: Messages): string => {
   const pdfMessages = messages.pdfTextExtractor

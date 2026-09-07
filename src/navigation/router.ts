@@ -1,5 +1,5 @@
 import { isCategoryId, type CategoryId } from '../dashboard/category-data.ts'
-import { isToolIdForCategory, type ToolId } from '../tools/catalog'
+import { getToolsForCategory, type ToolId } from '../tools/catalog'
 
 const BASE_URL = import.meta.env.BASE_URL || '/'
 
@@ -28,8 +28,20 @@ const toSegments = (pathname: string): string[] =>
 export const buildCategoryPath = (categoryId: CategoryId): string =>
   `${BASE_PATH}${categoryId}/`
 
+// URLs use kebab-case slugs while `ToolId` keys stay camelCase across catalog, schema and locales.
+const TOOL_SLUG_OVERRIDES: Partial<Record<ToolId, string>> = {}
+
+const toKebabCase = (value: string): string =>
+  value.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+
+const buildToolSlug = (toolId: ToolId): string =>
+  TOOL_SLUG_OVERRIDES[toolId] ?? toKebabCase(toolId)
+
+const toolIdFromSlug = (categoryId: CategoryId, slug: string): ToolId | undefined =>
+  getToolsForCategory(categoryId).find((toolId) => buildToolSlug(toolId) === slug)
+
 export const buildToolPath = (categoryId: CategoryId, toolId: ToolId): string =>
-  `${BASE_PATH}${categoryId}/${toolId}/`
+  `${BASE_PATH}${categoryId}/${buildToolSlug(toolId)}/`
 
 export const buildDashboardPath = (): string => BASE_PATH
 
@@ -58,8 +70,10 @@ const routeFromSegments = (segments: string[]): Route => {
   }
 
   if (segments.length === 2 && isCategoryId(segments[0])) {
-    if (isToolIdForCategory(segments[0], segments[1])) {
-      return { type: 'tool', categoryId: segments[0], toolId: segments[1] }
+    const toolId = toolIdFromSlug(segments[0], segments[1])
+
+    if (toolId) {
+      return { type: 'tool', categoryId: segments[0], toolId }
     }
 
     return { type: 'dashboard' }
@@ -69,13 +83,12 @@ const routeFromSegments = (segments: string[]): Route => {
     return { type: 'category', categoryId: segments[1] }
   }
 
-  if (
-    segments[0].toLowerCase() === 'tools' &&
-    segments.length === 3 &&
-    isCategoryId(segments[1]) &&
-    isToolIdForCategory(segments[1], segments[2])
-  ) {
-    return { type: 'tool', categoryId: segments[1], toolId: segments[2] }
+  if (segments[0].toLowerCase() === 'tools' && segments.length === 3 && isCategoryId(segments[1])) {
+    const toolId = toolIdFromSlug(segments[1], segments[2])
+
+    if (toolId) {
+      return { type: 'tool', categoryId: segments[1], toolId }
+    }
   }
 
   return { type: 'dashboard' }

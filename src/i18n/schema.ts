@@ -87,7 +87,7 @@ export type Messages = {
     saturationLabel: string
     lightnessLabel: string
   }
-  pdfTools: {
+  pdfPageOrganizer: {
     uploadLabel: string
     uploadHintLabel: string
     browseAction: string
@@ -130,7 +130,7 @@ export type Messages = {
     entryStatusFailed: string
     previewUnavailable: string
   }
-  audioTrimmer: {
+  audioCutter: {
     uploadLabel: string
     uploadHintLabel: string
     browseAction: string
@@ -151,7 +151,7 @@ export type Messages = {
     statusError: string
     emptySelectionWarning: string
   }
-  videoConverter: {
+  videoAudioSplitter: {
     uploadLabel: string
     uploadHintLabel: string
     browseAction: string
@@ -232,7 +232,7 @@ export type Messages = {
     exponentLabel: string
     exponentHint: string
   }
-  numericalConverter: {
+  baseConverter: {
     binaryLabel: string
     octalLabel: string
     decimalLabel: string
@@ -247,7 +247,7 @@ export type Messages = {
     reducedLabel: string
     decimalLabel: string
   }
-  floatingPointInspector: {
+  floatingPointConverter: {
     decimalLabel: string
     formatHalfTitle: string
     formatFloatTitle: string
@@ -296,7 +296,7 @@ export type Messages = {
     collapseAction: string
     expandAction: string
   }
-  markdownDisplayer: {
+  markdownViewer: {
     uploadLabel: string
     uploadHint: string
     uploadAction: string
@@ -344,7 +344,7 @@ export type Messages = {
     clearAction: string
     outputLabel: string
   }
-  unicodeDisplayer: {
+  unicodeConverter: {
     characterLabel: string
     codePointLabel: string
     decimalLabel: string

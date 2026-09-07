@@ -2,13 +2,13 @@ import type { CategoryId } from '../dashboard/category-data.ts'
 
 export const toolsByCategory = {
   image: ['imageConverter', 'colorPicker'],
-  pdf: ['pdfMergeReorderSplit', 'pdfTextExtractor'],
-  audio: ['audioConverter', 'audioTrimmer'],
-  video: ['videoConverter', 'videoCutter'],
+  pdf: ['pdfPageOrganizer', 'pdfTextExtractor'],
+  audio: ['audioConverter', 'audioCutter'],
+  video: ['videoAudioSplitter', 'videoCutter'],
   rng: ['numberGenerator', 'stringGenerator'],
   time: ['stopwatch', 'timer', 'timezoneConverter'],
-  math: ['primeFactorizer', 'numericalConverter', 'aspectRatioCalculator', 'floatingPointInspector', 'matrixMultiplier'],
-  text: ['jsonPrettyPrinter', 'markdownDisplayer', 'textCounter', 'loremIpsumGenerator', 'unicodeDisplayer', 'hiddenCharactersInspector'],
+  math: ['primeFactorizer', 'baseConverter', 'aspectRatioCalculator', 'floatingPointConverter', 'matrixMultiplier'],
+  text: ['jsonPrettyPrinter', 'markdownViewer', 'textCounter', 'loremIpsumGenerator', 'unicodeConverter', 'hiddenCharactersInspector'],
 } as const satisfies Record<CategoryId, readonly string[]>
 
 type ToolMap = typeof toolsByCategory

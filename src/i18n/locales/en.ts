@@ -76,7 +76,7 @@ export const enMessages: Messages = {
     saturationLabel: 'Saturation',
     lightnessLabel: 'Lightness',
   },
-  pdfTools: {
+  pdfPageOrganizer: {
     uploadLabel: 'PDF upload',
     uploadHintLabel: 'Accepted input',
     browseAction: 'Browse PDFs',
@@ -119,7 +119,7 @@ export const enMessages: Messages = {
     entryStatusFailed: 'Extraction failed.',
     previewUnavailable: 'Preview will be available after extraction.',
   },
-  audioTrimmer: {
+  audioCutter: {
     uploadLabel: 'Audio file',
     uploadHintLabel: 'Accepted input',
     browseAction: 'Browse files',
@@ -140,7 +140,7 @@ export const enMessages: Messages = {
     statusError: 'Could not load this audio file.',
     emptySelectionWarning: 'The current remove selection would export silence only.',
   },
-  videoConverter: {
+  videoAudioSplitter: {
     uploadLabel: 'Video input',
     uploadHintLabel: 'Accepted input',
     browseAction: 'Browse file',
@@ -252,7 +252,7 @@ export const enMessages: Messages = {
     exponentLabel: 'Prime factors with exponent',
     exponentHint: 'Use exponent notation, e.g. -1 * 2^2 * 3.',
   },
-  numericalConverter: {
+  baseConverter: {
     binaryLabel: 'Binary (base 2)',
     octalLabel: 'Octal (base 8)',
     decimalLabel: 'Decimal (base 10)',
@@ -267,7 +267,7 @@ export const enMessages: Messages = {
     reducedLabel: 'Aspect ratio',
     decimalLabel: 'Decimal value',
   },
-  floatingPointInspector: {
+  floatingPointConverter: {
     decimalLabel: 'Decimal value',
     formatHalfTitle: 'Half precision (16-bit)',
     formatFloatTitle: 'Single precision (32-bit)',
@@ -316,7 +316,7 @@ export const enMessages: Messages = {
     collapseAction: 'Collapse section',
     expandAction: 'Expand section',
   },
-  markdownDisplayer: {
+  markdownViewer: {
     uploadLabel: 'Upload Markdown file',
     uploadHint: 'Accepted input',
     uploadAction: 'Browse files',
@@ -364,7 +364,7 @@ export const enMessages: Messages = {
     clearAction: 'Clear',
     outputLabel: 'Generated text',
   },
-  unicodeDisplayer: {
+  unicodeConverter: {
     characterLabel: 'Character',
     codePointLabel: 'Code point (hex)',
     decimalLabel: 'Decimal',
@@ -414,11 +414,11 @@ export const enMessages: Messages = {
     },
     video: {
       name: 'Video',
-      description: 'Convert and cut video files.',
+      description: 'Separate audio tracks and cut video files.',
     },
     rng: {
       name: 'RNG',
-      description: 'Generate random numbers and words.',
+      description: 'Generate random numbers and strings.',
     },
     time: {
       name: 'Time',
@@ -426,7 +426,7 @@ export const enMessages: Messages = {
     },
     math: {
       name: 'Math',
-      description: 'Number analysis and conversions.',
+      description: 'Analyse and convert numbers.',
     },
     text: {
       name: 'Text',
@@ -442,9 +442,9 @@ export const enMessages: Messages = {
       name: 'Color Picker',
       description: 'Pick a color and inspect its values instantly.',
     },
-    pdfMergeReorderSplit: {
-      name: 'PDF Merge & Reorder & Split',
-      description: 'Combine multiple PDFs / arrange them in a different order / remove pages.',
+    pdfPageOrganizer: {
+      name: 'PDF Page Organizer',
+      description: 'Combine multiple PDFs, arrange them in a different order, remove pages.',
     },
     pdfTextExtractor: {
       name: 'PDF Text Extractor',
@@ -454,12 +454,12 @@ export const enMessages: Messages = {
       name: 'Audio Converter',
       description: 'Convert audio files into .wav.',
     },
-    audioTrimmer: {
-      name: 'Audio Trimmer',
-      description: 'Trim audio clips with precise start and end points.',
+    audioCutter: {
+      name: 'Audio Cutter',
+      description: 'Cut audio clips with precise start and end points.',
     },
-    videoConverter: {
-      name: 'Video Converter',
+    videoAudioSplitter: {
+      name: 'Video Audio Splitter',
       description: 'Extract the audio track or remove it from videos.',
     },
     videoCutter: {
@@ -490,16 +490,16 @@ export const enMessages: Messages = {
       name: 'Prime Factorizer',
       description: 'Break numbers into their prime factors.',
     },
-    numericalConverter: {
-      name: 'Numeral System Converter',
+    baseConverter: {
+      name: 'Base Converter',
       description: 'Convert numbers between numeral systems.',
     },
     aspectRatioCalculator: {
       name: 'Aspect Ratio Calculator',
       description: 'Determine screen and image aspect ratios.',
     },
-    floatingPointInspector: {
-      name: 'Floating-Point Inspector',
+    floatingPointConverter: {
+      name: 'Floating-Point Converter',
       description: 'Convert floating-point numbers and their bit representations.',
     },
     matrixMultiplier: {
@@ -510,9 +510,9 @@ export const enMessages: Messages = {
       name: 'JSON Pretty Printer',
       description: 'Validate and pretty-print JSON.',
     },
-    markdownDisplayer: {
-      name: 'Markdown Displayer',
-      description: 'Display Markdown and save it as HTML.',
+    markdownViewer: {
+      name: 'Markdown Viewer',
+      description: 'View Markdown and save it as HTML.',
     },
     textCounter: {
       name: 'Text Counter',
@@ -522,9 +522,9 @@ export const enMessages: Messages = {
       name: 'Lorem Ipsum Generator',
       description: 'Generate placeholder lorem ipsum text.',
     },
-    unicodeDisplayer: {
-      name: 'Unicode Displayer',
-      description: 'Display characters and code points for Unicode values.',
+    unicodeConverter: {
+      name: 'Unicode Converter',
+      description: 'Convert characters between code points and encodings.',
     },
     hiddenCharactersInspector: {
       name: 'Hidden Characters Inspector',
