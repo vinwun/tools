@@ -1,10 +1,8 @@
 import { dashboardCategories, type DashboardCategory } from './category-data.ts'
 import { messagesByLocale, type Locale } from '../i18n'
-import { renderLanguageOptions } from '../i18n/render.ts'
+import { renderPageHeader } from '../navigation/render.ts'
 import { buildCategoryPath } from '../navigation/router.ts'
 import { getToolsForCategory } from '../tools/catalog'
-
-export const LOCALE_SELECT_ID = 'locale-select'
 
 const renderToolList = (tools: string[]) => tools.map((tool) => `<li>${tool}</li>`).join('')
 
@@ -33,20 +31,9 @@ export const renderDashboard = (locale: Locale) => {
 
   return `
     <main class="page-shell">
-      <header class="page-header">
-        <div class="page-header-top">
-          <div>
+      ${renderPageHeader(locale, `
             <h1>${messages.dashboard.title}</h1>
-            <p>${messages.dashboard.subtitle}</p>
-          </div>
-          <label class="locale-switcher" for="${LOCALE_SELECT_ID}">
-            <span>${messages.dashboard.languageLabel}</span>
-            <select id="${LOCALE_SELECT_ID}" aria-label="${messages.dashboard.languageLabel}">
-              ${renderLanguageOptions(locale)}
-            </select>
-          </label>
-        </div>
-      </header>
+            <p>${messages.dashboard.subtitle}</p>`)}
       <section class="dashboard-grid" aria-label="${messages.dashboard.categoriesAriaLabel}">
         ${categoryCards}
       </section>

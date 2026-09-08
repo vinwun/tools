@@ -1,31 +1,20 @@
 import { messagesByLocale, type Locale } from '../../../i18n'
 import type { Messages } from '../../../i18n/schema.ts'
-import { stripExtension } from '../../foundations/file-converter/utils'
+import { downloadBlob, formatAcceptList, stripExtension } from '../../foundations/files.ts'
+import { formatMessage } from '../../foundations/dom.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
+import { clamp, localizeDecimalSeparator, parseDecimalNumber } from '../../foundations/numbers.ts'
+import { createObjectUrlSlot } from '../../foundations/object-url.ts'
 import { analyzeMp4, cutMp4, getKeyframeStartSeconds, getMaxDurationSeconds, getTrackDurationSeconds, pickVideoTrack } from '../mp4-utils.ts'
-import { ACCEPTED_VIDEO_TYPES, downloadBlob, formatVideoSeconds } from '../video-utils.ts'
-import { formatMessage } from '../../image/color-picker/utils.ts'
+import { ACCEPTED_VIDEO_TYPES, formatVideoSeconds } from '../video-utils.ts'
 import type { VideoCutterElements, VideoCutterState } from './types.ts'
 
-const getDecimalSeparator = (locale: Locale): string =>
-  new Intl.NumberFormat(locale).formatToParts(1.1).find((p) => p.type === 'decimal')?.value ?? '.'
-
-const parseNumericInput = (value: string, locale: Locale): number | null => {
-  const trimmed = value.trim()
-  if (trimmed.length === 0) return null
-  const sep = getDecimalSeparator(locale)
-  const normalized = sep === ',' ? trimmed.replace(/,/g, '.') : trimmed
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-const formatInputValue = (value: number, locale: Locale): string =>
-  value.toFixed(2).replace('.', getDecimalSeparator(locale))
-
 const setInputValue = (input: HTMLInputElement, value: number, locale: Locale): void => {
-  input.value = formatInputValue(value, locale)
+  input.value = localizeDecimalSeparator(value.toFixed(2), locale)
 }
 
-const videoCutterLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages, locale: Locale) => void>()
+const videoCutterLocale = createLocaleSyncRegistry<[Messages, Locale]>('[data-video-cutter-root]')
 
 export const mountVideoCutter = (container: HTMLElement, locale: Locale): void => {
   let messages = messagesByLocale[locale]
@@ -34,11 +23,12 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     return
   }
 
+  const filePicker = wireFilePicker(root, { onFiles: (files) => void loadFile(files[0]) })
+  if (!filePicker) {
+    return
+  }
+
   const elements: VideoCutterElements = {
-    fileInput: root.querySelector<HTMLInputElement>('[data-video-cutter-file]') as HTMLInputElement,
-    browseButton: root.querySelector<HTMLButtonElement>('[data-video-cutter-browse]') as HTMLButtonElement,
-    dropzone: root.querySelector<HTMLElement>('[data-video-cutter-dropzone]') as HTMLElement,
-    fileName: root.querySelector<HTMLElement>('[data-video-cutter-file-name]') as HTMLElement,
     status: root.querySelector<HTMLElement>('[data-video-cutter-status]') as HTMLElement,
     preview: root.querySelector<HTMLVideoElement>('[data-video-cutter-preview]') as HTMLVideoElement,
     startInput: root.querySelector<HTMLInputElement>('[data-video-cutter-start]') as HTMLInputElement,
@@ -55,10 +45,6 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
   }
 
   if (
-    !elements.fileInput ||
-    !elements.browseButton ||
-    !elements.dropzone ||
-    !elements.fileName ||
     !elements.status ||
     !elements.preview ||
     !elements.startInput ||
@@ -80,7 +66,6 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     fileName: '',
     source: null,
     analysis: null,
-    previewUrl: null,
     duration: 0,
     isFragmented: false,
     isProcessing: false,
@@ -98,8 +83,8 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
       return
     }
 
-    let start = parseNumericInput(elements.startInput.value, state.locale) ?? 0
-    let end = parseNumericInput(elements.endInput.value, state.locale) ?? state.duration
+    let start = parseDecimalNumber(elements.startInput.value) ?? 0
+    let end = parseDecimalNumber(elements.endInput.value) ?? state.duration
     if (start < 0) start = 0
     if (end > state.duration) end = state.duration
     if (end < start) end = start
@@ -143,14 +128,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     elements.cutDownload.disabled = !enabled
   }
 
-  const revokePreviewUrl = (): void => {
-    if (!state.previewUrl) {
-      return
-    }
-
-    URL.revokeObjectURL(state.previewUrl)
-    state.previewUrl = null
-  }
+  const previewUrl = createObjectUrlSlot()
 
   const resetState = (): void => {
     state.fileName = ''
@@ -162,7 +140,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     state.start = 0
     state.end = 0
 
-    revokePreviewUrl()
+    previewUrl.clear()
     elements.preview.removeAttribute('src')
     elements.preview.load()
     setInputValue(elements.startInput, 0, state.locale)
@@ -179,12 +157,11 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     const previewDurationLabel = root.querySelector<HTMLElement>('.video-cutter-preview-duration-field > span')
 
     if (uploadLabels[0]) uploadLabels[0].textContent = messages.videoCutter.uploadLabel
-    if (uploadHint) uploadHint.textContent = `${messages.videoCutter.uploadHintLabel}: ${ACCEPTED_VIDEO_TYPES.replaceAll(',', ' / ')}`
+    if (uploadHint) uploadHint.textContent = `${messages.videoCutter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_VIDEO_TYPES)}`
     if (previewHeading) previewHeading.textContent = messages.videoCutter.previewLabel
     if (rangeLabels[0]) rangeLabels[0].textContent = messages.videoCutter.startLabel
     if (rangeLabels[1]) rangeLabels[1].textContent = messages.videoCutter.endLabel
     if (previewDurationLabel) previewDurationLabel.textContent = messages.videoCutter.previewDurationLabel
-    elements.browseButton.textContent = messages.videoCutter.browseAction
     elements.playSelection.textContent = messages.videoCutter.playSelectionAction
     elements.playEnding.textContent = messages.videoCutter.playEndingAction
     elements.cutDownload.textContent = messages.videoCutter.downloadAction
@@ -192,13 +169,12 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
   }
 
   const syncLocale = (nextMessages: Messages, nextLocale: Locale): void => {
-    const prevLocale = state.locale
     messages = nextMessages
     state.locale = nextLocale
     syncLocalizedText()
 
     if (state.source === null) {
-      elements.fileName.textContent = messages.videoCutter.noFileSelected
+      filePicker.setName(messages.videoCutter.noFileSelected)
       setInputValue(elements.startInput, 0, state.locale)
       setInputValue(elements.endInput, 0, state.locale)
       setStatus(messages.videoCutter.statusNoFile)
@@ -212,8 +188,8 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
       return
     }
 
-    const currentStart = parseNumericInput(elements.startInput.value, prevLocale) ?? state.start
-    const currentEnd = parseNumericInput(elements.endInput.value, prevLocale) ?? state.end
+    const currentStart = parseDecimalNumber(elements.startInput.value) ?? state.start
+    const currentEnd = parseDecimalNumber(elements.endInput.value) ?? state.end
     state.start = currentStart
     state.end = currentEnd
     setInputValue(elements.startInput, currentStart, state.locale)
@@ -221,11 +197,11 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     syncSummary()
   }
 
-  videoCutterLocaleSyncers.set(root, syncLocale)
+  videoCutterLocale.register(root, syncLocale)
 
   const loadFile = async (file: File): Promise<void> => {
     resetState()
-    elements.fileName.textContent = file.name
+    filePicker.setName(file.name)
     setStatus(messages.videoCutter.statusLoading)
 
     try {
@@ -245,9 +221,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
       state.start = 0
       state.end = state.duration
 
-      revokePreviewUrl()
-      state.previewUrl = URL.createObjectURL(file)
-      elements.preview.src = state.previewUrl
+      elements.preview.src = previewUrl.set(file)
       elements.preview.load()
 
       if (state.isFragmented) {
@@ -266,20 +240,11 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     }
   }
 
-  const handleSelectedFiles = (files: FileList | null): void => {
-    const selectedFile = files?.[0]
-    if (!selectedFile) {
-      return
-    }
-
-    void loadFile(selectedFile)
-  }
-
   const getRange = (): { startSeconds: number; endSeconds: number; valid: boolean } => {
-    const startSeconds = parseNumericInput(elements.startInput.value, state.locale) ?? 0
-    const endSeconds = parseNumericInput(elements.endInput.value, state.locale) ?? state.duration
-    const start = Math.max(0, Math.min(state.duration, startSeconds))
-    const end = Math.max(0, Math.min(state.duration, endSeconds))
+    const startSeconds = parseDecimalNumber(elements.startInput.value) ?? 0
+    const endSeconds = parseDecimalNumber(elements.endInput.value) ?? state.duration
+    const start = clamp(startSeconds, 0, state.duration)
+    const end = clamp(endSeconds, 0, state.duration)
     return { startSeconds: start, endSeconds: end, valid: end - start >= 0.1 }
   }
 
@@ -292,7 +257,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     if (state.source === null || state.isFragmented) {
       return
     }
-    const end = parseNumericInput(elements.endInput.value, state.locale)
+    const end = parseDecimalNumber(elements.endInput.value)
     if (end === null) {
       return
     }
@@ -333,9 +298,9 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
   }
 
   const stepInput = (input: HTMLInputElement, delta: number, min: number, max: number): void => {
-    const current = parseNumericInput(input.value, state.locale) ?? min
+    const current = parseDecimalNumber(input.value) ?? min
     const stepped = Math.round((current + delta) * 100) / 100
-    const clamped = Math.max(min, Math.min(max, stepped))
+    const clamped = clamp(stepped, min, max)
     setInputValue(input, clamped, state.locale)
   }
 
@@ -366,7 +331,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
 
   const seekToStart = (): void => {
     if (state.source === null || state.isFragmented) return
-    const newStart = parseNumericInput(elements.startInput.value, state.locale) ?? 0
+    const newStart = parseDecimalNumber(elements.startInput.value) ?? 0
     let seekTo = newStart
     if (state.analysis) {
       seekTo = getKeyframeStartSeconds(state.analysis, newStart)
@@ -376,7 +341,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
 
   attachStepButton(elements.startStepDown, () => {
     if (state.source === null || state.isFragmented) return
-    const endVal = parseNumericInput(elements.endInput.value, state.locale) ?? state.duration
+    const endVal = parseDecimalNumber(elements.endInput.value) ?? state.duration
     stepInput(elements.startInput, -0.1, 0, endVal)
     seekToStart()
     syncSummary()
@@ -384,7 +349,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
 
   attachStepButton(elements.startStepUp, () => {
     if (state.source === null || state.isFragmented) return
-    const endVal = parseNumericInput(elements.endInput.value, state.locale) ?? state.duration
+    const endVal = parseDecimalNumber(elements.endInput.value) ?? state.duration
     stepInput(elements.startInput, 0.1, 0, endVal)
     seekToStart()
     syncSummary()
@@ -392,7 +357,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
 
   attachStepButton(elements.endStepDown, () => {
     if (state.source === null || state.isFragmented) return
-    const startVal = parseNumericInput(elements.startInput.value, state.locale) ?? 0
+    const startVal = parseDecimalNumber(elements.startInput.value) ?? 0
     stepInput(elements.endInput, -0.1, startVal, state.duration)
     playEndingPreview()
     syncSummary()
@@ -400,38 +365,16 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
 
   attachStepButton(elements.endStepUp, () => {
     if (state.source === null || state.isFragmented) return
-    const startVal = parseNumericInput(elements.startInput.value, state.locale) ?? 0
+    const startVal = parseDecimalNumber(elements.startInput.value) ?? 0
     stepInput(elements.endInput, 0.1, startVal, state.duration)
     playEndingPreview()
     syncSummary()
   })
 
-  elements.browseButton.addEventListener('click', (event) => {
-    event.stopPropagation()
-    elements.fileInput.click()
-  })
-
-  elements.fileInput.addEventListener('change', () => {
-    handleSelectedFiles(elements.fileInput.files)
-  })
-
-  elements.dropzone.addEventListener('dragover', (event) => {
-    event.preventDefault()
-  })
-
-  elements.dropzone.addEventListener('drop', (event) => {
-    event.preventDefault()
-    handleSelectedFiles(event.dataTransfer?.files ?? null)
-  })
-
-  elements.dropzone.addEventListener('click', () => {
-    elements.fileInput.click()
-  })
-
   elements.startInput.addEventListener('input', () => {
-    const val = parseNumericInput(elements.startInput.value, state.locale)
+    const val = parseDecimalNumber(elements.startInput.value)
     if (val !== null) {
-      const clamped = Math.max(0, Math.min(state.duration, val))
+      const clamped = clamp(val, 0, state.duration)
       setInputValue(elements.startInput, clamped, state.locale)
       if (state.source !== null && !state.isFragmented) {
         let seekTo = clamped
@@ -445,9 +388,9 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
   })
 
   elements.endInput.addEventListener('input', () => {
-    const val = parseNumericInput(elements.endInput.value, state.locale)
+    const val = parseDecimalNumber(elements.endInput.value)
     if (val !== null) {
-      const clamped = Math.max(0, Math.min(state.duration, val))
+      const clamped = clamp(val, 0, state.duration)
       setInputValue(elements.endInput, clamped, state.locale)
       if (state.source !== null && !state.isFragmented) {
         if (!elements.preview.paused && elements.preview.currentTime > clamped) {
@@ -463,12 +406,12 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     if (state.source === null || state.isFragmented) {
       return
     }
-    const parsed = parseNumericInput(elements.startInput.value, state.locale)
+    const parsed = parseDecimalNumber(elements.startInput.value)
     if (parsed === null) {
       setInputValue(elements.startInput, state.start, state.locale)
       return
     }
-    const clamped = Math.max(0, Math.min(state.end, parsed))
+    const clamped = clamp(parsed, 0, state.end)
     state.start = clamped
     setInputValue(elements.startInput, clamped, state.locale)
     syncSummary()
@@ -478,12 +421,12 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     if (state.source === null || state.isFragmented) {
       return
     }
-    const parsed = parseNumericInput(elements.endInput.value, state.locale)
+    const parsed = parseDecimalNumber(elements.endInput.value)
     if (parsed === null) {
       setInputValue(elements.endInput, state.end, state.locale)
       return
     }
-    const clamped = Math.max(state.start, Math.min(state.duration, parsed))
+    const clamped = clamp(parsed, state.start, state.duration)
     state.end = clamped
     setInputValue(elements.endInput, clamped, state.locale)
     syncSummary()
@@ -497,7 +440,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     if (state.source === null || state.isFragmented) {
       return
     }
-    const end = parseNumericInput(elements.endInput.value, state.locale)
+    const end = parseDecimalNumber(elements.endInput.value)
     if (end !== null && elements.preview.currentTime >= end) {
       elements.preview.pause()
     }
@@ -507,7 +450,7 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     if (state.source === null || state.isFragmented) {
       return
     }
-    let start = parseNumericInput(elements.startInput.value, state.locale)
+    let start = parseDecimalNumber(elements.startInput.value)
     if (start === null) {
       return
     }
@@ -521,11 +464,11 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
     if (state.source === null || state.isFragmented) {
       return
     }
-    let start = parseNumericInput(elements.startInput.value, state.locale) ?? 0
+    let start = parseDecimalNumber(elements.startInput.value) ?? 0
     if (state.analysis) {
       start = getKeyframeStartSeconds(state.analysis, start)
     }
-    const end = parseNumericInput(elements.endInput.value, state.locale) ?? state.duration
+    const end = parseDecimalNumber(elements.endInput.value) ?? state.duration
     if (elements.preview.currentTime < start) {
       elements.preview.currentTime = start
     }
@@ -552,16 +495,9 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
   })
 
   syncLocalizedText()
-  elements.fileName.textContent = messages.videoCutter.noFileSelected
+  filePicker.setName(messages.videoCutter.noFileSelected)
   setStatus(messages.videoCutter.statusNoFile)
   setControlsEnabled(false)
 }
 
-export const updateVideoCutterLocale = (container: HTMLElement, messages: Messages, locale: Locale): void => {
-  const root = container.querySelector<HTMLElement>('[data-video-cutter-root]')
-  if (!root) {
-    return
-  }
-
-  videoCutterLocaleSyncers.get(root)?.(messages, locale)
-}
+export const updateVideoCutterLocale = videoCutterLocale.update

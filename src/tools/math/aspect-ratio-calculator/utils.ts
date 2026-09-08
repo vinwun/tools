@@ -1,4 +1,5 @@
 import type { AspectRatioCalculatorState } from './types.ts'
+import { formatDecimalNumber, resolveNumberLocale } from '../../foundations/numbers.ts'
 
 const resolveDefaultScreenSize = (): { width: string; height: string } => {
   if (typeof window === 'undefined' || !window.screen) {
@@ -38,8 +39,6 @@ export const createInitialAspectRatioCalculatorState = (): AspectRatioCalculator
   reducedText: DEFAULT_RESULT_TEXT,
   decimalText: DEFAULT_RESULT_TEXT,
 })
-
-export const resolveNumberLocale = (): string => document.documentElement.lang || 'en'
 
 const parseRatioInput = (value: string): ParsedRatioInput | null => {
   const trimmed = value.trim()
@@ -115,11 +114,7 @@ export const calculateAspectRatio = (
     return null
   }
 
-  const decimal = new Intl.NumberFormat(locale, {
-    maximumFractionDigits: MAX_DECIMAL_PLACES,
-    minimumFractionDigits: 0,
-    useGrouping: false,
-  }).format(decimalValue)
+  const decimal = formatDecimalNumber(decimalValue, locale, { maximumFractionDigits: MAX_DECIMAL_PLACES })
 
   return {
     reduced: `${reducedNumerator.toString()}:${reducedDenominator.toString()}`,

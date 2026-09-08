@@ -9,7 +9,7 @@ export const renderHiddenCharactersInspector = (
   return `
     <section class="tool-layout hidden-characters-inspector-layout" data-hidden-characters-inspector-root>
       <form class="tool-panel hidden-characters-inspector-panel" data-hidden-characters-inspector-form novalidate>
-        <div class="hidden-characters-inspector-head">
+        <div class="tool-panel-header hidden-characters-inspector-head">
           <label class="hidden-characters-inspector-head-label" for="hidden-characters-inspector-input" data-hidden-characters-inspector-input-label>${m.inputLabel}</label>
           <div class="hidden-characters-inspector-actions">
             <button type="button" class="tool-action" data-hidden-characters-inspector-example>${m.insertExampleAction}</button>
@@ -18,7 +18,7 @@ export const renderHiddenCharactersInspector = (
         </div>
         <textarea
           id="hidden-characters-inspector-input"
-          class="hidden-characters-inspector-input"
+          class="tool-textarea hidden-characters-inspector-input"
           data-hidden-characters-inspector-input
           rows="10"
           spellcheck="false"

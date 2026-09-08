@@ -12,7 +12,7 @@ const render = (messages: Messages, state: ColorState): string => {
           <div class="color-picker-canvas-stack">
             <div class="color-picker-text-block">
               <h2>${messages.colorPicker.squareLabel}</h2>
-              <p class="color-picker-hint">${messages.colorPicker.squareHint}</p>
+              <p class="tool-hint color-picker-hint">${messages.colorPicker.squareHint}</p>
             </div>
 
             <div class="color-picker-canvas-shell color-picker-square-shell">
@@ -72,36 +72,22 @@ const render = (messages: Messages, state: ColorState): string => {
           <fieldset class="color-picker-fieldset">
             <legend>${messages.colorPicker.rgbGroupLabel}</legend>
             <div class="color-picker-grid">
-              <label class="tool-field">
-                <span>${messages.colorPicker.redLabel}</span>
-                <input data-color-picker-r type="number" min="0" max="255" step="1" value="${state.rgb.r}" />
-              </label>
-              <label class="tool-field">
-                <span>${messages.colorPicker.greenLabel}</span>
-                <input data-color-picker-g type="number" min="0" max="255" step="1" value="${state.rgb.g}" />
-              </label>
-              <label class="tool-field">
-                <span>${messages.colorPicker.blueLabel}</span>
-                <input data-color-picker-b type="number" min="0" max="255" step="1" value="${state.rgb.b}" />
-              </label>
+              ${renderChannelFields([
+                { key: 'r', label: messages.colorPicker.redLabel, max: 255, value: state.rgb.r },
+                { key: 'g', label: messages.colorPicker.greenLabel, max: 255, value: state.rgb.g },
+                { key: 'b', label: messages.colorPicker.blueLabel, max: 255, value: state.rgb.b },
+              ])}
             </div>
           </fieldset>
 
           <fieldset class="color-picker-fieldset">
             <legend>${messages.colorPicker.hslGroupLabel}</legend>
             <div class="color-picker-grid">
-              <label class="tool-field">
-                <span>${messages.colorPicker.hueLabel}</span>
-                <input data-color-picker-h type="number" min="0" max="360" step="1" value="${state.hsl.h}" />
-              </label>
-              <label class="tool-field">
-                <span>${messages.colorPicker.saturationLabel}</span>
-                <input data-color-picker-s type="number" min="0" max="100" step="1" value="${state.hsl.s}" />
-              </label>
-              <label class="tool-field">
-                <span>${messages.colorPicker.lightnessLabel}</span>
-                <input data-color-picker-l type="number" min="0" max="100" step="1" value="${state.hsl.l}" />
-              </label>
+              ${renderChannelFields([
+                { key: 'h', label: messages.colorPicker.hueLabel, max: 360, value: state.hsl.h },
+                { key: 's', label: messages.colorPicker.saturationLabel, max: 100, value: state.hsl.s },
+                { key: 'l', label: messages.colorPicker.lightnessLabel, max: 100, value: state.hsl.l },
+              ])}
             </div>
           </fieldset>
         </div>
@@ -109,6 +95,19 @@ const render = (messages: Messages, state: ColorState): string => {
     </section>
   `
 }
+
+type ChannelField = { key: string; label: string; max: number; value: number }
+
+const renderChannelFields = (fields: readonly ChannelField[]): string =>
+  fields
+    .map(
+      ({ key, label, max, value }) => `
+              <label class="tool-field">
+                <span>${label}</span>
+                <input data-color-picker-${key} type="number" min="0" max="${max}" step="1" value="${value}" />
+              </label>`,
+    )
+    .join('')
 
 export const renderColorPicker = (messages: Messages): string => render(messages, {
   rgb: DEFAULT_COLOR,

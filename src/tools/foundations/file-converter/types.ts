@@ -16,22 +16,7 @@ export type ConverterOutputFormat = {
   label: string
 }
 
-export type ConverterMessages = {
-  uploadLabel: string
-  uploadHintLabel: string
-  browseAction: string
-  noFileSelected: string
-  selectedFilesLabel: string
-  outputLabel: string
-  converting: string
-  statusNoFile: string
-  statusUnsupported: string
-  statusFailed: string
-  downloadAllAction: string
-  removePreviewItemAction: string
-  previewTitle: string
-  previewUnavailable: string
-}
+export type ConverterMessages = Messages['fileConverter']
 
 export type FileConverterConfig = {
   id: string

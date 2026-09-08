@@ -1,10 +1,8 @@
 import { setCanvasSize } from '../../foundations/canvas.ts'
+import { clamp } from '../../foundations/numbers.ts'
 import type { ColorPickerElements, HSLColor, RGBColor } from './types.ts'
 
 export const DEFAULT_COLOR: RGBColor = { r: 31, g: 111, b: 235 }
-
-export const clamp = (value: number, min: number, max: number): number =>
-  Math.min(max, Math.max(min, value))
 
 export const round = (value: number): number => Math.round(value)
 
@@ -104,12 +102,6 @@ export const getReadableTextColor = (rgb: RGBColor): string => {
 
   return luminance > 0.54 ? '#111827' : '#FFFFFF'
 }
-
-export const formatMessage = (template: string, replacements: Record<string, string>): string =>
-  Object.entries(replacements).reduce(
-    (message, [key, value]) => message.replaceAll(`{${key}}`, value),
-    template,
-  )
 
 const parseNumberInput = (value: string): number | null => {
   if (value.trim() === '') {

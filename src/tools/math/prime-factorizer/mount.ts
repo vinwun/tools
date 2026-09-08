@@ -11,8 +11,9 @@ import {
   parseExpandedInput,
   parseExponentInput,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const primeFactorizerLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const primeFactorizerLocale = createLocaleSyncRegistry<[Messages]>('[data-prime-factorizer-root]')
 
 const queryPrimeFactorizerElements = (container: HTMLElement): PrimeFactorizerElements | null => {
   const decimalInput = container.querySelector<HTMLInputElement>('[data-prime-factorizer-decimal]')
@@ -93,9 +94,7 @@ export const mountPrimeFactorizer = (container: HTMLElement, initialMessages: Me
     return
   }
 
-  const existingSyncLocale = primeFactorizerLocaleSyncers.get(root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (primeFactorizerLocale.resync(root, initialMessages)) {
     return
   }
 
@@ -117,7 +116,7 @@ export const mountPrimeFactorizer = (container: HTMLElement, initialMessages: Me
     syncUi()
   }
 
-  primeFactorizerLocaleSyncers.set(root, syncLocale)
+  primeFactorizerLocale.register(root, syncLocale)
 
   const handleDecimalInput = (): void => {
     state.decimalValue = elements.decimalInput.value
@@ -198,7 +197,4 @@ export const mountPrimeFactorizer = (container: HTMLElement, initialMessages: Me
   syncUi()
 }
 
-export const updatePrimeFactorizerLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-prime-factorizer-root]') ?? container
-  primeFactorizerLocaleSyncers.get(root)?.(messages)
-}
+export const updatePrimeFactorizerLocale = primeFactorizerLocale.update

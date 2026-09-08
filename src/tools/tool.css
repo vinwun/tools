@@ -23,6 +23,18 @@
   gap: 1rem;
 }
 
+/* Main work area beside a narrower control sidebar. */
+.tool-layout-split {
+  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+  align-items: start;
+}
+
+/* Equal panels that reflow to one column when they no longer fit. */
+.tool-layout-auto {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
 .tool-panel {
   display: grid;
   gap: 0.75rem;
@@ -31,7 +43,7 @@
   border-radius: 0.85rem;
   padding: 1rem;
   background: var(--panel);
-  box-shadow: 0 10px 20px -18px rgba(17, 24, 39, 0.5);
+  box-shadow: var(--shadow-panel);
 }
 
 .tool-panel h2 {
@@ -59,8 +71,77 @@
 }
 
 .tool-action:disabled {
-  cursor: progress;
+  cursor: not-allowed;
   opacity: 0.7;
+}
+
+/* Multi-line text entry. Tools add their own height; the mono ones override `font`. */
+.tool-textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.5;
+  padding: 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+/* Large value readout: the generated number or string, the elapsed or remaining time. */
+.tool-readout {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--readout-bg);
+  color: var(--readout-text);
+  text-align: center;
+}
+
+/* Download affordance: a roomier, centred action. Works on a <button> or on an <a> that carries
+   the blob href, hence the text-decoration reset. */
+.tool-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.8rem;
+  text-decoration: none;
+}
+
+/* Panel title on the left, its controls pushed to the right. */
+.tool-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tool-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tool-media-preview {
+  display: block;
+  width: 100%;
+  max-height: 24rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--media-bg);
+}
+
+/* Clickable, selectable list item shared by the PDF tools. */
+.tool-card:hover,
+.tool-card:focus-visible {
+  border-color: var(--accent-muted);
+  box-shadow: 0 10px 20px -18px rgba(17, 24, 39, 0.4);
+  outline: none;
+}
+
+.tool-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 15%, transparent),
+    0 12px 22px -18px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 .tool-status,

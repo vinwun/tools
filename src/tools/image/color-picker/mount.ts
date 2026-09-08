@@ -5,7 +5,6 @@ import {
   DEFAULT_COLOR,
   drawHueCanvas,
   drawSpectrumCanvas,
-  formatMessage,
   getNormalizedPoint,
   getReadableTextColor,
   hexToRgb,
@@ -17,8 +16,10 @@ import {
   rgbToHsl,
   round,
 } from './utils.ts'
+import { formatMessage } from '../../foundations/dom.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const colorPickerLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const colorPickerLocale = createLocaleSyncRegistry<[Messages]>('[data-color-picker-root]')
 
 const queryColorPickerElements = (container: HTMLElement): ColorPickerElements | null => {
   const spectrumCanvas = container.querySelector<HTMLCanvasElement>('[data-color-picker-spectrum]')
@@ -151,7 +152,7 @@ export const mountColorPicker = (container: HTMLElement, initialMessages: Messag
     syncAll()
   }
 
-  colorPickerLocaleSyncers.set(root, syncLocale)
+  colorPickerLocale.register(root, syncLocale)
 
   const setPopupMessage = (message: string): void => {
     if (copyPopupTimer !== undefined) {
@@ -339,7 +340,4 @@ export const mountColorPicker = (container: HTMLElement, initialMessages: Messag
   window.requestAnimationFrame(refresh)
 }
 
-export const updateColorPickerLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-color-picker-root]') ?? container
-  colorPickerLocaleSyncers.get(root)?.(messages)
-}
+export const updateColorPickerLocale = colorPickerLocale.update

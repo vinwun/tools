@@ -6,29 +6,16 @@
 }
 
 .stopwatch-panel {
-  display: grid;
   gap: 1rem;
-  align-content: start;
 }
 
 .stopwatch-display {
   display: grid;
   place-items: center;
   min-height: 15rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-  color: #111827;
   font-size: clamp(4rem, 8vw, 8rem);
   font-weight: 700;
   letter-spacing: 0.05em;
-  text-align: center;
-}
-
-.stopwatch-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
 .stopwatch-primary,
@@ -43,13 +30,6 @@
   display: grid;
   gap: 0.75rem;
   align-content: start;
-}
-
-.stopwatch-laps-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
 }
 
 .stopwatch-laps-title {

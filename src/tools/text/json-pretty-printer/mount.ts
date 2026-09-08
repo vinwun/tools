@@ -1,4 +1,7 @@
 import type { Messages } from '../../../i18n/schema.ts'
+import { downloadBlob, formatAcceptList, readFileAsText } from '../../foundations/files.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import type { JsonPrettyPrinterElements, JsonPrettyPrinterState } from './types.ts'
 import {
   createInitialJsonPrettyPrinterState,
@@ -7,15 +10,11 @@ import {
   parseIndentValue,
 } from './utils.ts'
 
-const jsonPrettyPrinterLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const jsonPrettyPrinterLocale = createLocaleSyncRegistry<[Messages]>('[data-json-pretty-printer-root]')
 
 const queryJsonPrettyPrinterElements = (container: HTMLElement): JsonPrettyPrinterElements | null => {
   const form = container.querySelector<HTMLFormElement>('[data-json-pretty-printer-form]')
-  const uploadInput = container.querySelector<HTMLInputElement>('[data-json-pretty-printer-file-input]')
-  const uploadDropZone = container.querySelector<HTMLElement>('[data-json-pretty-printer-dropzone]')
   const uploadLabel = container.querySelector<HTMLElement>('[data-json-pretty-printer-upload-label]')
-  const uploadFileButton = container.querySelector<HTMLButtonElement>('[data-json-pretty-printer-file-button]')
-  const uploadFileName = container.querySelector<HTMLElement>('[data-json-pretty-printer-file-name]')
   const uploadHint = container.querySelector<HTMLElement>('[data-json-pretty-printer-upload-hint]')
   const input = container.querySelector<HTMLTextAreaElement>('[data-json-pretty-printer-input]')
   const indentSelect = container.querySelector<HTMLSelectElement>('[data-json-pretty-printer-indent]')
@@ -32,11 +31,7 @@ const queryJsonPrettyPrinterElements = (container: HTMLElement): JsonPrettyPrint
 
   if (
     !form ||
-    !uploadInput ||
-    !uploadDropZone ||
     !uploadLabel ||
-    !uploadFileButton ||
-    !uploadFileName ||
     !uploadHint ||
     !input ||
     !indentSelect ||
@@ -56,11 +51,7 @@ const queryJsonPrettyPrinterElements = (container: HTMLElement): JsonPrettyPrint
 
   return {
     form,
-    uploadInput,
-    uploadDropZone,
     uploadLabel,
-    uploadFileButton,
-    uploadFileName,
     uploadHint,
     input,
     indentSelect,
@@ -78,18 +69,15 @@ const queryJsonPrettyPrinterElements = (container: HTMLElement): JsonPrettyPrint
 }
 
 const INPUT_ACCEPT = '.json,.txt'
-const INPUT_ACCEPT_LABEL = INPUT_ACCEPT.replaceAll(',', ' / ')
+const INPUT_ACCEPT_LABEL = formatAcceptList(INPUT_ACCEPT)
 
 const syncLocalizedText = (
   elements: JsonPrettyPrinterElements,
   messages: Messages,
-  state: JsonPrettyPrinterState,
 ): void => {
   const jsonMessages = messages.jsonPrettyPrinter
   elements.uploadLabel.textContent = jsonMessages.uploadLabel
   elements.uploadHint.textContent = `${jsonMessages.uploadHint}: ${INPUT_ACCEPT_LABEL}`
-  elements.uploadFileButton.textContent = jsonMessages.uploadAction
-  elements.uploadFileName.textContent = state.selectedFileName ?? jsonMessages.noFileSelected
   elements.inputLabel.textContent = jsonMessages.inputLabel
   elements.input.placeholder = jsonMessages.inputPlaceholder
   elements.indentLabel.textContent = jsonMessages.indentLabel
@@ -272,18 +260,11 @@ const formatJsonInput = (
   }
 }
 
-const readJsonFile = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result ?? ''))
-    reader.onerror = () => reject(reader.error ?? new Error('File read failed'))
-    reader.readAsText(file)
-  })
-
 export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: Messages): void => {
   const root = container.querySelector<HTMLElement>('[data-json-pretty-printer-root]') ?? container
   const elements = queryJsonPrettyPrinterElements(container)
-  if (!elements) {
+  const filePicker = wireFilePicker(root, { onFiles: (files) => void loadFile(files[0]) })
+  if (!elements || !filePicker) {
     return
   }
 
@@ -292,7 +273,7 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
   let validateDelayId: number | null = null
 
   const syncUi = (): void => {
-    syncLocalizedText(elements, messages, state)
+    syncLocalizedText(elements, messages)
     elements.input.value = state.inputValue
     elements.indentSelect.value = String(state.indentSize)
     updateStatus(elements, messages, state)
@@ -310,17 +291,17 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
     syncUi()
   }
 
-  jsonPrettyPrinterLocaleSyncers.set(root, syncLocale)
+  jsonPrettyPrinterLocale.register(root, syncLocale)
 
   const updateFileName = (fileName: string | null): void => {
     state.selectedFileName = fileName
-    elements.uploadFileName.textContent = fileName ?? messages.jsonPrettyPrinter.noFileSelected
+    filePicker.setName(fileName ?? messages.jsonPrettyPrinter.noFileSelected)
   }
 
   const loadFile = async (file: File): Promise<void> => {
     try {
       updateFileName(file.name)
-      state.inputValue = await readJsonFile(file)
+      state.inputValue = await readFileAsText(file)
       elements.input.value = state.inputValue
       formatJsonInput(elements, state, messages)
       updateStatus(elements, messages, state)
@@ -345,42 +326,6 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
     scheduleValidation()
   })
 
-  elements.uploadInput.addEventListener('change', async () => {
-    const file = elements.uploadInput.files?.[0]
-    if (!file) {
-      return
-    }
-
-    await loadFile(file)
-  })
-
-  elements.uploadFileButton.addEventListener('click', () => {
-    elements.uploadInput.click()
-  })
-
-  const handleDrop = async (file: File): Promise<void> => {
-    await loadFile(file)
-  }
-
-  elements.uploadDropZone.addEventListener('dragover', (event) => {
-    event.preventDefault()
-    elements.uploadDropZone.classList.add('is-dragover')
-  })
-
-  elements.uploadDropZone.addEventListener('dragleave', () => {
-    elements.uploadDropZone.classList.remove('is-dragover')
-  })
-
-  elements.uploadDropZone.addEventListener('drop', async (event) => {
-    event.preventDefault()
-    elements.uploadDropZone.classList.remove('is-dragover')
-    const file = event.dataTransfer?.files?.[0]
-    if (!file) {
-      return
-    }
-    await handleDrop(file)
-  })
-
   elements.indentSelect.addEventListener('change', () => {
     state.indentSize = parseIndentValue(elements.indentSelect.value)
     if (state.parsedValue !== null) {
@@ -402,8 +347,8 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
     state.status = 'empty'
     state.selectedFileName = null
     elements.input.value = ''
-    elements.uploadInput.value = ''
-    elements.uploadFileName.textContent = messages.jsonPrettyPrinter.noFileSelected
+    filePicker.input.value = ''
+    filePicker.setName(messages.jsonPrettyPrinter.noFileSelected)
     updateStatus(elements, messages, state)
     resetOutput(elements)
     elements.downloadButton.disabled = true
@@ -415,18 +360,10 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
     }
 
     const blob = new Blob([state.formattedJson], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = 'pretty.json'
-    anchor.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(blob, 'pretty.json')
   })
 
   syncUi()
 }
 
-export const updateJsonPrettyPrinterLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-json-pretty-printer-root]') ?? container
-  jsonPrettyPrinterLocaleSyncers.get(root)?.(messages)
-}
+export const updateJsonPrettyPrinterLocale = jsonPrettyPrinterLocale.update

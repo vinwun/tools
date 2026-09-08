@@ -1,20 +1,10 @@
-.json-pretty-printer-layout {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  align-items: start;
-}
-
 .json-pretty-printer-panel {
   min-width: 0;
 }
 
 .json-pretty-printer-input {
-  width: 100%;
   min-height: 16.5rem;
-  resize: vertical;
-  font: 0.95rem/1.5 Consolas, 'SFMono-Regular', Menlo, Monaco, monospace;
-  padding: 0.65rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border);
+  font: 0.95rem/1.5 var(--font-mono);
 }
 
 .json-pretty-printer-controls,
@@ -24,19 +14,12 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
-.json-pretty-printer-output-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
 .json-pretty-printer-output {
   border: 1px solid var(--border);
   border-radius: 0.65rem;
   background: #f8f8f8;
   padding: 0.75rem;
-  font: 0.92rem/1.55 Consolas, 'SFMono-Regular', Menlo, Monaco, monospace;
+  font: 0.92rem/1.55 var(--font-mono);
   overflow: auto;
   min-height: 30.5rem;
   height: 30.5rem;
@@ -77,7 +60,7 @@
   height: 1.2rem;
   border: 0;
   border-radius: 0.2rem;
-  background: #2563eb;
+  background: var(--accent);
   color: #ffffff;
   font-weight: 700;
   line-height: 1;

@@ -9,11 +9,11 @@ import {
   toCodePointHex,
   type PreviewSegment,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const hiddenCharactersInspectorLocaleSyncers = new WeakMap<
-  HTMLElement,
-  (messages: Messages) => void
->()
+const hiddenCharactersInspectorLocale = createLocaleSyncRegistry<[Messages]>(
+  '[data-hidden-characters-inspector-root]',
+)
 
 const queryHiddenCharactersInspectorElements = (
   container: HTMLElement,
@@ -152,7 +152,7 @@ export const mountHiddenCharactersInspector = (
     renderPreview()
   }
 
-  hiddenCharactersInspectorLocaleSyncers.set(root, syncLocale)
+  hiddenCharactersInspectorLocale.register(root, syncLocale)
 
   elements.input.addEventListener('input', () => {
     state.inputValue = elements.input.value
@@ -176,11 +176,4 @@ export const mountHiddenCharactersInspector = (
   syncLocale(messages)
 }
 
-export const updateHiddenCharactersInspectorLocale = (
-  container: HTMLElement,
-  messages: Messages,
-): void => {
-  const root =
-    container.querySelector<HTMLElement>('[data-hidden-characters-inspector-root]') ?? container
-  hiddenCharactersInspectorLocaleSyncers.get(root)?.(messages)
-}
+export const updateHiddenCharactersInspectorLocale = hiddenCharactersInspectorLocale.update

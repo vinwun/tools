@@ -69,12 +69,7 @@ export const isHiddenCodePoint = (cp: number): boolean => categorizeHiddenCharac
 export const toCodePointHex = (cp: number): string =>
   `U+${cp.toString(16).toUpperCase().padStart(4, '0')}`
 
-export const escapeHtml = (value: string): string =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+export { escapeHtml } from '../../foundations/dom.ts'
 
 export type PreviewSegment =
   | { type: 'text'; value: string }

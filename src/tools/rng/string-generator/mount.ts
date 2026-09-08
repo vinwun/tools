@@ -5,10 +5,10 @@ import {
   formatStringGeneratorStatus,
   parseStringGeneratorEntries,
   pickWeightedEntryIndex,
-  resolveStringGeneratorLocale,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const stringGeneratorLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const stringGeneratorLocale = createLocaleSyncRegistry<[Messages]>('[data-rng-string-generator-root]')
 
 const queryStringGeneratorElements = (container: HTMLElement): StringGeneratorElements | null => {
   const form = container.querySelector<HTMLFormElement>('[data-rng-string-generator-form]')
@@ -70,7 +70,7 @@ const syncLocalizedText = (elements: StringGeneratorElements, messages: Messages
 }
 
 const syncStatus = (elements: StringGeneratorElements, messages: Messages, state: StringGeneratorState): void => {
-  const entries = parseStringGeneratorEntries(state.entriesText, resolveStringGeneratorLocale())
+  const entries = parseStringGeneratorEntries(state.entriesText)
   elements.statusMessage.textContent = formatStringGeneratorStatus(
     messages,
     entries.length,
@@ -80,8 +80,7 @@ const syncStatus = (elements: StringGeneratorElements, messages: Messages, state
 }
 
 const generateString = (elements: StringGeneratorElements, state: StringGeneratorState, messages: Messages): void => {
-  const locale = resolveStringGeneratorLocale()
-  const entries = parseStringGeneratorEntries(state.entriesText, locale)
+  const entries = parseStringGeneratorEntries(state.entriesText)
 
   if (entries.length === 0) {
     state.resultText = '—'
@@ -126,9 +125,7 @@ export const mountStringGenerator = (container: HTMLElement, initialMessages: Me
     return
   }
 
-  const existingSyncLocale = stringGeneratorLocaleSyncers.get(root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (stringGeneratorLocale.resync(root, initialMessages)) {
     return
   }
 
@@ -153,12 +150,12 @@ export const mountStringGenerator = (container: HTMLElement, initialMessages: Me
     syncUi()
   }
 
-  stringGeneratorLocaleSyncers.set(root, syncLocale)
+  stringGeneratorLocale.register(root, syncLocale)
 
   elements.entriesTextarea.addEventListener('input', () => {
     state.entriesText = elements.entriesTextarea.value
     if (state.uniqueMode) {
-      const entries = parseStringGeneratorEntries(state.entriesText, resolveStringGeneratorLocale())
+      const entries = parseStringGeneratorEntries(state.entriesText)
       state.availableEntryIndices = createUniqueEntryPool(entries)
     }
     syncStatus(elements, messages, state)
@@ -166,7 +163,7 @@ export const mountStringGenerator = (container: HTMLElement, initialMessages: Me
 
   elements.uniqueModeInput.addEventListener('change', () => {
     state.uniqueMode = elements.uniqueModeInput.checked
-    const entries = parseStringGeneratorEntries(state.entriesText, resolveStringGeneratorLocale())
+    const entries = parseStringGeneratorEntries(state.entriesText)
     state.availableEntryIndices = state.uniqueMode ? createUniqueEntryPool(entries) : []
     syncStatus(elements, messages, state)
   })
@@ -177,19 +174,16 @@ export const mountStringGenerator = (container: HTMLElement, initialMessages: Me
   })
 
   elements.resetButton.addEventListener('click', () => {
-    const entries = parseStringGeneratorEntries(state.entriesText, resolveStringGeneratorLocale())
+    const entries = parseStringGeneratorEntries(state.entriesText)
     state.availableEntryIndices = createUniqueEntryPool(entries)
     syncStatus(elements, messages, state)
   })
 
   syncUi()
 
-  const entries = parseStringGeneratorEntries(state.entriesText, resolveStringGeneratorLocale())
+  const entries = parseStringGeneratorEntries(state.entriesText)
   state.availableEntryIndices = state.uniqueMode ? createUniqueEntryPool(entries) : []
   syncStatus(elements, messages, state)
 }
 
-export const updateStringGeneratorLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-rng-string-generator-root]') ?? container
-  stringGeneratorLocaleSyncers.get(root)?.(messages)
-}
+export const updateStringGeneratorLocale = stringGeneratorLocale.update

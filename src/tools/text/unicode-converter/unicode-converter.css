@@ -37,7 +37,7 @@
 }
 
 .unicode-converter-grid .tool-field input {
-  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+  font-family: var(--font-mono);
   letter-spacing: 0.02em;
 }
 

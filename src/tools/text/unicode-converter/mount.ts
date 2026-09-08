@@ -17,8 +17,9 @@ import {
   parseUtf8,
   parseUtf16,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const unicodeConverterLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const unicodeConverterLocale = createLocaleSyncRegistry<[Messages]>('[data-unicode-converter-root]')
 
 const queryUnicodeConverterElements = (container: HTMLElement): UnicodeConverterElements | null => {
   const characterInput = container.querySelector<HTMLInputElement>('[data-unicode-converter-character]')
@@ -122,7 +123,7 @@ export const mountUnicodeConverter = (container: HTMLElement, initialMessages: M
     syncAll()
   }
 
-  unicodeConverterLocaleSyncers.set(root, syncLocale)
+  unicodeConverterLocale.register(root, syncLocale)
 
   elements.characterInput.addEventListener('input', () => {
     resetOnInvalid(parseCharacter(elements.characterInput.value))
@@ -159,7 +160,4 @@ export const mountUnicodeConverter = (container: HTMLElement, initialMessages: M
   syncAll()
 }
 
-export const updateUnicodeConverterLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-unicode-converter-root]') ?? container
-  unicodeConverterLocaleSyncers.get(root)?.(messages)
-}
+export const updateUnicodeConverterLocale = unicodeConverterLocale.update

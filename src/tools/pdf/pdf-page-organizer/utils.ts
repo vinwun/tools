@@ -1,4 +1,3 @@
-export const ACCEPTED_PDF_TYPES = '.pdf'
 export const PDF_THUMBNAIL_SCALE = 0.5
 
 export type PdfThumbnailState = 'loading' | 'ready' | 'failed'
@@ -14,19 +13,6 @@ export type PdfPageEntry = {
   thumbnailError: string | null
 }
 
-export const createUniqueId = (): string => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-
-  return `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-}
-
-export const formatMessage = (template: string, values: Record<string, string | number> = {}): string =>
-  template.replace(/\{(\w+)}/g, (_, key: string) => {
-    const value = values[key]
-    return value === undefined ? `{${key}}` : String(value)
-  })
 
 export const buildSelectionRange = (anchorIndex: number, currentIndex: number): number[] => {
   const start = Math.min(anchorIndex, currentIndex)

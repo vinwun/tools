@@ -1,58 +1,10 @@
-.video-cutter-layout {
-  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
-  align-items: start;
-}
-
 .video-cutter-panel {
   gap: 0.9rem;
-}
-
-.video-cutter-panel h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.video-cutter-file-picker {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  border: 1px dashed var(--border);
-  border-radius: 0.7rem;
-  padding: 0.7rem 0.8rem;
-  background: color-mix(in srgb, var(--panel) 92%, var(--bg));
-  cursor: pointer;
-}
-
-.video-cutter-file-picker:hover,
-.video-cutter-file-picker:focus-within {
-  border-color: color-mix(in srgb, var(--text) 30%, var(--border));
-}
-
-.video-cutter-file-button {
-  flex: 0 0 auto;
-}
-
-.video-cutter-file-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted);
-  font-weight: 600;
 }
 
 .video-cutter-preview-block {
   display: grid;
   gap: 0.65rem;
-}
-
-.video-cutter-preview {
-  display: block;
-  width: 100%;
-  max-height: 24rem;
-  border: 1px solid var(--border);
-  border-radius: 0.85rem;
-  background: #0f172a;
 }
 
 .video-cutter-range {
@@ -105,17 +57,12 @@
 
 .video-cutter-step-btn:disabled {
   background: var(--panel);
-  cursor: not-allowed;
   opacity: 0.4;
   pointer-events: none;
 }
 
 .video-cutter-download {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  min-height: 2.8rem;
 }
 
 .video-cutter-play-row {
@@ -130,7 +77,6 @@
 }
 
 .video-cutter-play-selection:disabled {
-  cursor: not-allowed;
   opacity: 0.55;
 }
 
@@ -153,7 +99,6 @@
 }
 
 .video-cutter-play-ending:disabled {
-  cursor: not-allowed;
   opacity: 0.55;
 }
 
@@ -175,7 +120,6 @@
 }
 
 .video-cutter-download:disabled {
-  cursor: not-allowed;
   opacity: 0.55;
 }
 

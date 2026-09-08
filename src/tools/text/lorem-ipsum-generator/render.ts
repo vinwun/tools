@@ -46,7 +46,7 @@ export const renderLoremIpsumGenerator = (
           </label>
         </fieldset>
 
-        <div class="lorem-ipsum-generator-actions">
+        <div class="tool-actions lorem-ipsum-generator-actions">
           <button type="submit" class="tool-action" data-lorem-ipsum-generator-generate>${loremMessages.generateAction}</button>
         </div>
       </form>
@@ -54,14 +54,14 @@ export const renderLoremIpsumGenerator = (
       <section class="tool-panel lorem-ipsum-generator-panel" aria-live="polite">
         <div class="lorem-ipsum-generator-output-header">
           <h2 data-lorem-ipsum-generator-output-label>${loremMessages.outputLabel}</h2>
-          <div class="lorem-ipsum-generator-output-actions">
+          <div class="tool-actions lorem-ipsum-generator-output-actions">
             <button type="button" class="tool-action" data-lorem-ipsum-generator-copy>${loremMessages.copyAction}</button>
             <button type="button" class="tool-action" data-lorem-ipsum-generator-clear>${loremMessages.clearAction}</button>
           </div>
         </div>
         <p class="tool-status" data-lorem-ipsum-generator-status></p>
         <textarea
-          class="lorem-ipsum-generator-output"
+          class="tool-textarea lorem-ipsum-generator-output"
           data-lorem-ipsum-generator-output
           rows="14"
           readonly

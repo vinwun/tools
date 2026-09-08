@@ -18,9 +18,6 @@
 
 .pdf-page-organizer-panel-header,
 .pdf-page-organizer-workspace-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
   align-items: start;
 }
 
@@ -34,15 +31,11 @@
   min-height: 2.65rem;
 }
 
-.pdf-page-organizer-upload-actions,
 .pdf-page-organizer-action-bar {
   display: flex;
-  gap: 0.65rem;
   align-items: center;
-}
-
-.pdf-page-organizer-action-bar {
   justify-content: space-between;
+  gap: 0.65rem;
   width: 100%;
   flex-wrap: nowrap;
 }
@@ -68,7 +61,7 @@
 
 .pdf-page-organizer-dropzone.is-dragover,
 .pdf-page-organizer-drop-end.is-dragover {
-  border-color: #2563eb;
+  border-color: var(--accent);
   background: rgba(37, 99, 235, 0.08);
   color: var(--text);
 }
@@ -121,18 +114,6 @@
   background: #fff;
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.pdf-page-organizer-page-card:hover,
-.pdf-page-organizer-page-card:focus-visible {
-  border-color: #94a3b8;
-  box-shadow: 0 10px 20px -18px rgba(17, 24, 39, 0.4);
-  outline: none;
-}
-
-.pdf-page-organizer-page-card.is-selected {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15), 0 12px 22px -18px rgba(37, 99, 235, 0.5);
 }
 
 .pdf-page-organizer-page-card.is-drop-target {

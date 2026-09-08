@@ -1,34 +1,21 @@
 import type { Messages } from '../../../i18n/schema.ts'
-import type {ConverterMessages, FileConverterConfig, FileConverterTool} from './types.ts'
+import type {ConverterResult, FileConverterConfig, FileConverterTool} from './types.ts'
 import {mountFileConverter} from "./mount.ts";
 import {renderFileConverter} from "./render.ts";
 import {updateFileConverterLocale} from "./mount.ts";
 
-export const mapFileConverterMessages = (messages: Messages): ConverterMessages => ({
-  uploadLabel: messages.fileConverter.uploadLabel,
-  uploadHintLabel: messages.fileConverter.uploadHintLabel,
-  browseAction: messages.fileConverter.browseAction,
-  noFileSelected: messages.fileConverter.noFileSelected,
-  selectedFilesLabel: messages.fileConverter.selectedFilesLabel,
-  outputLabel: messages.fileConverter.outputLabel,
-  converting: messages.fileConverter.converting,
-  statusNoFile: messages.fileConverter.statusNoFile,
-  statusUnsupported: messages.fileConverter.statusUnsupported,
-  statusFailed: messages.fileConverter.statusFailed,
-  downloadAllAction: messages.fileConverter.downloadAllAction,
-  removePreviewItemAction: messages.fileConverter.removePreviewItemAction,
-  previewTitle: messages.fileConverter.previewTitle,
-  previewUnavailable: messages.fileConverter.previewUnavailable,
-})
-
 export const createFileConverterTool = (config: FileConverterConfig): FileConverterTool => ({
-  render: (messages: Messages): string => renderFileConverter(config, mapFileConverterMessages(messages)),
+  render: (messages: Messages): string => renderFileConverter(config, messages.fileConverter),
   mount: (container: HTMLElement, messages: Messages): void => {
-    mountFileConverter(container, config, mapFileConverterMessages(messages))
+    mountFileConverter(container, config, messages.fileConverter)
   },
   updateLocale: (container: HTMLElement, messages: Messages): void => {
-    updateFileConverterLocale(container, mapFileConverterMessages(messages))
+    updateFileConverterLocale(container, messages.fileConverter)
   },
 })
 
-export const stripExtension = (fileName: string): string => fileName.replace(/\.[^/.]+$/, '')
+export const conversionFailed = (error: unknown): ConverterResult => ({
+  ok: false,
+  reason: 'conversionFailed',
+  details: error instanceof Error ? error.message : 'Unknown conversion error',
+})

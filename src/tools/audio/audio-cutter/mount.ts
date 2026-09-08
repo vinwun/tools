@@ -1,12 +1,15 @@
 import { messagesByLocale, type Locale } from '../../../i18n'
 import type { Messages } from '../../../i18n/schema.ts'
 import { setCanvasSize } from '../../foundations/canvas.ts'
-import { stripExtension } from '../../foundations/file-converter/utils'
+import { formatAcceptList, stripExtension } from '../../foundations/files.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
+import { clamp } from '../../foundations/numbers.ts'
+import { createObjectUrlSlot } from '../../foundations/object-url.ts'
 import { ACCEPTED_AUDIO_TYPES, decodeAudioFile, encodeWav, readAudioSampleRate, resampleChannelData } from '../audio-utils.ts'
 import type { AudioCutterElements, AudioCutterHandle, AudioCutterMode, AudioCutterState } from './types.ts'
 import {
   buildCutterChannelData,
-  clamp,
   computePeaks,
   drawWaveform,
   formatTime,
@@ -17,7 +20,7 @@ import {
   renderCutterSelectionLabel,
 } from './utils.ts'
 
-const audioCutterLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const audioCutterLocale = createLocaleSyncRegistry<[Messages]>('[data-audio-cutter-root]')
 
 const isEditableTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable)
@@ -29,11 +32,12 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
     return
   }
 
+  const filePicker = wireFilePicker(root, { onFiles: (files) => void loadFile(files[0]) })
+  if (!filePicker) {
+    return
+  }
+
   const elements: AudioCutterElements = {
-    fileInput: root.querySelector<HTMLInputElement>('[data-audio-cutter-file]') as HTMLInputElement,
-    browseButton: root.querySelector<HTMLButtonElement>('[data-audio-cutter-browse]') as HTMLButtonElement,
-    dropzone: root.querySelector<HTMLElement>('[data-audio-cutter-dropzone]') as HTMLElement,
-    fileName: root.querySelector<HTMLElement>('[data-audio-cutter-file-name]') as HTMLElement,
     status: root.querySelector<HTMLElement>('[data-audio-cutter-status]') as HTMLElement,
     summary: root.querySelector<HTMLElement>('[data-audio-cutter-summary]') as HTMLElement,
     waveformCanvas: root.querySelector<HTMLCanvasElement>('[data-audio-cutter-waveform]') as HTMLCanvasElement,
@@ -49,10 +53,6 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
   }
 
   if (
-    !elements.fileInput ||
-    !elements.browseButton ||
-    !elements.dropzone ||
-    !elements.fileName ||
     !elements.status ||
     !elements.summary ||
     !elements.waveformCanvas ||
@@ -80,8 +80,6 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
     playhead: 0,
     peaks: [],
     sourceUrl: null,
-    previewUrl: null,
-    downloadUrl: null,
   }
 
   const dragState: { handle: AudioCutterHandle | null; pointerId: number | null } = {
@@ -93,25 +91,15 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
   const setDownloadState = (enabled: boolean): void => {
     elements.downloadLink.classList.toggle('is-disabled', !enabled)
     elements.downloadLink.setAttribute('aria-disabled', enabled ? 'false' : 'true')
-  }
-
-  const revokePreviewUrl = (): void => {
-    if (!state.previewUrl) {
-      return
+    // An anchor without href is inert, so the disabled link cannot be clicked through.
+    if (!enabled) {
+      elements.downloadLink.removeAttribute('href')
+      elements.downloadLink.removeAttribute('download')
     }
-
-    URL.revokeObjectURL(state.previewUrl)
-    state.previewUrl = null
   }
 
-  const revokeDownloadUrl = (): void => {
-    if (!state.downloadUrl) {
-      return
-    }
-
-    URL.revokeObjectURL(state.downloadUrl)
-    state.downloadUrl = null
-  }
+  const previewUrl = createObjectUrlSlot()
+  const downloadUrl = createObjectUrlSlot()
 
   const buildSelectionBlob = (mode: AudioCutterMode): Blob | null => {
     const audioBuffer = state.audioBuffer
@@ -174,7 +162,7 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
 
   const syncSelectionPreview = (): void => {
     if (!state.audioBuffer) {
-      revokePreviewUrl()
+      previewUrl.clear()
       elements.preview.removeAttribute('src')
       elements.preview.load()
       return
@@ -187,9 +175,7 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
     }
 
     state.playhead = clampToPlayableSourceTime(state.playhead)
-    revokePreviewUrl()
-    state.previewUrl = URL.createObjectURL(nextBlob)
-    elements.preview.src = state.previewUrl
+    elements.preview.src = previewUrl.set(nextBlob)
     elements.preview.load()
 
     elements.preview.currentTime = sourceTimeToPreviewTime(state.playhead)
@@ -284,24 +270,22 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
     const audioBuffer = state.audioBuffer
 
     if (!audioBuffer) {
-      revokeDownloadUrl()
+      downloadUrl.clear()
       elements.downloadLink.removeAttribute('href')
       elements.downloadLink.removeAttribute('download')
       setDownloadState(false)
       return
     }
 
-    revokeDownloadUrl()
+    downloadUrl.clear()
 
     const downloadBlob = buildSelectionBlob(state.mode)
     if (!downloadBlob) {
       return
     }
 
-    state.downloadUrl = URL.createObjectURL(downloadBlob)
-
     const downloadSuffix = state.mode === 'keep' ? 'trimmed' : 'removed'
-    elements.downloadLink.href = state.downloadUrl
+    elements.downloadLink.href = downloadUrl.set(downloadBlob)
     elements.downloadLink.download = `${stripExtension(state.fileName || 'audio')}_${downloadSuffix}.wav`
     setDownloadState(true)
 
@@ -418,7 +402,7 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
     const timeLabels = root.querySelectorAll<HTMLElement>('.audio-cutter-time-grid .tool-field > span')
 
     if (uploadLabel) uploadLabel.textContent = messages.audioCutter.uploadLabel
-    if (uploadHint) uploadHint.textContent = `${messages.audioCutter.uploadHintLabel}: ${ACCEPTED_AUDIO_TYPES.replaceAll(',', ' / ')}`
+    if (uploadHint) uploadHint.textContent = `${messages.audioCutter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_AUDIO_TYPES)}`
     if (waveformHeading) waveformHeading.textContent = messages.audioCutter.waveformLabel
     if (waveformHint) waveformHint.textContent = messages.audioCutter.waveformHint
     if (modeLegend) modeLegend.textContent = messages.audioCutter.selectionModeLabel
@@ -426,7 +410,6 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
     if (modeLabels[1]) modeLabels[1].textContent = messages.audioCutter.removeModeLabel
     if (timeLabels[0]) timeLabels[0].textContent = messages.audioCutter.startLabel
     if (timeLabels[1]) timeLabels[1].textContent = messages.audioCutter.endLabel
-    elements.browseButton.textContent = messages.audioCutter.browseAction
     elements.waveformCanvas.setAttribute('aria-label', messages.audioCutter.waveformLabel)
     elements.playhead.setAttribute('aria-label', messages.audioCutter.playheadLabel)
     elements.startHandle.setAttribute('aria-label', messages.audioCutter.startLabel)
@@ -447,9 +430,9 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
       return
     }
 
-    elements.fileName.textContent = messages.audioCutter.noFileSelected
-    revokePreviewUrl()
-    revokeDownloadUrl()
+    filePicker.setName(messages.audioCutter.noFileSelected)
+    previewUrl.clear()
+    downloadUrl.clear()
     elements.preview.removeAttribute('src')
     elements.preview.load()
     elements.downloadLink.removeAttribute('href')
@@ -468,7 +451,7 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
     drawCurrentWaveform()
   }
 
-  audioCutterLocaleSyncers.set(root, syncLocale)
+  audioCutterLocale.register(root, syncLocale)
 
   const setControlsEnabled = (enabled: boolean): void => {
     elements.startInput.disabled = !enabled
@@ -480,7 +463,7 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
   }
 
   const loadFile = async (file: File): Promise<void> => {
-    elements.fileName.textContent = file.name
+    filePicker.setName(file.name)
     elements.status.textContent = messages.audioCutter.statusLoading
     setDownloadState(false)
     setControlsEnabled(false)
@@ -525,50 +508,19 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
       state.playhead = 0
       state.start = 0
       state.end = 0
-      revokePreviewUrl()
-      revokeDownloadUrl()
+      previewUrl.clear()
+      downloadUrl.clear()
       elements.preview.removeAttribute('src')
       elements.preview.load()
       elements.downloadLink.removeAttribute('href')
       elements.downloadLink.removeAttribute('download')
-      elements.fileName.textContent = messages.audioCutter.noFileSelected
+      filePicker.setName(messages.audioCutter.noFileSelected)
       elements.summary.textContent = messages.audioCutter.statusError
       elements.status.textContent = messages.audioCutter.statusError
       drawCurrentWaveform()
       setControlsEnabled(false)
     }
   }
-
-  const handleSelectedFiles = (files: FileList | null): void => {
-    const selectedFile = files?.[0]
-    if (!selectedFile) {
-      return
-    }
-
-    void loadFile(selectedFile)
-  }
-
-  elements.browseButton.addEventListener('click', (event) => {
-    event.stopPropagation()
-    elements.fileInput.click()
-  })
-
-  elements.fileInput.addEventListener('change', () => {
-    handleSelectedFiles(elements.fileInput.files)
-  })
-
-  elements.dropzone.addEventListener('dragover', (event) => {
-    event.preventDefault()
-  })
-
-  elements.dropzone.addEventListener('drop', (event) => {
-    event.preventDefault()
-    handleSelectedFiles(event.dataTransfer?.files ?? null)
-  })
-
-  elements.dropzone.addEventListener('click', () => {
-    elements.fileInput.click()
-  })
 
   elements.startInput.addEventListener('input', () => {
     markTimeFieldValidity(elements.startInput)
@@ -731,7 +683,7 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
   })
 
   syncTimeFields()
-  elements.fileName.textContent = messages.audioCutter.noFileSelected
+  filePicker.setName(messages.audioCutter.noFileSelected)
   elements.status.textContent = messages.audioCutter.statusNoFile
   elements.summary.textContent = messages.audioCutter.statusNoFile
   elements.preview.removeAttribute('src')
@@ -742,11 +694,4 @@ export const mountAudioCutter = (container: HTMLElement, locale: Locale): void =
   drawCurrentWaveform()
 }
 
-export const updateAudioCutterLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-audio-cutter-root]')
-  if (!root) {
-    return
-  }
-
-  audioCutterLocaleSyncers.get(root)?.(messages)
-}
+export const updateAudioCutterLocale = audioCutterLocale.update

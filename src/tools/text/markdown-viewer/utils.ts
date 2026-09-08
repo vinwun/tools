@@ -1,4 +1,5 @@
 import type { MarkdownViewerState } from './types.ts'
+import { escapeHtml } from '../../foundations/dom.ts'
 
 type MarkdownListItem = {
   text: string
@@ -32,12 +33,6 @@ export const createInitialMarkdownViewerState = (): MarkdownViewerState => ({
   status: 'empty',
   selectedFileName: null,
 })
-
-const escapeHtml = (value: string): string =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
 
 const escapeAttribute = (value: string): string =>
   value

@@ -1,5 +1,6 @@
 import type { Messages } from '../../../i18n/schema.ts'
-import { ACCEPTED_PDF_TYPES } from './utils.ts'
+import { formatAcceptList } from '../../foundations/files.ts'
+import { ACCEPTED_PDF_TYPES } from '../pdf-utils.ts'
 
 export const renderPdfPageOrganizer = (messages: Messages): string => {
   const pdfMessages = messages.pdfPageOrganizer
@@ -12,15 +13,15 @@ export const renderPdfPageOrganizer = (messages: Messages): string => {
             <h2>${pdfMessages.uploadLabel}</h2>
             <p class="tool-hint">${pdfMessages.dropHint}</p>
           </div>
-          <div class="pdf-page-organizer-upload-actions">
-            <button type="button" class="tool-action pdf-page-organizer-browse" data-pdf-page-organizer-browse>${pdfMessages.browseAction}</button>
+          <div class="tool-actions">
+            <button type="button" class="tool-action pdf-page-organizer-browse" data-tool-file-picker-browse>${pdfMessages.browseAction}</button>
             <button type="button" class="tool-action pdf-page-organizer-clear" data-pdf-page-organizer-clear disabled>${pdfMessages.clearAction}</button>
           </div>
         </div>
 
-        <input class="pdf-page-organizer-file-input" type="file" accept="${ACCEPTED_PDF_TYPES}" data-pdf-page-organizer-file multiple hidden />
-        <div class="pdf-page-organizer-dropzone" data-pdf-page-organizer-dropzone>
-          <span data-pdf-page-organizer-upload-hint>${pdfMessages.uploadHintLabel}: ${ACCEPTED_PDF_TYPES.replaceAll(',', ' / ')}</span>
+        <input class="pdf-page-organizer-file-input" type="file" accept="${ACCEPTED_PDF_TYPES}" data-tool-file-picker-input multiple hidden />
+        <div class="pdf-page-organizer-dropzone" data-tool-file-picker>
+          <span data-pdf-page-organizer-upload-hint>${pdfMessages.uploadHintLabel}: ${formatAcceptList(ACCEPTED_PDF_TYPES)}</span>
         </div>
       </div>
 
@@ -50,7 +51,7 @@ export const renderPdfPageOrganizer = (messages: Messages): string => {
             <button type="button" class="tool-action pdf-page-organizer-remove" data-pdf-page-organizer-remove disabled>${pdfMessages.removeSelectedAction}</button>
           </div>
           <div class="pdf-page-organizer-action-group pdf-page-organizer-action-group-right">
-            <button type="button" class="tool-action pdf-page-organizer-download" data-pdf-page-organizer-download disabled>${pdfMessages.downloadAction}</button>
+            <button type="button" class="tool-action" data-pdf-page-organizer-download disabled>${pdfMessages.downloadAction}</button>
           </div>
         </div>
       </div>

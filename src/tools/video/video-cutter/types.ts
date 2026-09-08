@@ -5,7 +5,6 @@ export type VideoCutterState = {
   fileName: string
   source: Uint8Array | null
   analysis: Mp4Analysis | null
-  previewUrl: string | null
   duration: number
   isFragmented: boolean
   isProcessing: boolean
@@ -15,10 +14,6 @@ export type VideoCutterState = {
 }
 
 export type VideoCutterElements = {
-  fileInput: HTMLInputElement
-  browseButton: HTMLButtonElement
-  dropzone: HTMLElement
-  fileName: HTMLElement
   status: HTMLElement
   preview: HTMLVideoElement
   startInput: HTMLInputElement

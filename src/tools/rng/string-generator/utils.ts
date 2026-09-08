@@ -1,4 +1,5 @@
 import type { Messages } from '../../../i18n/schema.ts'
+import { parseDecimalNumber } from '../../foundations/numbers.ts'
 import type { StringGeneratorEntry, StringGeneratorState } from './types.ts'
 
 const DEFAULT_STRING_ENTRIES = ['Alpha', 'Beta', 'Gamma'] as const
@@ -8,25 +9,9 @@ const DEFAULT_RESULT_TEXT = '—'
 const hasCryptoRandomValues = (): boolean =>
   typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
 
-const resolveDecimalSeparator = (locale: string): string => {
-  const parts = new Intl.NumberFormat(locale).formatToParts(1.1)
-  return parts.find((part) => part.type === 'decimal')?.value ?? '.'
-}
-
-const normalizeNumericInput = (value: string, locale: string): string => {
-  const decimalSeparator = resolveDecimalSeparator(locale)
-  const trimmedValue = value.trim()
-
-  if (decimalSeparator === ',') {
-    return trimmedValue.replace(/,/g, '.')
-  }
-
-  return trimmedValue.replace(/,/g, '.')
-}
-
-const parseWeight = (value: string, locale: string): number | null => {
-  const parsedValue = Number(normalizeNumericInput(value, locale))
-  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null
+const parseWeight = (value: string): number | null => {
+  const parsedValue = parseDecimalNumber(value)
+  return parsedValue !== null && parsedValue > 0 ? parsedValue : null
 }
 
 const randomUnitValue = (): number => {
@@ -46,12 +31,7 @@ export const createInitialStringGeneratorState = (): StringGeneratorState => ({
   resultText: DEFAULT_RESULT_TEXT,
 })
 
-export const resolveStringGeneratorLocale = (): string => document.documentElement.lang || 'en'
-
-export const parseStringGeneratorEntries = (
-  value: string,
-  locale: string = resolveStringGeneratorLocale(),
-): StringGeneratorEntry[] =>
+export const parseStringGeneratorEntries = (value: string): StringGeneratorEntry[] =>
   value
     .split(/\r?\n/)
     .map((line) => {
@@ -70,7 +50,7 @@ export const parseStringGeneratorEntries = (
         return null
       }
 
-      const parsedWeight = parseWeight(trimmedLine.slice(separatorIndex + 1), locale)
+      const parsedWeight = parseWeight(trimmedLine.slice(separatorIndex + 1))
       return {
         value: entryValue,
         weight: parsedWeight ?? 1,
@@ -127,20 +107,4 @@ export const formatStringGeneratorStatus = (
   return stringMessages.readyMessage.replace('{count}', String(entriesCount))
 }
 
-export const escapeHtml = (value: string): string =>
-  value.replace(/[&<>"']/g, (character) => {
-    switch (character) {
-      case '&':
-        return '&amp;'
-      case '<':
-        return '&lt;'
-      case '>':
-        return '&gt;'
-      case '"':
-        return '&quot;'
-      case "'":
-        return '&#39;'
-      default:
-        return character
-    }
-  })
+export { escapeHtml } from '../../foundations/dom.ts'

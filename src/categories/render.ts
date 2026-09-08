@@ -1,7 +1,6 @@
 import type { CategoryId } from '../dashboard/category-data.ts'
-import { LOCALE_SELECT_ID } from '../dashboard/render'
 import { messagesByLocale, type Locale } from '../i18n'
-import { renderLanguageOptions } from '../i18n/render.ts'
+import { renderPageHeader } from '../navigation/render.ts'
 import { buildDashboardPath, buildToolPath } from '../navigation/router.ts'
 import { getToolsForCategory } from '../tools/catalog'
 
@@ -37,9 +36,7 @@ export const renderCategoryPage = (locale: Locale, categoryId: CategoryId) => {
 
   return `
     <main class="page-shell category-page">
-      <header class="page-header">
-        <div class="page-header-top">
-          <div>
+      ${renderPageHeader(locale, `
             <nav class="breadcrumbs" aria-label="${messages.navigation.breadcrumbAriaLabel}">
               <a href="${dashboardPath}" data-dashboard-link>${messages.navigation.toolsSegment}</a>
               <span>/</span>
@@ -47,16 +44,7 @@ export const renderCategoryPage = (locale: Locale, categoryId: CategoryId) => {
               <span>/</span>
             </nav>
             <h1>${category.name}</h1>
-            <p>${category.description}</p>
-          </div>
-          <label class="locale-switcher" for="${LOCALE_SELECT_ID}">
-            <span>${messages.dashboard.languageLabel}</span>
-            <select id="${LOCALE_SELECT_ID}" aria-label="${messages.dashboard.languageLabel}">
-              ${renderLanguageOptions(locale)}
-            </select>
-          </label>
-        </div>
-      </header>
+            <p>${category.description}</p>`)}
 
       <button type="button" class="back-button" data-dashboard-link>${messages.navigation.backToDashboard}</button>
 

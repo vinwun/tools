@@ -1,8 +1,9 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { StopwatchElements, StopwatchState } from './types.ts'
 import { createInitialStopwatchState, formatStopwatchTime } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const stopwatchLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const stopwatchLocale = createLocaleSyncRegistry<[Messages]>('[data-stopwatch-root]')
 
 const queryStopwatchElements = (container: HTMLElement): StopwatchElements | null => {
   const display = container.querySelector<HTMLOutputElement>('[data-stopwatch-display]')
@@ -54,9 +55,7 @@ export const mountStopwatch = (container: HTMLElement, initialMessages: Messages
     return
   }
 
-  const existingSyncLocale = stopwatchLocaleSyncers.get(root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (stopwatchLocale.resync(root, initialMessages)) {
     return
   }
 
@@ -193,7 +192,7 @@ export const mountStopwatch = (container: HTMLElement, initialMessages: Messages
     syncLocalizedText()
   }
 
-  stopwatchLocaleSyncers.set(root, syncLocale)
+  stopwatchLocale.register(root, syncLocale)
 
   elements.primaryButton.addEventListener('click', () => {
     if (state.status === 'running') {
@@ -215,7 +214,4 @@ export const mountStopwatch = (container: HTMLElement, initialMessages: Messages
   updateDisplay(state.elapsedMs)
 }
 
-export const updateStopwatchLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-stopwatch-root]') ?? container
-  stopwatchLocaleSyncers.get(root)?.(messages)
-}
+export const updateStopwatchLocale = stopwatchLocale.update

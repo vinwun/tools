@@ -16,13 +16,13 @@ export const renderTextCounter = (messages: Messages, state: TextCounterState): 
   return `
     <section class="tool-layout text-counter-layout" data-text-counter-root>
       <form class="tool-panel text-counter-panel" data-text-counter-form novalidate>
-        <div class="text-counter-head">
+        <div class="tool-panel-header text-counter-head">
           <label class="text-counter-head-label" for="text-counter-input" data-text-counter-input-label>${textMessages.inputLabel}</label>
           <button type="button" class="tool-action text-counter-clear" data-text-counter-clear>${textMessages.clearAction}</button>
         </div>
         <textarea
           id="text-counter-input"
-          class="text-counter-input"
+          class="tool-textarea text-counter-input"
           data-text-counter-input
           rows="12"
           spellcheck="false"

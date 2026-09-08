@@ -12,14 +12,9 @@
   display: grid;
   place-items: center;
   min-height: 5rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-  color: #111827;
   font-size: clamp(5rem, 7.5vw, 10rem);
   font-weight: 800;
   letter-spacing: 0.04em;
-  text-align: center;
 }
 
 .rng-number-generator-fieldset {

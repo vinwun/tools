@@ -1,22 +1,24 @@
 import type { Messages } from '../../../i18n/schema'
+import { formatAcceptList } from '../../foundations/files.ts'
+import { renderFilePicker } from '../../foundations/file-picker/render.ts'
 import { ACCEPTED_VIDEO_TYPES } from '../video-utils.ts'
 
 export const renderVideoCutter = (messages: Messages): string => `
-  <section class="tool-layout video-cutter-layout" data-video-cutter-root>
+  <section class="tool-layout tool-layout-split video-cutter-layout" data-video-cutter-root>
     <div class="tool-panel video-cutter-panel video-cutter-panel-main">
-      <label class="tool-field">
+      <div class="tool-field">
         <span>${messages.videoCutter.uploadLabel}</span>
-        <div class="video-cutter-file-picker" data-video-cutter-dropzone>
-          <button type="button" class="tool-action video-cutter-file-button" data-video-cutter-browse>${messages.videoCutter.browseAction}</button>
-          <span class="video-cutter-file-name" data-video-cutter-file-name>${messages.videoCutter.noFileSelected}</span>
-        </div>
-        <input class="video-cutter-file-input" type="file" accept="${ACCEPTED_VIDEO_TYPES}" data-video-cutter-file hidden />
-      </label>
-      <p class="tool-hint">${messages.videoCutter.uploadHintLabel}: ${ACCEPTED_VIDEO_TYPES.replaceAll(',', ' / ')}</p>
+        ${renderFilePicker({
+          accept: ACCEPTED_VIDEO_TYPES,
+          browseLabel: messages.videoCutter.browseAction,
+          emptyLabel: messages.videoCutter.noFileSelected,
+        })}
+      </div>
+      <p class="tool-hint">${messages.videoCutter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_VIDEO_TYPES)}</p>
 
       <div class="video-cutter-preview-block">
         <h2>${messages.videoCutter.previewLabel}</h2>
-        <video class="video-cutter-preview" data-video-cutter-preview controls preload="metadata"></video>
+        <video class="tool-media-preview" data-video-cutter-preview controls preload="metadata"></video>
       </div>
     </div>
 
@@ -56,7 +58,7 @@ export const renderVideoCutter = (messages: Messages): string => `
 
       <p class="tool-status" data-video-cutter-status>${messages.videoCutter.statusNoFile}</p>
 
-      <button type="button" class="tool-action video-cutter-download" data-video-cutter-download disabled>${messages.videoCutter.downloadAction}</button>
+      <button type="button" class="tool-action tool-download video-cutter-download" data-video-cutter-download disabled>${messages.videoCutter.downloadAction}</button>
     </div>
   </section>
 `

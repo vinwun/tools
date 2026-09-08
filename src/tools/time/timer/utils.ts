@@ -1,3 +1,4 @@
+import { clamp } from '../../foundations/numbers.ts'
 import type { TimerState } from './types.ts'
 
 const MAX_TIMER_HOURS = 99
@@ -12,7 +13,6 @@ export type TimerDisplayTriplet = {
 }
 
 const formatTimerDisplayValue = (value: number): string => String(value).padStart(2, '0')
-const clampInteger = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
 
 export const createInitialTimerState = (): TimerState => ({
   status: 'idle',
@@ -29,16 +29,16 @@ export const splitTimerDuration = (durationMs: number): { hours: number; minutes
   const hours = Math.floor(totalMinutes / 60)
 
   return {
-    hours: clampInteger(hours, 0, MAX_TIMER_HOURS),
-    minutes: clampInteger(minutes, 0, MAX_TIMER_MINUTES),
-    seconds: clampInteger(seconds, 0, MAX_TIMER_SECONDS),
+    hours: clamp(hours, 0, MAX_TIMER_HOURS),
+    minutes: clamp(minutes, 0, MAX_TIMER_MINUTES),
+    seconds: clamp(seconds, 0, MAX_TIMER_SECONDS),
   }
 }
 
 
 export const adjustTimerDuration = (durationMs: number, deltaSeconds: number): number => {
   const totalSeconds = Math.floor(durationMs / 1000)
-  const nextTotalSeconds = clampInteger(totalSeconds + deltaSeconds, 0, MAX_TIMER_TOTAL_SECONDS)
+  const nextTotalSeconds = clamp(totalSeconds + deltaSeconds, 0, MAX_TIMER_TOTAL_SECONDS)
 
   return nextTotalSeconds * 1000
 }

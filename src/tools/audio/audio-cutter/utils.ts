@@ -1,10 +1,9 @@
 import type { Messages } from '../../../i18n/schema'
 import { setCanvasSize } from '../../foundations/canvas.ts'
+import { clamp } from '../../foundations/numbers.ts'
 import type { AudioCutterMode } from './types.ts'
 
 export const MIN_SELECTION_SECONDS = 0.01
-
-export const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
 
 export const formatTime = (seconds: number): string => {
   const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0

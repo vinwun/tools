@@ -5,8 +5,9 @@ import {
   createInitialTimerState,
   renderTimerDisplayMarkup,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const timerLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const timerLocale = createLocaleSyncRegistry<[Messages]>('[data-timer-root]')
 
 const queryTimerElements = (container: HTMLElement): TimerElements | null => {
   const display = container.querySelector<HTMLOutputElement>('[data-timer-display]')
@@ -50,9 +51,7 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     return
   }
 
-  const existingSyncLocale = timerLocaleSyncers.get(root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (timerLocale.resync(root, initialMessages)) {
     return
   }
 
@@ -368,7 +367,7 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     updateButtons()
   }
 
-  timerLocaleSyncers.set(root, syncLocale)
+  timerLocale.register(root, syncLocale)
   elements.display.addEventListener('wheel', handleDisplayWheel, { passive: false })
 
   elements.primaryButton.addEventListener('click', () => {
@@ -418,7 +417,4 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
   updateToggleUI()
 }
 
-export const updateTimerLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-timer-root]') ?? container
-  timerLocaleSyncers.get(root)?.(messages)
-}
+export const updateTimerLocale = timerLocale.update

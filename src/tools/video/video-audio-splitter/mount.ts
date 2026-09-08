@@ -1,13 +1,16 @@
 import { messagesByLocale, type Locale } from '../../../i18n'
 import type { Messages } from '../../../i18n/schema.ts'
-import { stripExtension } from '../../foundations/file-converter/utils'
+import { downloadBlob, formatAcceptList, stripExtension } from '../../foundations/files.ts'
+import { formatMessage } from '../../foundations/dom.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { createObjectUrlSlot } from '../../foundations/object-url.ts'
+import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import { decodeAudioFile, encodeWav, readAudioSampleRate } from '../../audio/audio-utils.ts'
 import { analyzeMp4, getMaxDurationSeconds, stripAudioTracks } from '../mp4-utils.ts'
-import { ACCEPTED_VIDEO_TYPES, downloadBlob, formatVideoSeconds } from '../video-utils.ts'
-import { formatMessage } from '../../image/color-picker/utils.ts'
+import { ACCEPTED_VIDEO_TYPES, formatVideoSeconds } from '../video-utils.ts'
 import type { VideoAudioSplitterElements, VideoAudioSplitterState } from './types.ts'
 
-const videoAudioSplitterLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages, locale: Locale) => void>()
+const videoAudioSplitterLocale = createLocaleSyncRegistry<[Messages, Locale]>('[data-video-audio-splitter-root]')
 
 export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale): void => {
   let messages = messagesByLocale[locale]
@@ -16,11 +19,12 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
     return
   }
 
+  const filePicker = wireFilePicker(root, { onFiles: (files) => void loadFile(files[0]) })
+  if (!filePicker) {
+    return
+  }
+
   const elements: VideoAudioSplitterElements = {
-    fileInput: root.querySelector<HTMLInputElement>('[data-video-audio-splitter-file]') as HTMLInputElement,
-    browseButton: root.querySelector<HTMLButtonElement>('[data-video-audio-splitter-browse]') as HTMLButtonElement,
-    dropzone: root.querySelector<HTMLElement>('[data-video-audio-splitter-dropzone]') as HTMLElement,
-    fileName: root.querySelector<HTMLElement>('[data-video-audio-splitter-file-name]') as HTMLElement,
     status: root.querySelector<HTMLElement>('[data-video-audio-splitter-status]') as HTMLElement,
     preview: root.querySelector<HTMLVideoElement>('[data-video-audio-splitter-preview]') as HTMLVideoElement,
     durationValue: root.querySelector<HTMLElement>('[data-video-audio-splitter-duration]') as HTMLElement,
@@ -31,10 +35,6 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
   }
 
   if (
-    !elements.fileInput ||
-    !elements.browseButton ||
-    !elements.dropzone ||
-    !elements.fileName ||
     !elements.status ||
     !elements.preview ||
     !elements.durationValue ||
@@ -50,7 +50,6 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
     fileName: '',
     file: null,
     source: null,
-    previewUrl: null,
     duration: 0,
     fragmented: false,
     trackCount: 0,
@@ -65,14 +64,7 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
     elements.status.textContent = text
   }
 
-  const revokePreviewUrl = (): void => {
-    if (!state.previewUrl) {
-      return
-    }
-
-    URL.revokeObjectURL(state.previewUrl)
-    state.previewUrl = null
-  }
+  const previewUrl = createObjectUrlSlot()
 
   const hasAudioTrack = (): boolean => state.file !== null && state.audioTrackCount > 0
 
@@ -108,7 +100,7 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
     state.isProcessing = false
     state.errorReason = null
 
-    revokePreviewUrl()
+    previewUrl.clear()
     elements.preview.removeAttribute('src')
     elements.preview.load()
     elements.durationValue.textContent = '—'
@@ -180,13 +172,12 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
     const infoLabels = root.querySelectorAll<HTMLElement>('.video-audio-splitter-info-row dt')
 
     if (uploadLabels[0]) uploadLabels[0].textContent = messages.videoAudioSplitter.uploadLabel
-    if (uploadHint) uploadHint.textContent = `${messages.videoAudioSplitter.uploadHintLabel}: ${ACCEPTED_VIDEO_TYPES.replaceAll(',', ' / ')}`
+    if (uploadHint) uploadHint.textContent = `${messages.videoAudioSplitter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_VIDEO_TYPES)}`
     if (previewHeading) previewHeading.textContent = messages.videoAudioSplitter.previewLabel
     if (infoHeading) infoHeading.textContent = messages.videoAudioSplitter.infoTitle
     if (infoLabels[0]) infoLabels[0].textContent = messages.videoAudioSplitter.durationLabel
     if (infoLabels[1]) infoLabels[1].textContent = messages.videoAudioSplitter.formatLabel
     if (infoLabels[2]) infoLabels[2].textContent = messages.videoAudioSplitter.tracksLabel
-    elements.browseButton.textContent = messages.videoAudioSplitter.browseAction
     elements.audioDownload.textContent = messages.videoAudioSplitter.audioDownloadAction
     elements.silentDownload.textContent = messages.videoAudioSplitter.silentDownloadAction
   }
@@ -197,7 +188,7 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
     syncLocalizedText()
 
     if (!state.file) {
-      elements.fileName.textContent = messages.videoAudioSplitter.noFileSelected
+      filePicker.setName(messages.videoAudioSplitter.noFileSelected)
       setStatus(state.errorReason ? messages.videoAudioSplitter.statusUnsupported : messages.videoAudioSplitter.statusNoFile)
       return
     }
@@ -210,11 +201,11 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
     renderInfo()
   }
 
-  videoAudioSplitterLocaleSyncers.set(root, syncLocale)
+  videoAudioSplitterLocale.register(root, syncLocale)
 
   const loadFile = async (file: File): Promise<void> => {
     resetState()
-    elements.fileName.textContent = file.name
+    filePicker.setName(file.name)
     setStatus(messages.videoAudioSplitter.statusLoading)
 
     try {
@@ -235,9 +226,7 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
       state.videoTrackCount = analysis.tracks.filter((track) => track.handler === 'vide').length
       state.audioTrackCount = analysis.tracks.filter((track) => track.handler === 'soun').length
 
-      revokePreviewUrl()
-      state.previewUrl = URL.createObjectURL(file)
-      elements.preview.src = state.previewUrl
+      elements.preview.src = previewUrl.set(file)
       elements.preview.load()
 
       setProcessing(false)
@@ -249,37 +238,6 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
     }
   }
 
-  const handleSelectedFiles = (files: FileList | null): void => {
-    const selectedFile = files?.[0]
-    if (!selectedFile) {
-      return
-    }
-
-    void loadFile(selectedFile)
-  }
-
-  elements.browseButton.addEventListener('click', (event) => {
-    event.stopPropagation()
-    elements.fileInput.click()
-  })
-
-  elements.fileInput.addEventListener('change', () => {
-    handleSelectedFiles(elements.fileInput.files)
-  })
-
-  elements.dropzone.addEventListener('dragover', (event) => {
-    event.preventDefault()
-  })
-
-  elements.dropzone.addEventListener('drop', (event) => {
-    event.preventDefault()
-    handleSelectedFiles(event.dataTransfer?.files ?? null)
-  })
-
-  elements.dropzone.addEventListener('click', () => {
-    elements.fileInput.click()
-  })
-
   elements.audioDownload.addEventListener('click', () => {
     void handleAudioDownload()
   })
@@ -289,16 +247,9 @@ export const mountVideoAudioSplitter = (container: HTMLElement, locale: Locale):
   })
 
   syncLocalizedText()
-  elements.fileName.textContent = messages.videoAudioSplitter.noFileSelected
+  filePicker.setName(messages.videoAudioSplitter.noFileSelected)
   setStatus(messages.videoAudioSplitter.statusNoFile)
   setProcessing(false)
 }
 
-export const updateVideoAudioSplitterLocale = (container: HTMLElement, messages: Messages, locale: Locale): void => {
-  const root = container.querySelector<HTMLElement>('[data-video-audio-splitter-root]')
-  if (!root) {
-    return
-  }
-
-  videoAudioSplitterLocaleSyncers.get(root)?.(messages, locale)
-}
+export const updateVideoAudioSplitterLocale = videoAudioSplitterLocale.update

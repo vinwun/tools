@@ -2,7 +2,12 @@ import { PDFDocument } from 'pdf-lib'
 import { getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
 import { messagesByLocale, type Locale } from '../../../i18n'
 import { configurePdfWorker } from '../pdf-worker.ts'
-import { ACCEPTED_PDF_TYPES, keepSelectedEntries, moveSelectedEntries, removeSelectedEntries, type PdfPageEntry, PDF_THUMBNAIL_SCALE, buildSelectionRange, countSelectedEntries, createUniqueId, formatMessage } from './utils.ts'
+import { keepSelectedEntries, moveSelectedEntries, removeSelectedEntries, type PdfPageEntry, PDF_THUMBNAIL_SCALE, buildSelectionRange, countSelectedEntries } from './utils.ts'
+import { createUniqueId, escapeHtml, formatMessage } from '../../foundations/dom.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
+import { downloadBlob, formatAcceptList } from '../../foundations/files.ts'
+import { ACCEPTED_PDF_TYPES } from '../pdf-utils.ts'
 
 type PdfDropTarget =
   | { kind: 'none' }
@@ -30,7 +35,7 @@ type PdfShortcutActions = {
 let activePdfShortcutActions: PdfShortcutActions | null = null
 let isPdfShortcutListenerAttached = false
 let isPdfOutsideClickListenerAttached = false
-const pdfLocaleSyncers = new WeakMap<HTMLElement, (locale: Locale) => void>()
+const pdfPageOrganizerLocale = createLocaleSyncRegistry<[Locale]>('[data-pdf-page-organizer-root]')
 
 const isEditableTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
@@ -97,14 +102,6 @@ const ensurePdfOutsideClickListener = (): void => {
   isPdfOutsideClickListenerAttached = true
 }
 
-const escapeHtml = (value: string): string =>
-  value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-
 const isPdfFile = (file: File): boolean => {
   const lowerName = file.name.toLowerCase()
   return file.type === 'application/pdf' || lowerName.endsWith('.pdf')
@@ -135,7 +132,7 @@ const renderPageCard = (entry: PdfPageEntry, index: number, selected: boolean, d
 
   return `
     <div
-      class="pdf-page-organizer-page-card${selected ? ' is-selected' : ''}${dropBeforeClass}"
+      class="tool-card pdf-page-organizer-page-card${selected ? ' is-selected' : ''}${dropBeforeClass}"
       data-pdf-page-index="${index}"
       role="option"
       draggable="true"
@@ -224,7 +221,7 @@ const syncPdfStaticTexts = (root: HTMLElement, locale: Locale): void => {
   const uploadHeading = root.querySelector<HTMLElement>('.pdf-page-organizer-panel-upload .pdf-page-organizer-panel-header h2')
   const uploadHint = root.querySelector<HTMLElement>('.pdf-page-organizer-panel-upload .tool-hint')
   const uploadHintText = root.querySelector<HTMLElement>('[data-pdf-page-organizer-upload-hint]')
-  const browseButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-browse]')
+  const browseButton = root.querySelector<HTMLButtonElement>('[data-tool-file-picker-browse]')
   const clearButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-clear]')
   const workspaceHeading = root.querySelector<HTMLElement>('.pdf-page-organizer-workspace-header h2')
   const guidance = root.querySelector<HTMLElement>('[data-pdf-page-organizer-guidance]')
@@ -236,7 +233,7 @@ const syncPdfStaticTexts = (root: HTMLElement, locale: Locale): void => {
 
   if (uploadHeading) uploadHeading.textContent = messages.pdfPageOrganizer.uploadLabel
   if (uploadHint) uploadHint.textContent = messages.pdfPageOrganizer.dropHint
-  if (uploadHintText) uploadHintText.textContent = `${messages.pdfPageOrganizer.uploadHintLabel}: ${ACCEPTED_PDF_TYPES.replaceAll(',', ' / ')}`
+  if (uploadHintText) uploadHintText.textContent = `${messages.pdfPageOrganizer.uploadHintLabel}: ${formatAcceptList(ACCEPTED_PDF_TYPES)}`
   if (browseButton) browseButton.textContent = messages.pdfPageOrganizer.browseAction
   if (clearButton) clearButton.textContent = messages.pdfPageOrganizer.clearAction
   if (workspaceHeading) workspaceHeading.textContent = messages.pdfPageOrganizer.pageListTitle
@@ -318,10 +315,8 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
 
   let currentLocale = locale
 
-  const fileInput = root.querySelector<HTMLInputElement>('[data-pdf-page-organizer-file]')
-  const browseButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-browse]')
+  const filePicker = wireFilePicker(root, { onFiles: (files) => void appendFiles([...files]) })
   const clearButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-clear]')
-  const dropzone = root.querySelector<HTMLElement>('[data-pdf-page-organizer-dropzone]')
   const pageList = root.querySelector<HTMLElement>('[data-pdf-page-organizer-page-list]')
   const listShell = root.querySelector<HTMLElement>('.pdf-page-organizer-list-shell')
   const endDropTarget = root.querySelector<HTMLElement>('[data-pdf-page-organizer-drop-end]')
@@ -329,7 +324,7 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
   const removeButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-remove]')
   const downloadButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-download]')
 
-  if (!fileInput || !browseButton || !clearButton || !dropzone || !pageList || !listShell || !endDropTarget || !keepButton || !removeButton || !downloadButton) {
+  if (!filePicker || !clearButton || !pageList || !listShell || !endDropTarget || !keepButton || !removeButton || !downloadButton) {
     return
   }
 
@@ -394,7 +389,7 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
     if (clearButton) clearButton.disabled = state.isBusy || !hasEntries
   }
 
-  pdfLocaleSyncers.set(root, syncLocale)
+  pdfPageOrganizerLocale.register(root, syncLocale)
 
   const clearSelection = (): void => {
     state.selectedIndices = new Set()
@@ -403,8 +398,8 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
 
   const setBusy = (busy: boolean): void => {
     state.isBusy = busy
-    browseButton.disabled = busy
-    fileInput.disabled = busy
+    filePicker.browseButton.disabled = busy
+    filePicker.input.disabled = busy
   }
 
   const resetDropTarget = (): void => {
@@ -517,15 +512,7 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
       const pdfBytes = await exportDocument.save()
       const pdfArrayBuffer = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer
       const blob = new Blob([pdfArrayBuffer], { type: 'application/pdf' })
-      const downloadUrl = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = downloadUrl
-      anchor.download = 'pdf-page-organizer-export.pdf'
-      anchor.style.display = 'none'
-      document.body.append(anchor)
-      anchor.click()
-      anchor.remove()
-      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+      downloadBlob(blob, 'pdf-page-organizer-export.pdf')
     } catch (error) {
       console.error(error)
     }
@@ -594,31 +581,6 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
     state.dropTarget = dropTarget
     sync()
   }
-
-  browseButton.addEventListener('click', () => {
-    fileInput.click()
-  })
-
-  fileInput.addEventListener('change', () => {
-    const files = Array.from(fileInput.files ?? [])
-    fileInput.value = ''
-    void appendFiles(files)
-  })
-
-  dropzone.addEventListener('dragover', (event) => {
-    event.preventDefault()
-    dropzone.classList.add('is-dragover')
-  })
-
-  dropzone.addEventListener('dragleave', () => {
-    dropzone.classList.remove('is-dragover')
-  })
-
-  dropzone.addEventListener('drop', (event) => {
-    event.preventDefault()
-    dropzone.classList.remove('is-dragover')
-    void appendFiles(Array.from(event.dataTransfer?.files ?? []))
-  })
 
   clearButton.addEventListener('click', () => {
     stateGeneration += 1
@@ -798,17 +760,6 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
     sync()
   })
 
-  root.addEventListener('dragenter', (event) => {
-    const target = event.target
-    if (!(target instanceof HTMLElement)) {
-      return
-    }
-
-    if (target.closest<HTMLElement>('[data-pdf-page-organizer-dropzone]')) {
-      dropzone.classList.add('is-dragover')
-    }
-  })
-
   activePdfShortcutActions = {
     root,
     clearSelection,
@@ -823,11 +774,4 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
   sync()
 }
 
-export const updatePdfPageOrganizerLocale = (container: HTMLElement, locale: Locale): void => {
-  const root = container.querySelector<HTMLElement>('[data-pdf-page-organizer-root]')
-  if (!root) {
-    return
-  }
-
-  pdfLocaleSyncers.get(root)?.(locale)
-}
+export const updatePdfPageOrganizerLocale = pdfPageOrganizerLocale.update

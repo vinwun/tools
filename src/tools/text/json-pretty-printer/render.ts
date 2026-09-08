@@ -1,4 +1,5 @@
 import type { Messages } from '../../../i18n/schema.ts'
+import { renderFilePicker } from '../../foundations/file-picker/render.ts'
 import type { JsonPrettyPrinterState } from './types.ts'
 
 export const renderJsonPrettyPrinter = (messages: Messages, state: JsonPrettyPrinterState): string => {
@@ -7,24 +8,17 @@ export const renderJsonPrettyPrinter = (messages: Messages, state: JsonPrettyPri
   const inputAcceptLabel = inputAccept.replaceAll(',', ' / ')
 
   return `
-    <section class="tool-layout json-pretty-printer-layout" data-json-pretty-printer-root>
+    <section class="tool-layout tool-layout-auto json-pretty-printer-layout" data-json-pretty-printer-root>
       <form class="tool-panel json-pretty-printer-panel" data-json-pretty-printer-form novalidate>
         <div class="file-converter-input-header">
-          <label class="tool-field" for="json-pretty-printer-upload-input">
+          <div class="tool-field">
             <span data-json-pretty-printer-upload-label>${jsonMessages.uploadLabel}</span>
-            <div class="file-converter-file-picker" data-json-pretty-printer-dropzone>
-              <button type="button" class="file-converter-file-button" data-json-pretty-printer-file-button>${jsonMessages.uploadAction}</button>
-              <span class="file-converter-file-name" data-json-pretty-printer-file-name aria-live="polite">${jsonMessages.noFileSelected}</span>
-            </div>
-            <input
-              id="json-pretty-printer-upload-input"
-              class="file-converter-file-input"
-              type="file"
-              data-json-pretty-printer-file-input
-              accept="${inputAccept},application/json,text/plain"
-              hidden
-            />
-          </label>
+            ${renderFilePicker({
+              accept: `${inputAccept},application/json,text/plain`,
+              browseLabel: jsonMessages.uploadAction,
+              emptyLabel: jsonMessages.noFileSelected,
+            })}
+          </div>
           <p class="tool-hint" data-json-pretty-printer-upload-hint>${jsonMessages.uploadHint}: ${inputAcceptLabel}</p>
         </div>
 
@@ -32,7 +26,7 @@ export const renderJsonPrettyPrinter = (messages: Messages, state: JsonPrettyPri
           <span data-json-pretty-printer-input-label>${jsonMessages.inputLabel}</span>
           <textarea
             id="json-pretty-printer-input"
-            class="json-pretty-printer-input"
+            class="tool-textarea json-pretty-printer-input"
             data-json-pretty-printer-input
             rows="10"
             spellcheck="false"
@@ -57,7 +51,7 @@ export const renderJsonPrettyPrinter = (messages: Messages, state: JsonPrettyPri
       </form>
 
       <section class="tool-panel json-pretty-printer-panel" aria-live="polite">
-        <div class="json-pretty-printer-output-header">
+        <div class="tool-panel-header json-pretty-printer-output-header">
           <h2 data-json-pretty-printer-output-label>${jsonMessages.outputLabel}</h2>
           <button type="button" class="tool-action" data-json-pretty-printer-download disabled>${jsonMessages.downloadAction}</button>
         </div>

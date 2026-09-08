@@ -7,11 +7,12 @@ import {
   calculateAspectRatio,
   createInitialAspectRatioCalculatorState,
   DEFAULT_RESULT_TEXT,
-  resolveNumberLocale,
   type AspectRatioResult,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { resolveNumberLocale } from '../../foundations/numbers.ts'
 
-const aspectRatioLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const aspectRatioLocale = createLocaleSyncRegistry<[Messages]>('[data-aspect-ratio-calculator-root]')
 
 const queryAspectRatioElements = (container: HTMLElement): AspectRatioCalculatorElements | null => {
   const widthInput = container.querySelector<HTMLInputElement>('[data-aspect-ratio-calculator-width]')
@@ -79,9 +80,7 @@ export const mountAspectRatioCalculator = (
     return
   }
 
-  const existingSyncLocale = aspectRatioLocaleSyncers.get(root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (aspectRatioLocale.resync(root, initialMessages)) {
     return
   }
 
@@ -109,7 +108,7 @@ export const mountAspectRatioCalculator = (
     syncUi()
   }
 
-  aspectRatioLocaleSyncers.set(root, syncLocale)
+  aspectRatioLocale.register(root, syncLocale)
 
   const handleInput = (): void => {
     state.widthValue = elements.widthInput.value
@@ -148,7 +147,4 @@ export const mountAspectRatioCalculator = (
   syncUi()
 }
 
-export const updateAspectRatioCalculatorLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-aspect-ratio-calculator-root]') ?? container
-  aspectRatioLocaleSyncers.get(root)?.(messages)
-}
+export const updateAspectRatioCalculatorLocale = aspectRatioLocale.update

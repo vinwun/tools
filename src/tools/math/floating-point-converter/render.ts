@@ -1,24 +1,14 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { FloatingPointConverterState } from './types.ts'
-import { FLOATING_POINT_FORMATS, formatDelta, formatValueWithDelta } from './utils.ts'
-
-const getInterpretationLabel = (messages: Messages, key: string): string => {
-  const lookup: Record<string, string> = {
-    zero: messages.floatingPointConverter.interpretationZero,
-    subnormal: messages.floatingPointConverter.interpretationSubnormal,
-    normal: messages.floatingPointConverter.interpretationNormal,
-    infinity: messages.floatingPointConverter.interpretationInfinity,
-    nan: messages.floatingPointConverter.interpretationNaN,
-  }
-
-  return lookup[key] ?? key
-}
+import { FLOATING_POINT_FORMATS, formatDelta, formatValueWithDelta, getInterpretationLabel } from './utils.ts'
+import { resolveNumberLocale } from '../../foundations/numbers.ts'
 
 export const renderFloatingPointConverter = (
   messages: Messages,
   state: FloatingPointConverterState,
 ): string => {
   const fpMessages = messages.floatingPointConverter
+  const locale = resolveNumberLocale()
   const titles = {
     half: fpMessages.formatHalfTitle,
     float: fpMessages.formatFloatTitle,
@@ -27,50 +17,35 @@ export const renderFloatingPointConverter = (
 
   const formatCards = FLOATING_POINT_FORMATS.map((format) => {
     const formatState = state.formats[format.id]
-    const valueText = formatValueWithDelta(state.decimalNumber, formatState.value)
-    const deltaText = formatDelta(state.decimalNumber, formatState.value)
+    const valueText = formatValueWithDelta(state.decimalNumber, formatState.value, locale)
+    const deltaText = formatDelta(state.decimalNumber, formatState.value, locale)
     const interpretationText = getInterpretationLabel(messages, formatState.interpretation)
 
     return `
       <article class="tool-panel floating-point-card" data-floating-point-format="${format.id}">
         <h2 data-floating-point-format-title="${format.id}">${titles[format.id]}</h2>
         <div class="floating-point-fields">
-          <label class="tool-field" for="floating-point-${format.id}-sign">
-            <span data-floating-point-sign-label="${format.id}">${fpMessages.signLabel}</span>
+          ${[
+            { part: 'sign', label: fpMessages.signLabel, maxLength: 1, value: formatState.sign },
+            { part: 'exponent', label: fpMessages.exponentLabel, maxLength: format.exponentBits, value: formatState.exponent },
+            { part: 'mantissa', label: fpMessages.mantissaLabel, maxLength: format.mantissaBits, value: formatState.mantissa },
+          ]
+            .map(
+              ({ part, label, maxLength, value }) => `
+          <label class="tool-field" for="floating-point-${format.id}-${part}">
+            <span data-floating-point-${part}-label="${format.id}">${label}</span>
             <input
-              id="floating-point-${format.id}-sign"
-              data-floating-point-sign="${format.id}"
+              id="floating-point-${format.id}-${part}"
+              data-floating-point-${part}="${format.id}"
               type="text"
               inputmode="numeric"
               spellcheck="false"
-              maxlength="1"
-              value="${formatState.sign}"
+              maxlength="${maxLength}"
+              value="${value}"
             />
-          </label>
-          <label class="tool-field" for="floating-point-${format.id}-exponent">
-            <span data-floating-point-exponent-label="${format.id}">${fpMessages.exponentLabel}</span>
-            <input
-              id="floating-point-${format.id}-exponent"
-              data-floating-point-exponent="${format.id}"
-              type="text"
-              inputmode="numeric"
-              spellcheck="false"
-              maxlength="${format.exponentBits}"
-              value="${formatState.exponent}"
-            />
-          </label>
-          <label class="tool-field" for="floating-point-${format.id}-mantissa">
-            <span data-floating-point-mantissa-label="${format.id}">${fpMessages.mantissaLabel}</span>
-            <input
-              id="floating-point-${format.id}-mantissa"
-              data-floating-point-mantissa="${format.id}"
-              type="text"
-              inputmode="numeric"
-              spellcheck="false"
-              maxlength="${format.mantissaBits}"
-              value="${formatState.mantissa}"
-            />
-          </label>
+          </label>`,
+            )
+            .join('')}
         </div>
         <div class="floating-point-metrics">
           <div class="floating-point-metric">

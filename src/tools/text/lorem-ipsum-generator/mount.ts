@@ -4,8 +4,9 @@ import {
   createInitialLoremIpsumGeneratorState,
   generateLoremText,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const loremIpsumGeneratorLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const loremIpsumGeneratorLocale = createLocaleSyncRegistry<[Messages]>('[data-lorem-ipsum-generator-root]')
 
 const queryLoremIpsumGeneratorElements = (
   container: HTMLElement,
@@ -155,7 +156,7 @@ export const mountLoremIpsumGenerator = (
     syncUi()
   }
 
-  loremIpsumGeneratorLocaleSyncers.set(root, syncLocale)
+  loremIpsumGeneratorLocale.register(root, syncLocale)
 
   const generate = (): void => {
     state.amount = parseAmount(elements.amountInput.value)
@@ -197,10 +198,4 @@ export const mountLoremIpsumGenerator = (
   generate()
 }
 
-export const updateLoremIpsumGeneratorLocale = (
-  container: HTMLElement,
-  messages: Messages,
-): void => {
-  const root = container.querySelector<HTMLElement>('[data-lorem-ipsum-generator-root]') ?? container
-  loremIpsumGeneratorLocaleSyncers.get(root)?.(messages)
-}
+export const updateLoremIpsumGeneratorLocale = loremIpsumGeneratorLocale.update

@@ -4,12 +4,11 @@
 }
 
 .base-converter-panel {
-  display: grid;
   gap: 0.75rem;
 }
 
 .base-converter-panel .tool-field input {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 .base-converter-custom {
@@ -24,4 +23,3 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-

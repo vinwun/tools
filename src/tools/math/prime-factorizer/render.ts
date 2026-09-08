@@ -3,48 +3,50 @@ import type { PrimeFactorizerState } from './types.ts'
 
 export const renderPrimeFactorizer = (messages: Messages, state: PrimeFactorizerState): string => {
   const primeMessages = messages.primeFactorizer
+  const fields = [
+    {
+      key: 'decimal',
+      label: primeMessages.decimalLabel,
+      hint: primeMessages.decimalHint,
+      value: state.decimalValue,
+      inputMode: 'numeric',
+    },
+    {
+      key: 'expanded',
+      label: primeMessages.expandedLabel,
+      hint: primeMessages.expandedHint,
+      value: state.expandedValue,
+      inputMode: 'text',
+    },
+    {
+      key: 'exponent',
+      label: primeMessages.exponentLabel,
+      hint: primeMessages.exponentHint,
+      value: state.exponentValue,
+      inputMode: 'text',
+    },
+  ]
 
   return `
     <section class="tool-layout prime-factorizer-layout" data-prime-factorizer-root>
       <div class="tool-panel prime-factorizer-panel">
-        <label class="tool-field" for="prime-factorizer-decimal">
-          <span data-prime-factorizer-decimal-label>${primeMessages.decimalLabel}</span>
+        ${fields
+          .map(
+            ({ key, label, hint, value, inputMode }) => `
+        <label class="tool-field" for="prime-factorizer-${key}">
+          <span data-prime-factorizer-${key}-label>${label}</span>
           <input
-            id="prime-factorizer-decimal"
-            data-prime-factorizer-decimal
+            id="prime-factorizer-${key}"
+            data-prime-factorizer-${key}
             type="text"
-            inputmode="numeric"
+            inputmode="${inputMode}"
             spellcheck="false"
-            value="${state.decimalValue}"
+            value="${value}"
           />
         </label>
-        <p class="tool-hint" data-prime-factorizer-decimal-hint>${primeMessages.decimalHint}</p>
-
-        <label class="tool-field" for="prime-factorizer-expanded">
-          <span data-prime-factorizer-expanded-label>${primeMessages.expandedLabel}</span>
-          <input
-            id="prime-factorizer-expanded"
-            data-prime-factorizer-expanded
-            type="text"
-            inputmode="text"
-            spellcheck="false"
-            value="${state.expandedValue}"
-          />
-        </label>
-        <p class="tool-hint" data-prime-factorizer-expanded-hint>${primeMessages.expandedHint}</p>
-
-        <label class="tool-field" for="prime-factorizer-exponent">
-          <span data-prime-factorizer-exponent-label>${primeMessages.exponentLabel}</span>
-          <input
-            id="prime-factorizer-exponent"
-            data-prime-factorizer-exponent
-            type="text"
-            inputmode="text"
-            spellcheck="false"
-            value="${state.exponentValue}"
-          />
-        </label>
-        <p class="tool-hint" data-prime-factorizer-exponent-hint>${primeMessages.exponentHint}</p>
+        <p class="tool-hint" data-prime-factorizer-${key}-hint>${hint}</p>`,
+          )
+          .join('')}
       </div>
     </section>
   `

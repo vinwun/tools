@@ -3,57 +3,35 @@ import type { BaseConverterState } from './types.ts'
 
 export const renderBaseConverter = (messages: Messages, state: BaseConverterState): string => {
   const baseMessages = messages.baseConverter
+  const fields = [
+    { key: 'binary', label: baseMessages.binaryLabel, value: state.binaryValue, inputMode: 'text' },
+    { key: 'octal', label: baseMessages.octalLabel, value: state.octalValue, inputMode: 'text' },
+    { key: 'decimal', label: baseMessages.decimalLabel, value: state.decimalValue, inputMode: 'numeric' },
+    { key: 'hex', label: baseMessages.hexLabel, value: state.hexValue, inputMode: 'text' },
+  ]
+
+  const renderField = ({
+    key,
+    label,
+    value,
+    inputMode,
+  }: (typeof fields)[number]): string => `
+        <label class="tool-field" for="base-converter-${key}">
+          <span data-base-converter-${key}-label>${label}</span>
+          <input
+            id="base-converter-${key}"
+            data-base-converter-${key}
+            type="text"
+            inputmode="${inputMode}"
+            spellcheck="false"
+            value="${value}"
+          />
+        </label>`
 
   return `
     <section class="tool-layout base-converter-layout" data-base-converter-root>
       <div class="tool-panel base-converter-panel">
-        <label class="tool-field" for="base-converter-binary">
-          <span data-base-converter-binary-label>${baseMessages.binaryLabel}</span>
-          <input
-            id="base-converter-binary"
-            data-base-converter-binary
-            type="text"
-            inputmode="text"
-            spellcheck="false"
-            value="${state.binaryValue}"
-          />
-        </label>
-
-        <label class="tool-field" for="base-converter-octal">
-          <span data-base-converter-octal-label>${baseMessages.octalLabel}</span>
-          <input
-            id="base-converter-octal"
-            data-base-converter-octal
-            type="text"
-            inputmode="text"
-            spellcheck="false"
-            value="${state.octalValue}"
-          />
-        </label>
-
-        <label class="tool-field" for="base-converter-decimal">
-          <span data-base-converter-decimal-label>${baseMessages.decimalLabel}</span>
-          <input
-            id="base-converter-decimal"
-            data-base-converter-decimal
-            type="text"
-            inputmode="numeric"
-            spellcheck="false"
-            value="${state.decimalValue}"
-          />
-        </label>
-
-        <label class="tool-field" for="base-converter-hex">
-          <span data-base-converter-hex-label>${baseMessages.hexLabel}</span>
-          <input
-            id="base-converter-hex"
-            data-base-converter-hex
-            type="text"
-            inputmode="text"
-            spellcheck="false"
-            value="${state.hexValue}"
-          />
-        </label>
+        ${fields.map(renderField).join('')}
 
         <div class="base-converter-custom">
           <label class="tool-field base-converter-custom-base" for="base-converter-custom-base">
@@ -82,17 +60,7 @@ export const renderBaseConverter = (messages: Messages, state: BaseConverterStat
           </label>
         </div>
 
-        <label class="tool-field" for="base-converter-roman">
-          <span data-base-converter-roman-label>${baseMessages.romanLabel}</span>
-          <input
-            id="base-converter-roman"
-            data-base-converter-roman
-            type="text"
-            inputmode="text"
-            spellcheck="false"
-            value="${state.romanValue}"
-          />
-        </label>
+        ${renderField({ key: 'roman', label: baseMessages.romanLabel, value: state.romanValue, inputMode: 'text' })}
       </div>
     </section>
   `

@@ -5,9 +5,7 @@
 }
 
 .timer-panel {
-  display: grid;
   gap: 1rem;
-  align-content: start;
 }
 
 .timer-display {
@@ -17,11 +15,6 @@
   gap: 0.9rem;
   min-height: 20rem;
   padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-  color: #111827;
-  text-align: center;
   font-variant-numeric: tabular-nums;
   cursor: ew-resize;
 }
@@ -76,12 +69,6 @@
   letter-spacing: 0.05em;
 }
 
-
-.timer-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
 
 .timer-primary,
 .timer-secondary {

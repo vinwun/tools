@@ -1,18 +1,14 @@
+import { escapeHtml, formatMessage } from '../dom.ts'
+import { formatAcceptList } from '../files.ts'
+import { createLocaleSyncRegistry } from '../locale-sync.ts'
+import { wireFilePicker } from '../file-picker/mount.ts'
 import type { ConverterMessages, FileConverterConfig, ConverterResultData } from './types.ts'
 
-const fileConverterLocaleSyncers = new WeakMap<HTMLElement, (messages: ConverterMessages) => void>()
+const fileConverterLocale = createLocaleSyncRegistry<[ConverterMessages]>('[data-file-converter-root]')
 
 type PreviewItem =
   | { kind: 'success'; data: ConverterResultData }
   | { kind: 'error'; fileName: string; message: string }
-
-const escapeHtml = (value: string): string =>
-  value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
 
 const createPreviewContentMarkup = (data: ConverterResultData, messages: ConverterMessages): string => {
   const previewUrl = URL.createObjectURL(data.blob)
@@ -88,15 +84,12 @@ export const mountFileConverter = (
   config: FileConverterConfig,
   initialMessages: ConverterMessages,
 ): void => {
-  const fileInput = root.querySelector<HTMLInputElement>('[data-file-converter-file]')
-  const fileButton = root.querySelector<HTMLButtonElement>('[data-file-converter-file-button]')
-  const fileNameElement = root.querySelector<HTMLElement>('[data-file-converter-file-name]')
+  const filePicker = wireFilePicker(root, { onFiles: (files) => setSelectedFiles(files) })
   const outputSelect = root.querySelector<HTMLSelectElement>('[data-file-converter-output]')
   const previewElement = root.querySelector<HTMLElement>('[data-file-converter-preview]')
   const downloadLink = root.querySelector<HTMLAnchorElement>('[data-file-converter-download]')
-  const dropzoneElement = root.querySelector<HTMLElement>('[data-file-converter-dropzone]')
 
-  if (!fileInput || !fileButton || !fileNameElement || !outputSelect || !previewElement || !downloadLink || !dropzoneElement) {
+  if (!filePicker || !outputSelect || !previewElement || !downloadLink) {
     return
   }
 
@@ -104,11 +97,6 @@ export const mountFileConverter = (
   let downloadableResults: ConverterResultData[] = []
   let currentPreviewItems: PreviewItem[] = []
   let selectedFiles: File[] = []
-  let dropzoneDragDepth = 0
-
-  const setDropzoneActive = (isActive: boolean): void => {
-    dropzoneElement.classList.toggle('is-dragover', isActive)
-  }
 
   const setSelectedFiles = (files: readonly File[]): void => {
     selectedFiles = [...files]
@@ -127,7 +115,7 @@ export const mountFileConverter = (
       transfer.items.add(file)
     })
 
-    fileInput.files = transfer.files
+    filePicker.input.files = transfer.files
   }
 
   const setDownloadDisabled = (): void => {
@@ -172,16 +160,16 @@ export const mountFileConverter = (
 
   const setSelectedFileLabel = (files: readonly File[]): void => {
     if (files.length === 0) {
-      fileNameElement.textContent = messages.noFileSelected
+      filePicker.setName(messages.noFileSelected)
       return
     }
 
     if (files.length === 1) {
-      fileNameElement.textContent = files[0].name
+      filePicker.setName(files[0].name)
       return
     }
 
-    fileNameElement.textContent = messages.selectedFilesLabel.replace('{count}', String(files.length))
+    filePicker.setName(formatMessage(messages.selectedFilesLabel, { count: files.length }))
   }
 
   const getFailureMessage = (details?: string): string =>
@@ -210,13 +198,12 @@ export const mountFileConverter = (
   const syncStaticTexts = (): void => {
     const uploadLabel = root.querySelector<HTMLElement>('[data-file-converter-upload-label]')
     const uploadHint = root.querySelector<HTMLElement>('[data-file-converter-upload-hint]')
-    const fileButton = root.querySelector<HTMLButtonElement>('[data-file-converter-file-button]')
     const outputLabel = root.querySelector<HTMLElement>('[data-file-converter-output-label]')
     const previewTitle = root.querySelector<HTMLElement>('[data-file-converter-preview-title]')
 
     if (uploadLabel) uploadLabel.textContent = messages.uploadLabel
-    if (uploadHint) uploadHint.textContent = `${messages.uploadHintLabel}: ${config.inputAccept.replaceAll(',', ' / ')}`
-    if (fileButton) fileButton.textContent = messages.browseAction
+    if (uploadHint) uploadHint.textContent = `${messages.uploadHintLabel}: ${formatAcceptList(config.inputAccept)}`
+    filePicker.browseButton.textContent = messages.browseAction
     if (outputLabel) outputLabel.textContent = messages.outputLabel
     if (previewTitle) previewTitle.textContent = messages.previewTitle
     downloadLink.textContent = messages.downloadAllAction
@@ -252,7 +239,7 @@ export const mountFileConverter = (
     syncDownloadFromPreviewItems()
   }
 
-  fileConverterLocaleSyncers.set(root, syncLocale)
+  fileConverterLocale.register(root, syncLocale)
 
   downloadLink.addEventListener('click', (event) => {
     event.preventDefault()
@@ -300,44 +287,6 @@ export const mountFileConverter = (
 
     setPreviewItems(nextItems)
     syncDownloadFromPreviewItems()
-  })
-
-  fileButton.addEventListener('click', () => {
-    fileInput.click()
-  })
-
-  dropzoneElement.addEventListener('dragenter', (event) => {
-    event.preventDefault()
-    dropzoneDragDepth += 1
-    setDropzoneActive(true)
-  })
-
-  dropzoneElement.addEventListener('dragover', (event) => {
-    event.preventDefault()
-    event.dataTransfer!.dropEffect = 'copy'
-    setDropzoneActive(true)
-  })
-
-  dropzoneElement.addEventListener('dragleave', (event) => {
-    event.preventDefault()
-    dropzoneDragDepth = Math.max(0, dropzoneDragDepth - 1)
-
-    if (dropzoneDragDepth === 0) {
-      setDropzoneActive(false)
-    }
-  })
-
-  dropzoneElement.addEventListener('drop', (event) => {
-    event.preventDefault()
-    dropzoneDragDepth = 0
-    setDropzoneActive(false)
-
-    const droppedFiles = Array.from(event.dataTransfer?.files ?? [])
-    if (droppedFiles.length === 0) {
-      return
-    }
-
-    setSelectedFiles(droppedFiles)
   })
 
   let conversionRequestId = 0
@@ -389,25 +338,9 @@ export const mountFileConverter = (
     syncDownloadFromPreviewItems()
   }
 
-  fileInput.addEventListener('change', () => {
-    setSelectedFiles(Array.from(fileInput.files ?? []))
-  })
-
   outputSelect.addEventListener('change', () => {
     void runConversion()
   })
 }
 
-export const updateFileConverterLocale = (root: HTMLElement, messages: ConverterMessages): void => {
-  const targetRoot = root.matches('[data-file-converter-root]')
-    ? root
-    : fileConverterLocaleSyncers.has(root)
-      ? root
-      : root.querySelector<HTMLElement>('[data-file-converter-root]') ?? root.closest<HTMLElement>('[data-file-converter-root]')
-
-  if (!targetRoot) {
-    return
-  }
-
-  fileConverterLocaleSyncers.get(targetRoot)?.(messages)
-}
+export const updateFileConverterLocale = fileConverterLocale.update

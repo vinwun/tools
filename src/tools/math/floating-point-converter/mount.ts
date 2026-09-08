@@ -11,25 +11,16 @@ import {
   buildFormatDisplayFromNumber,
   createInitialFloatingPointConverterState,
   formatDelta,
-  formatNumber,
+  localizeDecimalNumber,
   formatValueWithDelta,
   isTransientDecimalInput,
   parseDecimalInput,
+  getInterpretationLabel,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { resolveNumberLocale } from '../../foundations/numbers.ts'
 
-const floatingPointConverterLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
-
-const getInterpretationLabel = (messages: Messages, key: string): string => {
-  const lookup: Record<string, string> = {
-    zero: messages.floatingPointConverter.interpretationZero,
-    subnormal: messages.floatingPointConverter.interpretationSubnormal,
-    normal: messages.floatingPointConverter.interpretationNormal,
-    infinity: messages.floatingPointConverter.interpretationInfinity,
-    nan: messages.floatingPointConverter.interpretationNaN,
-  }
-
-  return lookup[key] ?? key
-}
+const floatingPointConverterLocale = createLocaleSyncRegistry<[Messages]>('[data-floating-point-converter-root]')
 
 const queryFormatElements = (
   container: HTMLElement,
@@ -150,14 +141,15 @@ const updateFormatOutputs = (
   formatId: FloatingPointFormatId,
   state: FloatingPointConverterState,
 ): void => {
+  const locale = resolveNumberLocale()
   const formatElements = elements.formats[formatId]
   const formatState = state.formats[formatId]
 
   formatElements.signInput.value = formatState.sign
   formatElements.exponentInput.value = formatState.exponent
   formatElements.mantissaInput.value = formatState.mantissa
-  formatElements.valueText.textContent = formatValueWithDelta(decimalNumber, formatState.value)
-  formatElements.deltaText.textContent = formatDelta(decimalNumber, formatState.value)
+  formatElements.valueText.textContent = formatValueWithDelta(decimalNumber, formatState.value, locale)
+  formatElements.deltaText.textContent = formatDelta(decimalNumber, formatState.value, locale)
   formatElements.interpretationText.textContent = getInterpretationLabel(
     messages,
     formatState.interpretation,
@@ -171,9 +163,7 @@ export const mountFloatingPointConverter = (container: HTMLElement, initialMessa
     return
   }
 
-  const existingSyncLocale = floatingPointConverterLocaleSyncers.get(root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (floatingPointConverterLocale.resync(root, initialMessages)) {
     return
   }
 
@@ -194,6 +184,9 @@ export const mountFloatingPointConverter = (container: HTMLElement, initialMessa
 
   const syncUi = (): void => {
     syncLocalizedText(elements, messages)
+    // The field holds the previous locale's separator, so re-derive it from the parsed number.
+    state.decimalValue = localizeDecimalNumber(decimalNumber, resolveNumberLocale())
+    lastValidDecimal = state.decimalValue
     elements.decimalInput.value = state.decimalValue
     for (const format of FLOATING_POINT_FORMATS) {
       updateFormatOutputs(elements, messages, decimalNumber, format.id, state)
@@ -205,12 +198,12 @@ export const mountFloatingPointConverter = (container: HTMLElement, initialMessa
     syncUi()
   }
 
-  floatingPointConverterLocaleSyncers.set(root, syncLocale)
+  floatingPointConverterLocale.register(root, syncLocale)
 
   const updateAllFromDecimalValue = (value: number): void => {
     decimalNumber = value
     state.decimalNumber = value
-    state.decimalValue = formatNumber(value)
+    state.decimalValue = localizeDecimalNumber(value, resolveNumberLocale())
     elements.decimalInput.value = state.decimalValue
 
     for (const format of FLOATING_POINT_FORMATS) {
@@ -333,7 +326,4 @@ export const mountFloatingPointConverter = (container: HTMLElement, initialMessa
   syncUi()
 }
 
-export const updateFloatingPointConverterLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-floating-point-converter-root]') ?? container
-  floatingPointConverterLocaleSyncers.get(root)?.(messages)
-}
+export const updateFloatingPointConverterLocale = floatingPointConverterLocale.update

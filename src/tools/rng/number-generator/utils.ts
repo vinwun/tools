@@ -1,3 +1,4 @@
+import { formatDecimalNumber } from '../../foundations/numbers.ts'
 import type {NumberGeneratorState} from './types.ts'
 
 const DEFAULT_MIN_VALUE = '0'
@@ -17,25 +18,6 @@ export const createInitialNumberGeneratorState = (): NumberGeneratorState => ({
   resultValue: null,
   resultText: DEFAULT_RESULT_TEXT,
 })
-
-export const resolveNumberLocale = (): string => document.documentElement.lang || 'en'
-
-const resolveDecimalSeparator = (locale: string): string => {
-  const parts = new Intl.NumberFormat(locale).formatToParts(1.1)
-  return parts.find((part) => part.type === 'decimal')?.value ?? '.'
-}
-
-export const parseNumericInput = (value: string, locale: string = resolveNumberLocale()): number | null => {
-  const trimmedValue = value.trim()
-  if (trimmedValue.length === 0) {
-    return null
-  }
-
-  const decimalSeparator = resolveDecimalSeparator(locale)
-  const normalizedValue = decimalSeparator === ',' ? trimmedValue.replace(/,/g, '.') : trimmedValue
-  const parsedValue = Number(normalizedValue)
-  return Number.isFinite(parsedValue) ? parsedValue : null
-}
 
 export const normalizeRange = (minValue: number, maxValue: number): [number, number] =>
   minValue <= maxValue ? [minValue, maxValue] : [maxValue, minValue]
@@ -90,8 +72,7 @@ export const resolveDecimalPrecision = (minValue: string, maxValue: string): num
 export const formatIntegerResult = (value: number): string => String(value)
 
 export const formatDecimalResult = (value: number, locale: string, precision: number): string =>
-  new Intl.NumberFormat(locale, {
+  formatDecimalNumber(value, locale, {
     minimumFractionDigits: precision,
     maximumFractionDigits: precision,
-    useGrouping: false,
-  }).format(value)
+  })

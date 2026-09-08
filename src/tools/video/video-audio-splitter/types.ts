@@ -4,7 +4,6 @@ export type VideoAudioSplitterState = {
   fileName: string
   file: File | null
   source: Uint8Array | null
-  previewUrl: string | null
   duration: number
   fragmented: boolean
   trackCount: number
@@ -16,10 +15,6 @@ export type VideoAudioSplitterState = {
 }
 
 export type VideoAudioSplitterElements = {
-  fileInput: HTMLInputElement
-  browseButton: HTMLButtonElement
-  dropzone: HTMLElement
-  fileName: HTMLElement
   status: HTMLElement
   preview: HTMLVideoElement
   durationValue: HTMLElement

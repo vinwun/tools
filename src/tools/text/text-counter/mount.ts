@@ -1,8 +1,9 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { TextCounterElements, TextCounterState } from './types.ts'
 import { countText, createInitialTextCounterState, TEXT_COUNTER_STAT_KEYS } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const textCounterLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const textCounterLocale = createLocaleSyncRegistry<[Messages]>('[data-text-counter-root]')
 
 const queryTextCounterElements = (container: HTMLElement): TextCounterElements | null => {
   const form = container.querySelector<HTMLFormElement>('[data-text-counter-form]')
@@ -81,7 +82,7 @@ export const mountTextCounter = (container: HTMLElement, initialMessages: Messag
     syncUi()
   }
 
-  textCounterLocaleSyncers.set(root, syncLocale)
+  textCounterLocale.register(root, syncLocale)
 
   elements.input.addEventListener('input', () => {
     state.inputValue = elements.input.value
@@ -102,7 +103,4 @@ export const mountTextCounter = (container: HTMLElement, initialMessages: Messag
   syncUi()
 }
 
-export const updateTextCounterLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-text-counter-root]') ?? container
-  textCounterLocaleSyncers.get(root)?.(messages)
-}
+export const updateTextCounterLocale = textCounterLocale.update

@@ -5,14 +5,14 @@ import {
   formatDecimalResult,
   formatIntegerResult,
   normalizeRange,
-  parseNumericInput,
   randomDecimalInclusive,
   randomIntegerInclusive,
-  resolveNumberLocale,
   resolveDecimalPrecision,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { parseDecimalNumber, resolveNumberLocale } from '../../foundations/numbers.ts'
 
-const numberGeneratorLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const numberGeneratorLocale = createLocaleSyncRegistry<[Messages]>('[data-rng-number-generator-root]')
 
 const queryNumberGeneratorElements = (container: HTMLElement): NumberGeneratorElements | null => {
   const form = container.querySelector<HTMLFormElement>('[data-rng-number-generator-form]')
@@ -94,8 +94,8 @@ const generateNumber = (
   const locale = resolveNumberLocale()
   readCurrentState(elements, state)
 
-  const minValue = parseNumericInput(state.minValue, locale)
-  const maxValue = parseNumericInput(state.maxValue, locale)
+  const minValue = parseDecimalNumber(state.minValue)
+  const maxValue = parseDecimalNumber(state.maxValue)
   if (minValue === null || maxValue === null) {
     return
   }
@@ -154,7 +154,7 @@ export const mountNumberGenerator = (container: HTMLElement, initialMessages: Me
     syncUi()
   }
 
-  numberGeneratorLocaleSyncers.set(root, syncLocale)
+  numberGeneratorLocale.register(root, syncLocale)
 
   elements.minInput.addEventListener('input', () => {
     state.minValue = elements.minInput.value
@@ -185,7 +185,4 @@ export const mountNumberGenerator = (container: HTMLElement, initialMessages: Me
   generateNumber(elements, state)
 }
 
-export const updateNumberGeneratorLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-rng-number-generator-root]') ?? container
-  numberGeneratorLocaleSyncers.get(root)?.(messages)
-}
+export const updateNumberGeneratorLocale = numberGeneratorLocale.update

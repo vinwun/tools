@@ -2,6 +2,7 @@
 @import 'dashboard/dashboard.css';
 @import 'categories/categories.css';
 @import 'tools/tool.css';
+@import 'tools/foundations/file-picker/file-picker.css';
 @import 'tools/foundations/file-converter/file-converter.css';
 @import './tools/image/color-picker/color-picker.css';
 @import 'tools/audio/audio-cutter/audio-cutter.css';
@@ -33,6 +34,13 @@
   --border: #cccccc;
   --text: #111111;
   --muted: #777777;
+  --accent: #2563eb;
+  --readout-bg: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  --readout-text: #111827;
+  --accent-muted: #94a3b8;
+  --media-bg: #0f172a;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --shadow-panel: 0 10px 20px -18px rgba(17, 24, 39, 0.5);
 }
 
 * {

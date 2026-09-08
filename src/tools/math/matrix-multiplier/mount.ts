@@ -3,10 +3,11 @@ import type { MatrixMultiplierElements } from './types.ts'
 import {
   calculateMatrixMultiplierState,
   createInitialMatrixMultiplierState,
-  resolveNumberLocale,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { resolveNumberLocale } from '../../foundations/numbers.ts'
 
-const matrixMultiplierLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const matrixMultiplierLocale = createLocaleSyncRegistry<[Messages]>('[data-matrix-multiplier-root]')
 
 const queryMatrixMultiplierElements = (container: HTMLElement): MatrixMultiplierElements | null => {
   const matrixAInput = container.querySelector<HTMLTextAreaElement>('[data-matrix-multiplier-a]')
@@ -64,9 +65,7 @@ export const mountMatrixMultiplier = (container: HTMLElement, initialMessages: M
     return
   }
 
-  const existingSyncLocale = matrixMultiplierLocaleSyncers.get(root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (matrixMultiplierLocale.resync(root, initialMessages)) {
     return
   }
 
@@ -104,7 +103,7 @@ export const mountMatrixMultiplier = (container: HTMLElement, initialMessages: M
     syncUi()
   }
 
-  matrixMultiplierLocaleSyncers.set(root, syncLocale)
+  matrixMultiplierLocale.register(root, syncLocale)
 
   const handleInput = (): void => {
     state.matrixAValue = elements.matrixAInput.value
@@ -118,7 +117,4 @@ export const mountMatrixMultiplier = (container: HTMLElement, initialMessages: M
   syncUi()
 }
 
-export const updateMatrixMultiplierLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-matrix-multiplier-root]') ?? container
-  matrixMultiplierLocaleSyncers.get(root)?.(messages)
-}
+export const updateMatrixMultiplierLocale = matrixMultiplierLocale.update

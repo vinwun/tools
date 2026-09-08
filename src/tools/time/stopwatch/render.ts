@@ -8,19 +8,19 @@ export const renderStopwatch = (messages: Messages): string => {
     <section class="tool-layout stopwatch-layout" data-stopwatch-root>
       <div class="tool-panel stopwatch-panel">
         <output
-          class="stopwatch-display"
+          class="tool-readout stopwatch-display"
           data-stopwatch-display
           aria-live="polite"
           aria-label="${stopwatchMessages.elapsedLabel}"
         >${formatStopwatchTime(0)}</output>
-        <div class="stopwatch-actions">
+        <div class="tool-actions stopwatch-actions">
           <button type="button" class="tool-action stopwatch-primary" data-stopwatch-primary>${stopwatchMessages.startAction}</button>
           <button type="button" class="tool-action stopwatch-secondary" data-stopwatch-secondary disabled>${stopwatchMessages.resetAction}</button>
         </div>
       </div>
 
       <div class="tool-panel stopwatch-laps-panel">
-        <div class="stopwatch-laps-header">
+        <div class="tool-panel-header stopwatch-laps-header">
           <h2 class="stopwatch-laps-title" data-stopwatch-laps-title>${stopwatchMessages.lapsTitle}</h2>
           <span class="stopwatch-laps-count" data-stopwatch-laps-count>${stopwatchMessages.lapsCountLabel.replace('{count}', '0')}</span>
         </div>

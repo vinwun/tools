@@ -2,8 +2,9 @@ import type { Messages } from '../../../i18n/schema.ts'
 import type { TimezoneConverterElements } from './types.ts'
 import { TIMEZONE_GROUPS } from './timezones.ts'
 import { formatTimeInput, getLocalOffsetMinutes, normalizeMinutes, parseTimeInput } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const timezoneLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const timezoneLocale = createLocaleSyncRegistry<[Messages]>('[data-timezone-root]')
 
 const queryTimezoneElements = (container: HTMLElement): TimezoneConverterElements | null => {
   const root = container.querySelector<HTMLElement>('[data-timezone-root]') ?? container
@@ -45,9 +46,7 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
     return
   }
 
-  const existingSyncLocale = timezoneLocaleSyncers.get(elements.root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (timezoneLocale.resync(elements.root, initialMessages)) {
     return
   }
 
@@ -191,13 +190,10 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
     updateAutoSyncState()
   })
 
-  timezoneLocaleSyncers.set(elements.root, syncLocale)
+  timezoneLocale.register(elements.root, syncLocale)
   syncLocale(messages)
   applyTimes()
   updateAutoSyncState()
 }
 
-export const updateTimezoneConverterLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-timezone-root]') ?? container
-  timezoneLocaleSyncers.get(root)?.(messages)
-}
+export const updateTimezoneConverterLocale = timezoneLocale.update

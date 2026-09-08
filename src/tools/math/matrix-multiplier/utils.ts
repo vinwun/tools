@@ -1,4 +1,5 @@
 import type { Messages } from '../../../i18n/schema.ts'
+import { formatDecimalNumber, parseDecimalNumber, resolveNumberLocale } from '../../foundations/numbers.ts'
 import type { MatrixMultiplierState } from './types.ts'
 
 const DEFAULT_MATRIX_A = '1 2\n3 4'
@@ -34,19 +35,6 @@ const parseMatrixInput = (value: string): ParsedMatrixResult => {
     return { ok: false, reason: 'empty' }
   }
 
-  const parseNumberPart = (part: string): number => {
-    const trimmed = part.trim()
-    const commaCount = (trimmed.match(/,/g) ?? []).length
-    if (commaCount > 1) {
-      return Number.NaN
-    }
-    if (trimmed.includes('.') && trimmed.includes(',')) {
-      return Number.NaN
-    }
-    const normalized = commaCount === 1 ? trimmed.replace(',', '.') : trimmed
-    return Number(normalized)
-  }
-
   const matrix: number[][] = []
   let columns = 0
 
@@ -56,7 +44,7 @@ const parseMatrixInput = (value: string): ParsedMatrixResult => {
       return { ok: false, reason: 'invalid' }
     }
 
-    const numbers = parts.map((part) => parseNumberPart(part))
+    const numbers = parts.map((part) => parseDecimalNumber(part) ?? Number.NaN)
     if (numbers.some((value) => !Number.isFinite(value))) {
       return { ok: false, reason: 'invalid' }
     }
@@ -101,19 +89,13 @@ const multiplyMatrices = (left: number[][], right: number[][]): number[][] => {
   return result
 }
 
-export const resolveNumberLocale = (): string => document.documentElement.lang || 'en'
-
 const formatNumber = (value: number, locale: string): string => {
   const normalized = Object.is(value, -0) ? 0 : value
   if (Number.isInteger(normalized)) {
     return String(normalized)
   }
 
-  return new Intl.NumberFormat(locale, {
-    maximumFractionDigits: MAX_DECIMAL_PLACES,
-    minimumFractionDigits: 0,
-    useGrouping: false,
-  }).format(normalized)
+  return formatDecimalNumber(normalized, locale, { maximumFractionDigits: MAX_DECIMAL_PLACES })
 }
 
 const formatMatrix = (matrix: number[][], locale: string): string =>

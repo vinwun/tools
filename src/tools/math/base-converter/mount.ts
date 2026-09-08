@@ -13,8 +13,9 @@ import {
   parseRomanInput,
   parseValueInBase,
 } from './utils.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
-const baseConverterLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const baseConverterLocale = createLocaleSyncRegistry<[Messages]>('[data-base-converter-root]')
 
 const queryBaseConverterElements = (container: HTMLElement): BaseConverterElements | null => {
   const binaryInput = container.querySelector<HTMLInputElement>('[data-base-converter-binary]')
@@ -126,9 +127,7 @@ export const mountBaseConverter = (container: HTMLElement, initialMessages: Mess
     return
   }
 
-  const existingSyncLocale = baseConverterLocaleSyncers.get(root)
-  if (existingSyncLocale) {
-    existingSyncLocale(initialMessages)
+  if (baseConverterLocale.resync(root, initialMessages)) {
     return
   }
 
@@ -159,7 +158,7 @@ export const mountBaseConverter = (container: HTMLElement, initialMessages: Mess
     syncUi()
   }
 
-  baseConverterLocaleSyncers.set(root, syncLocale)
+  baseConverterLocale.register(root, syncLocale)
 
   const handleBinaryInput = (): void => {
     state.binaryValue = elements.binaryInput.value
@@ -374,7 +373,4 @@ export const mountBaseConverter = (container: HTMLElement, initialMessages: Mess
   syncUi()
 }
 
-export const updateBaseConverterLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-base-converter-root]') ?? container
-  baseConverterLocaleSyncers.get(root)?.(messages)
-}
+export const updateBaseConverterLocale = baseConverterLocale.update

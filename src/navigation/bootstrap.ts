@@ -1,6 +1,7 @@
 import { renderCategoryPage } from '../categories/render.ts'
 import { isCategoryId } from '../dashboard/category-data.ts'
-import { LOCALE_SELECT_ID, renderDashboard } from '../dashboard/render.ts'
+import { renderDashboard } from '../dashboard/render.ts'
+import { LOCALE_SELECT_ID } from './render.ts'
 import { hasLocale, type Locale } from '../i18n'
 import { initLocale, persistLocale, resolveInitialLocale } from '../i18n/manager.ts'
 import { isToolIdForCategory } from '../tools/catalog.ts'

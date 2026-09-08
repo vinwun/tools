@@ -1,5 +1,6 @@
 import type { FileConverterConfig, ConverterResult } from '../foundations/file-converter/types'
-import {createFileConverterTool, stripExtension} from '../foundations/file-converter/utils'
+import {conversionFailed, createFileConverterTool} from '../foundations/file-converter/utils'
+import {stripExtension} from '../foundations/files.ts'
 import {ACCEPTED_AUDIO_TYPES, decodeAudioFile, encodeWav, readAudioSampleRate} from './audio-utils.ts'
 
 const isWav = (file: File): boolean =>
@@ -41,11 +42,7 @@ const convertAudioFile = async (file: File, outputFormatId: string): Promise<Con
       },
     }
   } catch (error) {
-    return {
-      ok: false,
-      reason: 'conversionFailed',
-      details: error instanceof Error ? error.message : 'Unknown conversion error',
-    }
+    return conversionFailed(error)
   }
 }
 

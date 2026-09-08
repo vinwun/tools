@@ -41,6 +41,6 @@
 }
 
 .floating-point-mono {
-  font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+  font-family: var(--font-mono);
   word-break: break-all;
 }

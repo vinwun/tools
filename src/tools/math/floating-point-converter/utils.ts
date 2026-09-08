@@ -4,6 +4,8 @@ import type {
   FloatingPointConverterState,
   FloatingPointInterpretation,
 } from './types.ts'
+import type { Messages } from '../../../i18n/schema.ts'
+import { localizeDecimalSeparator, parseDecimalNumber, resolveNumberLocale } from '../../foundations/numbers.ts'
 
 type FloatingPointFormat = {
   id: FloatingPointFormatId
@@ -180,18 +182,20 @@ const buildDisplay = (
   }
 }
 
+const NON_FINITE_INPUTS = new Set(['nan', 'infinity', '-infinity', '+infinity'])
+
 export const parseDecimalInput = (value: string): number | null => {
   const trimmed = value.trim()
   if (!trimmed) {
     return null
   }
 
-  const parsed = Number(trimmed)
-  if (Number.isNaN(parsed) && trimmed.toLowerCase() !== 'nan') {
-    return null
+  // NaN and the infinities are typed literally here, so they bypass the numeric parser.
+  if (NON_FINITE_INPUTS.has(trimmed.toLowerCase())) {
+    return Number(trimmed)
   }
 
-  return parsed
+  return parseDecimalNumber(trimmed)
 }
 
 const expandExponential = (value: string): string => {
@@ -262,7 +266,8 @@ const leadingMagnitude = (value: number): number => {
 }
 
 export const isTransientDecimalInput = (value: string): boolean => {
-  const trimmed = value.trim()
+  // Either separator may be mid-typing, so both count as an incomplete decimal.
+  const trimmed = value.trim().replace(',', '.')
   if (trimmed === '' || trimmed === '-' || trimmed === '+') {
     return true
   }
@@ -278,6 +283,7 @@ export const isTransientDecimalInput = (value: string): boolean => {
   return /e[+-]?$/i.test(trimmed);
 }
 
+// Emits the exact digits with a '.' separator; use `localizeDecimalNumber` for display.
 export const formatNumber = (value: number, precision?: number): string => {
   if (Number.isNaN(value)) {
     return 'NaN'
@@ -301,7 +307,10 @@ export const formatNumber = (value: number, precision?: number): string => {
   return formatNumberPlain(value)
 }
 
-export const formatDelta = (decimalValue: number, formatValue: number): string => {
+export const localizeDecimalNumber = (value: number, locale: string, precision?: number): string =>
+  localizeDecimalSeparator(formatNumber(value, precision), locale)
+
+export const formatDelta = (decimalValue: number, formatValue: number, locale: string): string => {
   if (!Number.isFinite(decimalValue) || !Number.isFinite(formatValue)) {
     return 'n/a'
   }
@@ -312,28 +321,32 @@ export const formatDelta = (decimalValue: number, formatValue: number): string =
   }
 
   const formatted = delta.toPrecision(5)
-  if (formatted.includes('e') || formatted.includes('E')) {
-    return trimExponentialMantissa(formatted)
-  }
+  const plain = formatted.includes('e') || formatted.includes('E')
+    ? trimExponentialMantissa(formatted)
+    : trimTrailingZeros(formatted)
 
-  return trimTrailingZeros(formatted)
+  return localizeDecimalSeparator(plain, locale)
 }
 
-export const formatValueWithDelta = (decimalValue: number, formatValue: number): string => {
+export const formatValueWithDelta = (
+  decimalValue: number,
+  formatValue: number,
+  locale: string,
+): string => {
   if (!Number.isFinite(formatValue)) {
     return formatNumber(formatValue)
   }
 
   const delta = formatValue - decimalValue
   if (Object.is(delta, -0) || delta === 0) {
-    return formatNumber(formatValue)
+    return localizeDecimalNumber(formatValue, locale)
   }
 
   const magnitude = leadingMagnitude(formatValue)
   const deltaMagnitude = leadingMagnitude(delta)
   const precision = clampPrecision(magnitude - deltaMagnitude + 2)
 
-  return formatNumber(formatValue, precision)
+  return localizeDecimalNumber(formatValue, locale, precision)
 }
 
 export const buildFormatDisplayFromNumber = (
@@ -421,9 +434,11 @@ export const buildFormatDisplayFromInputs = (
   return buildDisplay(signBits, exponentBits, mantissaBits, value)
 }
 
-export const createInitialFloatingPointConverterState = (): FloatingPointConverterState => {
+export const createInitialFloatingPointConverterState = (
+  locale: string = resolveNumberLocale(),
+): FloatingPointConverterState => {
   const decimalNumber = Number(DEFAULT_DECIMAL_VALUE)
-  const decimalValue = formatNumber(decimalNumber)
+  const decimalValue = localizeDecimalNumber(decimalNumber, locale)
   const formats = Object.fromEntries(
     FLOATING_POINT_FORMATS.map((format) => [format.id, buildFormatDisplayFromNumber(format, decimalNumber)]),
   ) as Record<FloatingPointFormatId, FloatingPointFormatDisplay>
@@ -433,4 +448,16 @@ export const createInitialFloatingPointConverterState = (): FloatingPointConvert
     decimalNumber,
     formats,
   }
+}
+
+export const getInterpretationLabel = (messages: Messages, key: string): string => {
+  const lookup: Record<string, string> = {
+    zero: messages.floatingPointConverter.interpretationZero,
+    subnormal: messages.floatingPointConverter.interpretationSubnormal,
+    normal: messages.floatingPointConverter.interpretationNormal,
+    infinity: messages.floatingPointConverter.interpretationInfinity,
+    nan: messages.floatingPointConverter.interpretationNaN,
+  }
+
+  return lookup[key] ?? key
 }

@@ -11,11 +11,7 @@ export type JsonPrettyPrinterState = {
 
 export type JsonPrettyPrinterElements = {
   form: HTMLFormElement
-  uploadInput: HTMLInputElement
-  uploadDropZone: HTMLElement
   uploadLabel: HTMLElement
-  uploadFileButton: HTMLButtonElement
-  uploadFileName: HTMLElement
   uploadHint: HTMLElement
   input: HTMLTextAreaElement
   indentSelect: HTMLSelectElement

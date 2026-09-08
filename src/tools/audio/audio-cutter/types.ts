@@ -11,15 +11,9 @@ export type AudioCutterState = {
   playhead: number
   peaks: number[]
   sourceUrl: string | null
-  previewUrl: string | null
-  downloadUrl: string | null
 }
 
 export type AudioCutterElements = {
-  fileInput: HTMLInputElement
-  browseButton: HTMLButtonElement
-  dropzone: HTMLElement
-  fileName: HTMLElement
   status: HTMLElement
   summary: HTMLElement
   waveformCanvas: HTMLCanvasElement

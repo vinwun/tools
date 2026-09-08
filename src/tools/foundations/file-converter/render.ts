@@ -1,3 +1,5 @@
+import { formatAcceptList } from '../files.ts'
+import { renderFilePicker } from '../file-picker/render.ts'
 import type { ConverterMessages, FileConverterConfig } from './types.ts'
 
 const renderOutputOptions = (config: FileConverterConfig): string =>
@@ -12,15 +14,16 @@ export const renderFileConverter = (
   <section class="tool-layout file-converter-layout" data-file-converter-root="${config.id}">
     <div class="tool-panel file-converter-panel file-converter-panel-input">
       <div class="file-converter-input-header">
-        <label class="tool-field">
+        <div class="tool-field">
           <span data-file-converter-upload-label>${messages.uploadLabel}</span>
-          <div class="file-converter-file-picker" data-file-converter-dropzone>
-            <button type="button" class="file-converter-file-button" data-file-converter-file-button>${messages.browseAction}</button>
-            <span class="file-converter-file-name" data-file-converter-file-name aria-live="polite">${messages.noFileSelected}</span>
-          </div>
-          <input class="file-converter-file-input" type="file" data-file-converter-file accept="${config.inputAccept}" multiple hidden />
-        </label>
-        <p class="tool-hint" data-file-converter-upload-hint>${messages.uploadHintLabel}: ${config.inputAccept.replaceAll(',', ' / ')}</p>
+          ${renderFilePicker({
+            accept: config.inputAccept,
+            multiple: true,
+            browseLabel: messages.browseAction,
+            emptyLabel: messages.noFileSelected,
+          })}
+        </div>
+        <p class="tool-hint" data-file-converter-upload-hint>${messages.uploadHintLabel}: ${formatAcceptList(config.inputAccept)}</p>
       </div>
 
       <label class="tool-field">

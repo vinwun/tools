@@ -1,23 +1,25 @@
 import type { Messages } from '../../../i18n/schema'
-import {ACCEPTED_AUDIO_TYPES} from "../audio-utils.ts";
+import { formatAcceptList } from '../../foundations/files.ts'
+import { renderFilePicker } from '../../foundations/file-picker/render.ts'
+import { ACCEPTED_AUDIO_TYPES } from '../audio-utils.ts'
 
 export const renderAudioCutter = (messages: Messages): string => `
-  <section class="tool-layout audio-cutter-layout" data-audio-cutter-root>
+  <section class="tool-layout tool-layout-split audio-cutter-layout" data-audio-cutter-root>
     <div class="tool-panel audio-cutter-panel audio-cutter-panel-main">
-      <label class="tool-field">
+      <div class="tool-field">
         <span>${messages.audioCutter.uploadLabel}</span>
-        <div class="audio-cutter-file-picker" data-audio-cutter-dropzone>
-          <button type="button" class="tool-action audio-cutter-file-button" data-audio-cutter-browse>${messages.audioCutter.browseAction}</button>
-          <span class="audio-cutter-file-name" data-audio-cutter-file-name aria-live="polite">${messages.audioCutter.noFileSelected}</span>
-        </div>
-        <input class="audio-cutter-file-input" type="file" accept="${ACCEPTED_AUDIO_TYPES}" data-audio-cutter-file hidden />
-      </label>
-      <p class="tool-hint">${messages.audioCutter.uploadHintLabel}: ${ACCEPTED_AUDIO_TYPES.replaceAll(',', ' / ')}</p>
+        ${renderFilePicker({
+          accept: ACCEPTED_AUDIO_TYPES,
+          browseLabel: messages.audioCutter.browseAction,
+          emptyLabel: messages.audioCutter.noFileSelected,
+        })}
+      </div>
+      <p class="tool-hint">${messages.audioCutter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_AUDIO_TYPES)}</p>
 
       <div class="audio-cutter-waveform-block">
-        <div class="audio-cutter-waveform-header">
+        <div class="tool-panel-header audio-cutter-waveform-header">
           <h2>${messages.audioCutter.waveformLabel}</h2>
-          <p class="audio-cutter-selection-summary" data-audio-cutter-summary>${messages.audioCutter.statusNoFile}</p>
+          <p class="tool-hint" data-audio-cutter-summary>${messages.audioCutter.statusNoFile}</p>
         </div>
         <div class="audio-cutter-waveform-shell">
           <canvas class="audio-cutter-waveform-canvas" data-audio-cutter-waveform aria-label="${messages.audioCutter.waveformLabel}"></canvas>
@@ -58,7 +60,7 @@ export const renderAudioCutter = (messages: Messages): string => `
 
       <audio class="audio-cutter-preview" data-audio-cutter-preview controls preload="metadata"></audio>
       <p class="tool-status" data-audio-cutter-status>${messages.audioCutter.statusNoFile}</p>
-      <a class="tool-action audio-cutter-download is-disabled" data-audio-cutter-download aria-disabled="true">${messages.audioCutter.downloadAction}</a>
+      <a class="tool-action tool-download audio-cutter-download is-disabled" data-audio-cutter-download aria-disabled="true">${messages.audioCutter.downloadAction}</a>
     </div>
   </section>
 `

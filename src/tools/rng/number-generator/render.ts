@@ -7,7 +7,7 @@ export const renderNumberGenerator = (messages: Messages, state: NumberGenerator
   return `
     <section class="tool-layout rng-number-generator-layout" data-rng-number-generator-root>
       <form class="tool-panel rng-number-generator-panel" data-rng-number-generator-form novalidate>
-        <output class="rng-number-generator-result" data-rng-number-generator-result aria-live="polite">${state.resultText}</output>
+        <output class="tool-readout rng-number-generator-result" data-rng-number-generator-result aria-live="polite">${state.resultText}</output>
         <fieldset class="rng-number-generator-fieldset">
           <legend data-rng-number-generator-settings-legend>${numberMessages.settingsLegend}</legend>
           <div class="rng-number-generator-grid">

@@ -4,12 +4,11 @@ import {
   escapeHtml,
   formatStringGeneratorStatus,
   parseStringGeneratorEntries,
-  resolveStringGeneratorLocale,
 } from './utils.ts'
 
 export const renderStringGenerator = (messages: Messages, state: StringGeneratorState): string => {
   const stringMessages = messages.rngStringGenerator
-  const entries = parseStringGeneratorEntries(state.entriesText, resolveStringGeneratorLocale())
+  const entries = parseStringGeneratorEntries(state.entriesText)
   const statusText = formatStringGeneratorStatus(
     messages,
     entries.length,
@@ -20,7 +19,7 @@ export const renderStringGenerator = (messages: Messages, state: StringGenerator
   return `
     <section class="tool-layout rng-string-generator-layout" data-rng-string-generator-root>
       <div class="rng-string-generator-result-shell">
-        <output class="rng-string-generator-result" data-rng-string-generator-result aria-live="polite">${escapeHtml(state.resultText)}</output>
+        <output class="tool-readout rng-string-generator-result" data-rng-string-generator-result aria-live="polite">${escapeHtml(state.resultText)}</output>
         <p class="tool-status rng-string-generator-status" data-rng-string-generator-status>${escapeHtml(statusText)}</p>
       </div>
 
@@ -54,7 +53,7 @@ export const renderStringGenerator = (messages: Messages, state: StringGenerator
               </div>
             </fieldset>
 
-            <div class="rng-string-generator-actions">
+            <div class="tool-actions rng-string-generator-actions">
               <button type="submit" class="tool-action rng-string-generator-generate" data-rng-string-generator-generate>${escapeHtml(stringMessages.generateAction)}</button>
             </div>
           </div>

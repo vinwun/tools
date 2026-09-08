@@ -7,27 +7,13 @@
   min-width: 0;
 }
 
-.text-counter-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
 .text-counter-head-label {
   font-weight: 700;
   font-size: 1.15rem;
 }
 
 .text-counter-input {
-  width: 100%;
   min-height: 30rem;
-  resize: vertical;
-  font: inherit;
-  padding: 0.65rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border);
-  line-height: 1.5;
 }
 
 .text-counter-grid {

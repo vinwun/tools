@@ -1,16 +1,15 @@
 import type { Messages } from '../../../i18n/schema.ts'
+import { downloadBlob, formatAcceptList, readFileAsText } from '../../foundations/files.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import type { MarkdownViewerElements, MarkdownViewerState } from './types.ts'
 import { createInitialMarkdownViewerState, renderMarkdownToHtml, wrapHtmlDocument } from './utils.ts'
 
-const markdownViewerLocaleSyncers = new WeakMap<HTMLElement, (messages: Messages) => void>()
+const markdownViewerLocale = createLocaleSyncRegistry<[Messages]>('[data-markdown-viewer-root]')
 
 const queryMarkdownViewerElements = (container: HTMLElement): MarkdownViewerElements | null => {
   const form = container.querySelector<HTMLFormElement>('[data-markdown-viewer-form]')
-  const uploadInput = container.querySelector<HTMLInputElement>('[data-markdown-viewer-file-input]')
-  const uploadDropZone = container.querySelector<HTMLElement>('[data-markdown-viewer-dropzone]')
   const uploadLabel = container.querySelector<HTMLElement>('[data-markdown-viewer-upload-label]')
-  const uploadFileButton = container.querySelector<HTMLButtonElement>('[data-markdown-viewer-file-button]')
-  const uploadFileName = container.querySelector<HTMLElement>('[data-markdown-viewer-file-name]')
   const uploadHint = container.querySelector<HTMLElement>('[data-markdown-viewer-upload-hint]')
   const input = container.querySelector<HTMLTextAreaElement>('[data-markdown-viewer-input]')
   const renderButton = container.querySelector<HTMLButtonElement>('[data-markdown-viewer-render]')
@@ -23,11 +22,7 @@ const queryMarkdownViewerElements = (container: HTMLElement): MarkdownViewerElem
 
   if (
     !form ||
-    !uploadInput ||
-    !uploadDropZone ||
     !uploadLabel ||
-    !uploadFileButton ||
-    !uploadFileName ||
     !uploadHint ||
     !input ||
     !renderButton ||
@@ -43,11 +38,7 @@ const queryMarkdownViewerElements = (container: HTMLElement): MarkdownViewerElem
 
   return {
     form,
-    uploadInput,
-    uploadDropZone,
     uploadLabel,
-    uploadFileButton,
-    uploadFileName,
     uploadHint,
     input,
     renderButton,
@@ -61,18 +52,15 @@ const queryMarkdownViewerElements = (container: HTMLElement): MarkdownViewerElem
 }
 
 const INPUT_ACCEPT = '.md,.txt'
-const INPUT_ACCEPT_LABEL = INPUT_ACCEPT.replaceAll(',', ' / ')
+const INPUT_ACCEPT_LABEL = formatAcceptList(INPUT_ACCEPT)
 
 const syncLocalizedText = (
   elements: MarkdownViewerElements,
   messages: Messages,
-  state: MarkdownViewerState,
 ): void => {
   const markdownMessages = messages.markdownViewer
   elements.uploadLabel.textContent = markdownMessages.uploadLabel
   elements.uploadHint.textContent = `${markdownMessages.uploadHint}: ${INPUT_ACCEPT_LABEL}`
-  elements.uploadFileButton.textContent = markdownMessages.uploadAction
-  elements.uploadFileName.textContent = state.selectedFileName ?? markdownMessages.noFileSelected
   elements.inputLabel.textContent = markdownMessages.inputLabel
   elements.input.placeholder = markdownMessages.inputPlaceholder
   elements.renderButton.textContent = markdownMessages.renderAction
@@ -133,18 +121,11 @@ const renderMarkdownInput = (
   elements.downloadButton.disabled = false
 }
 
-const readMarkdownFile = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result ?? ''))
-    reader.onerror = () => reject(reader.error ?? new Error('File read failed'))
-    reader.readAsText(file)
-  })
-
 export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Messages): void => {
   const root = container.querySelector<HTMLElement>('[data-markdown-viewer-root]') ?? container
   const elements = queryMarkdownViewerElements(container)
-  if (!elements) {
+  const filePicker = wireFilePicker(root, { onFiles: (files) => void loadFile(files[0]) })
+  if (!elements || !filePicker) {
     return
   }
 
@@ -153,7 +134,7 @@ export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Mes
   let renderDelayId: number | null = null
 
   const syncUi = (): void => {
-    syncLocalizedText(elements, messages, state)
+    syncLocalizedText(elements, messages)
     elements.input.value = state.inputValue
     updateStatus(elements, messages, state)
     if (state.status === 'ready') {
@@ -170,17 +151,17 @@ export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Mes
     syncUi()
   }
 
-  markdownViewerLocaleSyncers.set(root, syncLocale)
+  markdownViewerLocale.register(root, syncLocale)
 
   const updateFileName = (fileName: string | null): void => {
     state.selectedFileName = fileName
-    elements.uploadFileName.textContent = fileName ?? messages.markdownViewer.noFileSelected
+    filePicker.setName(fileName ?? messages.markdownViewer.noFileSelected)
   }
 
   const loadFile = async (file: File): Promise<void> => {
     try {
       updateFileName(file.name)
-      state.inputValue = await readMarkdownFile(file)
+      state.inputValue = await readFileAsText(file)
       elements.input.value = state.inputValue
       renderMarkdownInput(elements, state)
       updateStatus(elements, messages, state)
@@ -205,42 +186,6 @@ export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Mes
     scheduleRender()
   })
 
-  elements.uploadInput.addEventListener('change', async () => {
-    const file = elements.uploadInput.files?.[0]
-    if (!file) {
-      return
-    }
-
-    await loadFile(file)
-  })
-
-  elements.uploadFileButton.addEventListener('click', () => {
-    elements.uploadInput.click()
-  })
-
-  const handleDrop = async (file: File): Promise<void> => {
-    await loadFile(file)
-  }
-
-  elements.uploadDropZone.addEventListener('dragover', (event) => {
-    event.preventDefault()
-    elements.uploadDropZone.classList.add('is-dragover')
-  })
-
-  elements.uploadDropZone.addEventListener('dragleave', () => {
-    elements.uploadDropZone.classList.remove('is-dragover')
-  })
-
-  elements.uploadDropZone.addEventListener('drop', async (event) => {
-    event.preventDefault()
-    elements.uploadDropZone.classList.remove('is-dragover')
-    const file = event.dataTransfer?.files?.[0]
-    if (!file) {
-      return
-    }
-    await handleDrop(file)
-  })
-
   elements.form.addEventListener('submit', (event) => {
     event.preventDefault()
     renderMarkdownInput(elements, state)
@@ -254,8 +199,8 @@ export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Mes
     state.status = 'empty'
     state.selectedFileName = null
     elements.input.value = ''
-    elements.uploadInput.value = ''
-    elements.uploadFileName.textContent = messages.markdownViewer.noFileSelected
+    filePicker.input.value = ''
+    filePicker.setName(messages.markdownViewer.noFileSelected)
     updateStatus(elements, messages, state)
     resetOutput(elements)
     elements.downloadButton.disabled = true
@@ -267,18 +212,10 @@ export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Mes
     }
 
     const blob = new Blob([state.renderedDocument], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = 'markdown.html'
-    anchor.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(blob, 'markdown.html')
   })
 
   syncUi()
 }
 
-export const updateMarkdownViewerLocale = (container: HTMLElement, messages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-markdown-viewer-root]') ?? container
-  markdownViewerLocaleSyncers.get(root)?.(messages)
-}
+export const updateMarkdownViewerLocale = markdownViewerLocale.update

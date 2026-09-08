@@ -1,6 +1,10 @@
 import {type Locale, messagesByLocale} from '../../../i18n'
 import {configurePdfWorker} from '../pdf-worker.ts'
-import {ACCEPTED_PDF_TYPES, createUniqueId} from '../pdf-page-organizer/utils.ts'
+import { createUniqueId, escapeHtml } from '../../foundations/dom.ts'
+import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
+import { downloadBlob, formatAcceptList } from '../../foundations/files.ts'
+import { ACCEPTED_PDF_TYPES } from '../pdf-utils.ts'
 import type {PdfTextExtractorEntry, PdfTextExtractorFormat} from './types.ts'
 import {buildDownloadFileName, extractPdfText, isPdfFile} from './utils.ts'
 
@@ -11,16 +15,8 @@ type PdfTextExtractorState = {
   selectedEntryId: string | null
 }
 
-const pdfTextExtractorLocaleSyncers = new WeakMap<HTMLElement, (locale: Locale) => void>()
+const pdfTextExtractorLocale = createLocaleSyncRegistry<[Locale]>('[data-pdf-text-extractor-root]')
 let stateGeneration = 0
-
-const escapeHtml = (value: string): string =>
-  value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
 
 const getMessages = (locale: Locale) => messagesByLocale[locale]
 
@@ -51,8 +47,8 @@ const renderResults = (state: PdfTextExtractorState, locale: Locale): string => 
         : `<p class="tool-hint">${messages.previewUnavailable}</p>`
 
       return `
-        <article class="pdf-text-extractor-entry${isSelected ? ' is-selected' : ''}" data-pdf-text-extractor-entry="${entry.id}" aria-selected="${isSelected ? 'true' : 'false'}">
-          <header class="pdf-text-extractor-entry-header">
+        <article class="tool-card pdf-text-extractor-entry${isSelected ? ' is-selected' : ''}" data-pdf-text-extractor-entry="${entry.id}" aria-selected="${isSelected ? 'true' : 'false'}">
+          <header class="tool-panel-header pdf-text-extractor-entry-header">
             <div class="pdf-text-extractor-entry-meta">
               <h3 class="pdf-text-extractor-entry-title">${escapeHtml(entry.fileName)}</h3>
             </div>
@@ -102,16 +98,13 @@ export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): v
 
   let currentLocale = locale
 
-  const fileInput = root.querySelector<HTMLInputElement>('[data-pdf-text-extractor-file]')
-  const browseButton = root.querySelector<HTMLButtonElement>('[data-pdf-text-extractor-browse]')
-  const dropzone = root.querySelector<HTMLElement>('[data-pdf-text-extractor-dropzone]')
-  const fileNameElement = root.querySelector<HTMLElement>('[data-pdf-text-extractor-file-name]')
+  const filePicker = wireFilePicker(root, { onFiles: (files) => void extractFiles(files.slice(0, 1)) })
   const outputSelect = root.querySelector<HTMLSelectElement>('[data-pdf-text-extractor-output]')
   const downloadSelectedButton = root.querySelector<HTMLButtonElement>('[data-pdf-text-extractor-download-selected]')
   const statusElement = root.querySelector<HTMLElement>('[data-pdf-text-extractor-status]')
   const resultsElement = root.querySelector<HTMLElement>('[data-pdf-text-extractor-results]')
 
-  if (!fileInput || !browseButton || !dropzone || !fileNameElement || !outputSelect || !downloadSelectedButton || !statusElement || !resultsElement) {
+  if (!filePicker || !outputSelect || !downloadSelectedButton || !statusElement || !resultsElement) {
     return
   }
 
@@ -127,13 +120,12 @@ export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): v
     resultsElement.innerHTML = renderResults(state, currentLocale)
 
     const currentFileName = state.entries[0]?.fileName ?? ''
-    fileNameElement.textContent = currentFileName || getMessages(currentLocale).pdfTextExtractor.noFileSelected
+    filePicker.setName(currentFileName || getMessages(currentLocale).pdfTextExtractor.noFileSelected)
 
     const selectedEntry = state.entries.find((entry) => entry.id === state.selectedEntryId) ?? null
     const hasReadySelection = Boolean(selectedEntry && selectedEntry.status === 'ready')
 
-    browseButton.disabled = state.isBusy
-    fileInput.disabled = state.isBusy
+    filePicker.input.disabled = state.isBusy
     downloadSelectedButton.disabled = state.isBusy || !hasReadySelection
   }
 
@@ -144,9 +136,9 @@ export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): v
     const uploadHint = root.querySelector<HTMLElement>('[data-pdf-text-extractor-upload-hint]')
     const outputSelect = root.querySelector<HTMLSelectElement>('[data-pdf-text-extractor-output]')
 
-    if (uploadHint) uploadHint.textContent = `${messages.uploadHintLabel}: ${ACCEPTED_PDF_TYPES.replaceAll(',', ' / ')}`
+    if (uploadHint) uploadHint.textContent = `${messages.uploadHintLabel}: ${formatAcceptList(ACCEPTED_PDF_TYPES)}`
     if (!state.entries[0]?.fileName) {
-      fileNameElement.textContent = messages.noFileSelected
+      filePicker.setName(messages.noFileSelected)
     }
     if (outputSelect) {
       outputSelect.options[0].textContent = messages.outputFormatMarkdown
@@ -163,13 +155,12 @@ export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): v
     if (outputHeading) outputHeading.textContent = messages.outputTitle
     if (resultsHeading) resultsHeading.textContent = messages.resultsTitle
 
-    browseButton.textContent = messages.browseAction
     downloadSelectedButton.textContent = messages.downloadAction
 
     sync()
   }
 
-  pdfTextExtractorLocaleSyncers.set(root, syncLocale)
+  pdfTextExtractorLocale.register(root, syncLocale)
 
   const setBusy = (busy: boolean): void => {
     state.isBusy = busy
@@ -178,16 +169,7 @@ export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): v
 
   const triggerDownload = (text: string, fileName: string, format: PdfTextExtractorFormat): void => {
     const blob = new Blob([text], { type: format === 'md' ? 'text/markdown' : 'text/plain' })
-    const downloadUrl = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = downloadUrl
-    anchor.download = buildDownloadFileName(fileName, format)
-    anchor.style.display = 'none'
-
-    document.body.append(anchor)
-    anchor.click()
-    anchor.remove()
-    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+    downloadBlob(blob, buildDownloadFileName(fileName, format))
   }
 
   const extractFiles = async (files: readonly File[]): Promise<void> => {
@@ -242,32 +224,6 @@ export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): v
     setBusy(false)
   }
 
-  browseButton.addEventListener('click', () => {
-    fileInput.click()
-  })
-
-  fileInput.addEventListener('change', () => {
-    const files = Array.from(fileInput.files ?? [])
-    fileInput.value = ''
-    void extractFiles(files.slice(0, 1))
-  })
-
-  dropzone.addEventListener('dragover', (event) => {
-    event.preventDefault()
-    dropzone.classList.add('is-dragover')
-  })
-
-  dropzone.addEventListener('dragleave', () => {
-    dropzone.classList.remove('is-dragover')
-  })
-
-  dropzone.addEventListener('drop', (event) => {
-    event.preventDefault()
-    dropzone.classList.remove('is-dragover')
-    const droppedFiles = Array.from(event.dataTransfer?.files ?? [])
-    void extractFiles(droppedFiles.slice(0, 1))
-  })
-
   outputSelect.addEventListener('change', () => {
     state.outputFormat = outputSelect.value === 'txt' ? 'txt' : 'md'
     sync()
@@ -310,11 +266,4 @@ export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): v
   sync()
 }
 
-export const updatePdfTextExtractorLocale = (container: HTMLElement, locale: Locale): void => {
-  const root = container.querySelector<HTMLElement>('[data-pdf-text-extractor-root]')
-  if (!root) {
-    return
-  }
-
-  pdfTextExtractorLocaleSyncers.get(root)?.(locale)
-}
+export const updatePdfTextExtractorLocale = pdfTextExtractorLocale.update

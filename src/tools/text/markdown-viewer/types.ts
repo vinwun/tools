@@ -10,11 +10,7 @@ export type MarkdownViewerState = {
 
 export type MarkdownViewerElements = {
   form: HTMLFormElement
-  uploadInput: HTMLInputElement
-  uploadDropZone: HTMLElement
   uploadLabel: HTMLElement
-  uploadFileButton: HTMLButtonElement
-  uploadFileName: HTMLElement
   uploadHint: HTMLElement
   input: HTMLTextAreaElement
   renderButton: HTMLButtonElement
