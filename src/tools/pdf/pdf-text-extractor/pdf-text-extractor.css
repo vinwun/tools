@@ -24,6 +24,7 @@
 
 .pdf-text-extractor-output-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.65rem;
   align-items: center;
   width: 100%;

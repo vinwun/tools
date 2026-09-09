@@ -11,9 +11,14 @@
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.tool-file-picker:hover,
 .tool-file-picker:focus-within {
   border-color: color-mix(in srgb, var(--text) 30%, var(--border));
+}
+
+@media (hover: hover) {
+  .tool-file-picker:hover {
+    border-color: color-mix(in srgb, var(--text) 30%, var(--border));
+  }
 }
 
 .tool-file-picker.is-dragover {

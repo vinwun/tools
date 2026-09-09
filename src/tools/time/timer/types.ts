@@ -9,6 +9,7 @@ export type TimerState = {
 
 export type TimerElements = {
   display: HTMLOutputElement
+  hint: HTMLElement | null
   primaryButton: HTMLButtonElement
   secondaryButton: HTMLButtonElement
   soundToggle?: HTMLButtonElement

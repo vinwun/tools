@@ -13,8 +13,10 @@
   font-weight: 600;
 }
 
-.breadcrumbs a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .breadcrumbs a:hover {
+    text-decoration: underline;
+  }
 }
 
 .back-button {
@@ -27,8 +29,10 @@
   cursor: pointer;
 }
 
-.back-button:hover {
-  border-color: var(--accent);
+@media (hover: hover) {
+  .back-button:hover {
+    border-color: var(--accent);
+  }
 }
 
 .category-tools {
@@ -69,8 +73,10 @@
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.tool-link-card:hover {
-  border-color: var(--accent);
+@media (hover: hover) {
+  .tool-link-card:hover {
+    border-color: var(--accent);
+  }
 }
 
 .tool-link-card:focus-visible {
@@ -85,4 +91,10 @@
 .tool-link-description {
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+@media (pointer: coarse) {
+  .back-button {
+    min-height: 2.75rem;
+  }
 }

@@ -16,7 +16,15 @@
   min-height: 20rem;
   padding: 1rem;
   font-variant-numeric: tabular-nums;
-  cursor: ew-resize;
+  cursor: ns-resize;
+}
+
+/* While idle (`disabled` marks the active states) the display is the duration control, so a drag
+   must adjust it rather than scroll the page. */
+.timer-display:not(.disabled) {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .timer-display.paused {
@@ -78,10 +86,39 @@
   font-weight: 600;
 }
 
+.timer-hint {
+  text-align: center;
+}
+
 .timer-toggle {
   flex: 0 0 auto;
   min-width: 4.5rem;
   padding: 0.5rem 0.75rem;
   font-size: 1.1rem;
   border-radius: 0.5rem;
+}
+
+/* Three two-digit columns at the desktop 5rem floor overflow a phone. */
+@media (max-width: 600px) {
+  .timer-display {
+    min-height: 14rem;
+  }
+
+  .timer-display-grid {
+    gap: 0.5rem;
+  }
+
+  .timer-display-unit {
+    min-height: 7rem;
+  }
+
+  .timer-display-current,
+  .timer-display-part-current {
+    font-size: clamp(2.5rem, 13vw, 5rem);
+  }
+
+  .timer-display-part-previous,
+  .timer-display-part-next {
+    font-size: clamp(1.25rem, 6vw, 3rem);
+  }
 }

@@ -4,6 +4,7 @@ import {
   createInitialLoremIpsumGeneratorState,
   generateLoremText,
 } from './utils.ts'
+import { copyText } from '../../foundations/clipboard.ts'
 import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
 const loremIpsumGeneratorLocale = createLocaleSyncRegistry<[Messages]>('[data-lorem-ipsum-generator-root]')
@@ -179,12 +180,10 @@ export const mountLoremIpsumGenerator = (
       return
     }
 
-    try {
-      await navigator.clipboard.writeText(text)
-      elements.status.textContent = messages.loremIpsumGenerator.copiedMessage
-    } catch {
-      elements.status.textContent = messages.loremIpsumGenerator.copyFailedMessage
-    }
+    const copied = await copyText(text)
+    elements.status.textContent = copied
+      ? messages.loremIpsumGenerator.copiedMessage
+      : messages.loremIpsumGenerator.copyFailedMessage
   })
 
   elements.clearButton.addEventListener('click', () => {

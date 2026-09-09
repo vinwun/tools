@@ -11,6 +11,7 @@ const timerLocale = createLocaleSyncRegistry<[Messages]>('[data-timer-root]')
 
 const queryTimerElements = (container: HTMLElement): TimerElements | null => {
   const display = container.querySelector<HTMLOutputElement>('[data-timer-display]')
+  const hint = container.querySelector<HTMLElement>('[data-timer-hint]')
   const primaryButton = container.querySelector<HTMLButtonElement>('[data-timer-primary]')
   const secondaryButton = container.querySelector<HTMLButtonElement>('[data-timer-secondary]')
   const soundToggle = container.querySelector<HTMLButtonElement>('[data-timer-sound]')
@@ -22,6 +23,7 @@ const queryTimerElements = (container: HTMLElement): TimerElements | null => {
 
   return {
     display,
+    hint,
     primaryButton,
     secondaryButton,
     soundToggle: soundToggle ?? undefined,
@@ -166,14 +168,22 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     elements.display.classList.toggle('disabled', isActive)
   }
 
-  const handleWheelAdjust = (stepSeconds: number, event: WheelEvent): void => {
-    if (state.status === 'running') {
-      return
+  const resolveStepSeconds = (clientX: number): number => {
+    const bounds = elements.display.getBoundingClientRect()
+    const relativeX = bounds.width > 0 ? (clientX - bounds.left) / bounds.width : 1
+
+    if (relativeX < 1 / 3) {
+      return 3600
     }
 
-    event.preventDefault()
-    const direction = event.deltaY < 0 ? 1 : -1
-    const nextDuration = adjustTimerDuration(state.durationMs, direction * stepSeconds)
+    if (relativeX < 2 / 3) {
+      return 60
+    }
+
+    return 1
+  }
+
+  const setDuration = (nextDuration: number): void => {
     state.durationMs = nextDuration
     state.remainingMs = nextDuration
     updateDisplay(nextDuration)
@@ -185,20 +195,65 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
       return
     }
 
-    const bounds = elements.display.getBoundingClientRect()
-    const relativeX = bounds.width > 0 ? (event.clientX - bounds.left) / bounds.width : 1
+    event.preventDefault()
+    const direction = event.deltaY < 0 ? 1 : -1
+    setDuration(adjustTimerDuration(state.durationMs, direction * resolveStepSeconds(event.clientX)))
+  }
 
-    if (relativeX < 1 / 3) {
-      handleWheelAdjust(3600, event)
+  // Touch devices get no wheel event, so the display is draggable too.
+  const DRAG_PIXELS_PER_STEP = 22
+  let dragPointerId: number | null = null
+  let dragStepSeconds = 1
+  let dragOriginY = 0
+  let dragOriginDurationMs = 0
+  let dragAppliedSteps = 0
+
+  const handleDisplayPointerDown = (event: PointerEvent): void => {
+    if (state.status !== 'idle' || dragPointerId !== null) {
       return
     }
 
-    if (relativeX < 2 / 3) {
-      handleWheelAdjust(60, event)
+    dragPointerId = event.pointerId
+    dragStepSeconds = resolveStepSeconds(event.clientX)
+    dragOriginY = event.clientY
+    dragOriginDurationMs = state.durationMs
+    dragAppliedSteps = 0
+
+    try {
+      elements.display.setPointerCapture(event.pointerId)
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleDisplayPointerMove = (event: PointerEvent): void => {
+    if (dragPointerId !== event.pointerId || state.status !== 'idle') {
       return
     }
 
-    handleWheelAdjust(1, event)
+    // Higher values sit below, so swiping up pulls one into the middle, as the wheel does.
+    const steps = Math.trunc((dragOriginY - event.clientY) / DRAG_PIXELS_PER_STEP)
+    if (steps === dragAppliedSteps) {
+      return
+    }
+
+    dragAppliedSteps = steps
+    // Measured from the drag's start, so travel past 0 or the max builds up no debt to pay back.
+    setDuration(adjustTimerDuration(dragOriginDurationMs, steps * dragStepSeconds))
+  }
+
+  const handleDisplayPointerEnd = (event: PointerEvent): void => {
+    if (dragPointerId !== event.pointerId) {
+      return
+    }
+
+    dragPointerId = null
+
+    try {
+      elements.display.releasePointerCapture(event.pointerId)
+    } catch {
+      // ignore
+    }
   }
 
   const updateButtons = (): void => {
@@ -364,11 +419,21 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
   const syncLocale = (nextMessages: Messages): void => {
     messages = nextMessages
     elements.display.setAttribute('aria-label', messages.timer.remainingLabel)
+
+    if (elements.hint) {
+      elements.hint.textContent = messages.timer.adjustHint
+    }
+
     updateButtons()
   }
 
   timerLocale.register(root, syncLocale)
   elements.display.addEventListener('wheel', handleDisplayWheel, { passive: false })
+  // Capture retargets move/up here; these guard on status, so they are never detached.
+  elements.display.addEventListener('pointerdown', handleDisplayPointerDown)
+  elements.display.addEventListener('pointermove', handleDisplayPointerMove)
+  elements.display.addEventListener('pointerup', handleDisplayPointerEnd)
+  elements.display.addEventListener('pointercancel', handleDisplayPointerEnd)
 
   elements.primaryButton.addEventListener('click', () => {
     // Prime audio and request notification permission on first user gesture

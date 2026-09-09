@@ -326,6 +326,8 @@ export const mountVideoCutter = (container: HTMLElement, locale: Locale): void =
 
     btn.addEventListener('pointerup', stop)
     btn.addEventListener('pointerleave', stop)
+    // Touch sends pointercancel, not pointerup, when the finger drifts.
+    btn.addEventListener('pointercancel', stop)
     btn.addEventListener('click', (e) => e.preventDefault())
   }
 

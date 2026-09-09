@@ -91,6 +91,11 @@ const convertImageFile = async (file: File, outputFormatId: string): Promise<Con
     const quality = 'quality' in outputFormat ? outputFormat.quality : undefined
     const blob = await canvasToBlob(canvas, outputFormat.mimeType, quality)
 
+    // A browser that cannot encode this type silently returns a PNG under the wanted extension.
+    if (blob.type !== outputFormat.mimeType) {
+      return { ok: false, reason: 'unsupportedOutput' }
+    }
+
     return {
       ok: true,
       data: {

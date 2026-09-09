@@ -164,20 +164,6 @@ export const normalizeHexInput = (value: string): string | null => {
   return rgb ? rgbToHex(rgb) : null
 }
 
-export const copyText = async (text: string): Promise<boolean> => {
-  try {
-    if (!navigator.clipboard?.writeText) {
-      return false
-    }
-
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch {
-    return false
-  }
-}
-
-
 export const drawSpectrumCanvas = (canvas: HTMLCanvasElement, hue: number): void => {
   const { width, height } = setCanvasSize(canvas)
   const context = canvas.getContext('2d')

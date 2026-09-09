@@ -99,6 +99,8 @@ export type Messages = {
     selectedSummary: string
     keepSelectedAction: string
     removeSelectedAction: string
+    moveLeftAction: string
+    moveRightAction: string
     downloadAction: string
     selectionHint: string
     reorderHint: string
@@ -210,6 +212,7 @@ export type Messages = {
   }
   timer: {
     remainingLabel: string
+    adjustHint: string
     startAction: string
     pauseAction: string
     resumeAction: string

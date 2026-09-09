@@ -177,11 +177,6 @@
 
 .pdf-page-organizer-guidance {
   max-width: none;
-  white-space: nowrap;
-}
-
-.pdf-page-organizer-reorder-hint {
-  white-space: nowrap;
 }
 
 .pdf-page-organizer-panel-upload {
@@ -197,9 +192,32 @@
   gap: 0.75rem;
 }
 
+/* Matches the specificity of the panel-scoped padding above, which would otherwise win. */
+.pdf-page-organizer-panel .pdf-page-organizer-move {
+  padding-inline: 1.25rem;
+}
+
 @media (max-width: 920px) {
   .pdf-page-organizer-layout {
     grid-template-columns: 1fr;
+  }
+
+  /* Five actions cannot share one non-wrapping row once the panel narrows. */
+  .pdf-page-organizer-action-bar {
+    flex-wrap: wrap;
+  }
+
+  .pdf-page-organizer-action-group {
+    flex: 1 1 auto;
+  }
+
+  .pdf-page-organizer-action-group-right {
+    margin-left: 0;
+  }
+
+  .pdf-page-organizer-panel .tool-action {
+    flex: 1 1 auto;
+    padding: 0.75rem 1rem;
   }
 
   .pdf-page-organizer-panel-header,

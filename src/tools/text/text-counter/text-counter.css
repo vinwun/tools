@@ -41,3 +41,14 @@
   font-size: 0.9rem;
   color: var(--muted);
 }
+
+/* Side by side, the stats column drops below its 150px tile while the textarea is still cramped. */
+@media (max-width: 860px) {
+  .text-counter-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .text-counter-input {
+    min-height: 18rem;
+  }
+}

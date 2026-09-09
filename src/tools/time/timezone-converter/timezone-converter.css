@@ -96,3 +96,53 @@
   appearance: none;
   margin: 0;
 }
+
+/* Pinning 10 rows per region group fixes the desktop grid at four columns; narrower viewports
+   have to flow by row instead. */
+@media (max-width: 1000px) {
+  .timezone-grid {
+    grid-template-rows: auto;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 0.45rem 1rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .timezone-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .timezone-local-label {
+    font-size: 1.15rem;
+  }
+
+  .timezone-local-hint,
+  .timezone-status,
+  .timezone-status-action {
+    font-size: 1rem;
+  }
+
+  .timezone-local-input {
+    width: 100%;
+    max-width: 12rem;
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .timezone-entry {
+    gap: 0.5rem;
+  }
+
+  .timezone-label {
+    /* The zone names run to ~26 characters; let them wrap rather than push the input off-screen. */
+    min-width: 0;
+    font-size: 0.95rem;
+  }
+
+  .timezone-time-input {
+    font-size: 1rem;
+  }
+}

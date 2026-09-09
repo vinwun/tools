@@ -11,6 +11,7 @@ export const renderTimer = (messages: Messages): string => {
           aria-live="polite"
           aria-label="${messages.timer.remainingLabel}"
         >${renderTimerDisplayMarkup(0, false)}</output>
+        <p class="tool-hint timer-hint" data-timer-hint>${messages.timer.adjustHint}</p>
         <div class="tool-actions timer-actions">
           <button type="button" class="tool-action timer-primary" data-timer-primary>${messages.timer.startAction}</button>
           <button type="button" class="tool-action timer-secondary" data-timer-secondary disabled>${messages.timer.resetAction}</button>

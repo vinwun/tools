@@ -88,4 +88,10 @@
   .stopwatch-layout {
     grid-template-columns: 1fr;
   }
+
+  /* "HH:MM:SS.cc" is 11 characters, which at the desktop 4rem floor runs off a phone. */
+  .stopwatch-display {
+    min-height: 9rem;
+    font-size: clamp(2rem, 9vw, 8rem);
+  }
 }

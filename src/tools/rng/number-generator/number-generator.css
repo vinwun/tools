@@ -84,6 +84,11 @@
 }
 
 @media (max-width: 900px) {
+  /* A decimal result can run to a dozen characters, which the desktop 5rem floor cannot hold. */
+  .rng-number-generator-result {
+    font-size: clamp(2rem, 9vw, 10rem);
+  }
+
   .rng-number-generator-fieldset {
     grid-template-columns: 1fr;
     gap: 0.85rem;

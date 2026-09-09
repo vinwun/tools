@@ -1,7 +1,6 @@
 import type { Messages } from '../../../i18n/schema'
 import type { ColorPickerElements, ColorState, HSLColor, RGBColor } from './types.ts'
 import {
-  copyText,
   DEFAULT_COLOR,
   drawHueCanvas,
   drawSpectrumCanvas,
@@ -17,6 +16,7 @@ import {
   round,
 } from './utils.ts'
 import { formatMessage } from '../../foundations/dom.ts'
+import { copyText } from '../../foundations/clipboard.ts'
 import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 
 const colorPickerLocale = createLocaleSyncRegistry<[Messages]>('[data-color-picker-root]')

@@ -56,3 +56,14 @@
   height: 20rem;
   min-height: 16.5rem;
 }
+
+/* The 2fr control column has no minimum, so on a phone it collapses to an unusable width. */
+@media (max-width: 860px) {
+  .lorem-ipsum-generator-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lorem-ipsum-generator-output {
+    height: 16rem;
+  }
+}

@@ -21,9 +21,11 @@
   text-decoration: none;
 }
 
-.dashboard-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px -24px rgba(17, 24, 39, 0.55);
+@media (hover: hover) {
+  .dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px -24px rgba(17, 24, 39, 0.55);
+  }
 }
 
 .dashboard-card h2 {

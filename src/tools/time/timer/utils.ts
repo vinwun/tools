@@ -78,22 +78,23 @@ export const renderTimerDisplayMarkup = (durationMs: number, isActive: boolean):
     `
   }
 
+  // Lower value on top, higher below, so moving up the strip - by wheel or by swipe - increases.
   return `
     <span class="timer-display-grid">
       <span class="timer-display-unit">
-        <span class="timer-display-part timer-display-part-previous">${formatTimerDisplayValue(triplets.hours.next)}</span>
+        <span class="timer-display-part timer-display-part-previous">${formatTimerDisplayValue(triplets.hours.previous)}</span>
         <span class="timer-display-part timer-display-part-current">${formatTimerDisplayValue(triplets.hours.current)}</span>
-        <span class="timer-display-part timer-display-part-next">${formatTimerDisplayValue(triplets.hours.previous)}</span>
+        <span class="timer-display-part timer-display-part-next">${formatTimerDisplayValue(triplets.hours.next)}</span>
       </span>
       <span class="timer-display-unit">
-        <span class="timer-display-part timer-display-part-previous">${formatTimerDisplayValue(triplets.minutes.next)}</span>
+        <span class="timer-display-part timer-display-part-previous">${formatTimerDisplayValue(triplets.minutes.previous)}</span>
         <span class="timer-display-part timer-display-part-current">${formatTimerDisplayValue(triplets.minutes.current)}</span>
-        <span class="timer-display-part timer-display-part-next">${formatTimerDisplayValue(triplets.minutes.previous)}</span>
+        <span class="timer-display-part timer-display-part-next">${formatTimerDisplayValue(triplets.minutes.next)}</span>
       </span>
       <span class="timer-display-unit">
-        <span class="timer-display-part timer-display-part-previous">${formatTimerDisplayValue(triplets.seconds.next)}</span>
+        <span class="timer-display-part timer-display-part-previous">${formatTimerDisplayValue(triplets.seconds.previous)}</span>
         <span class="timer-display-part timer-display-part-current">${formatTimerDisplayValue(triplets.seconds.current)}</span>
-        <span class="timer-display-part timer-display-part-next">${formatTimerDisplayValue(triplets.seconds.previous)}</span>
+        <span class="timer-display-part timer-display-part-next">${formatTimerDisplayValue(triplets.seconds.next)}</span>
       </span>
     </span>
   `

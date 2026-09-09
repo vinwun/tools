@@ -50,6 +50,10 @@ export const renderPdfPageOrganizer = (messages: Messages): string => {
             <button type="button" class="tool-action pdf-page-organizer-keep" data-pdf-page-organizer-keep disabled>${pdfMessages.keepSelectedAction}</button>
             <button type="button" class="tool-action pdf-page-organizer-remove" data-pdf-page-organizer-remove disabled>${pdfMessages.removeSelectedAction}</button>
           </div>
+          <div class="pdf-page-organizer-action-group pdf-page-organizer-action-group-move">
+            <button type="button" class="tool-action pdf-page-organizer-move" data-pdf-page-organizer-move-left disabled>${pdfMessages.moveLeftAction}</button>
+            <button type="button" class="tool-action pdf-page-organizer-move" data-pdf-page-organizer-move-right disabled>${pdfMessages.moveRightAction}</button>
+          </div>
           <div class="pdf-page-organizer-action-group pdf-page-organizer-action-group-right">
             <button type="button" class="tool-action" data-pdf-page-organizer-download disabled>${pdfMessages.downloadAction}</button>
           </div>

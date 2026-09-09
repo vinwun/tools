@@ -15,7 +15,6 @@
   margin: 0.35rem 0 0;
   color: var(--muted);
   max-width: 60ch;
-  white-space: nowrap;
 }
 
 .tool-layout {
@@ -131,11 +130,18 @@
 }
 
 /* Clickable, selectable list item shared by the PDF tools. */
-.tool-card:hover,
 .tool-card:focus-visible {
   border-color: var(--accent-muted);
   box-shadow: 0 10px 20px -18px rgba(17, 24, 39, 0.4);
   outline: none;
+}
+
+/* Touch devices keep a :hover state after the tap, so reserve it for real pointers. */
+@media (hover: hover) {
+  .tool-card:hover {
+    border-color: var(--accent-muted);
+    box-shadow: 0 10px 20px -18px rgba(17, 24, 39, 0.4);
+  }
 }
 
 .tool-card.is-selected {
@@ -175,4 +181,18 @@
 [data-tool-content-root][aria-busy='true'] .tool-layout {
   opacity: 0.55;
   pointer-events: none;
+}
+
+/* The sidebar column has an 18rem floor, so the split must collapse before the viewport hits it. */
+@media (max-width: 920px) {
+  .tool-layout-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Touch targets: a finger needs roughly 44px, which several compact actions fall short of. */
+@media (pointer: coarse) {
+  .tool-action {
+    min-height: 2.75rem;
+  }
 }

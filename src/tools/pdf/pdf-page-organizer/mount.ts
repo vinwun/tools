@@ -7,6 +7,7 @@ import { createUniqueId, escapeHtml, formatMessage } from '../../foundations/dom
 import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
 import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import { downloadBlob, formatAcceptList } from '../../foundations/files.ts'
+import { clamp } from '../../foundations/numbers.ts'
 import { ACCEPTED_PDF_TYPES } from '../pdf-utils.ts'
 
 type PdfDropTarget =
@@ -185,6 +186,8 @@ const renderWorkspace = (
   const selectionSummary = root.querySelector<HTMLElement>('[data-pdf-page-organizer-selection-summary]')
   const keepButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-keep]')
   const removeButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-remove]')
+  const moveLeftButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-move-left]')
+  const moveRightButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-move-right]')
   const downloadButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-download]')
   const clearButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-clear]')
 
@@ -214,6 +217,17 @@ const renderWorkspace = (
   removeButton.disabled = state.isBusy || !hasSelection
   downloadButton.disabled = state.isBusy || !hasEntries
   clearButton.disabled = state.isBusy || !hasEntries
+
+  const blockIndex = hasSelection ? Math.min(...state.selectedIndices) : 0
+  const remainingCount = state.entries.length - state.selectedIndices.size
+
+  if (moveLeftButton) {
+    moveLeftButton.disabled = state.isBusy || !hasSelection || blockIndex === 0
+  }
+
+  if (moveRightButton) {
+    moveRightButton.disabled = state.isBusy || !hasSelection || blockIndex >= remainingCount
+  }
 }
 
 const syncPdfStaticTexts = (root: HTMLElement, locale: Locale): void => {
@@ -229,6 +243,8 @@ const syncPdfStaticTexts = (root: HTMLElement, locale: Locale): void => {
   const endDropTarget = root.querySelector<HTMLElement>('[data-pdf-page-organizer-drop-end]')
   const keepButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-keep]')
   const removeButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-remove]')
+  const moveLeftButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-move-left]')
+  const moveRightButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-move-right]')
   const downloadButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-download]')
 
   if (uploadHeading) uploadHeading.textContent = messages.pdfPageOrganizer.uploadLabel
@@ -242,6 +258,8 @@ const syncPdfStaticTexts = (root: HTMLElement, locale: Locale): void => {
   if (endDropTarget) endDropTarget.textContent = messages.pdfPageOrganizer.moveToEndHint
   if (keepButton) keepButton.textContent = messages.pdfPageOrganizer.keepSelectedAction
   if (removeButton) removeButton.textContent = messages.pdfPageOrganizer.removeSelectedAction
+  if (moveLeftButton) moveLeftButton.textContent = messages.pdfPageOrganizer.moveLeftAction
+  if (moveRightButton) moveRightButton.textContent = messages.pdfPageOrganizer.moveRightAction
   if (downloadButton) downloadButton.textContent = messages.pdfPageOrganizer.downloadAction
 }
 
@@ -322,6 +340,8 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
   const endDropTarget = root.querySelector<HTMLElement>('[data-pdf-page-organizer-drop-end]')
   const keepButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-keep]')
   const removeButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-remove]')
+  const moveLeftButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-move-left]')
+  const moveRightButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-move-right]')
   const downloadButton = root.querySelector<HTMLButtonElement>('[data-pdf-page-organizer-download]')
 
   if (!filePicker || !clearButton || !pageList || !listShell || !endDropTarget || !keepButton || !removeButton || !downloadButton) {
@@ -485,6 +505,31 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
     sync()
   }
 
+  // HTML5 drag and drop never fires for touch input, so reordering needs buttons too.
+  const applyMoveBy = (offset: number): void => {
+    if (state.selectedIndices.size === 0) {
+      return
+    }
+
+    const selectedCount = state.selectedIndices.size
+    const blockIndex = Math.min(...state.selectedIndices)
+    const remainingCount = state.entries.length - selectedCount
+    const targetIndex = clamp(blockIndex + offset, 0, remainingCount)
+
+    if (targetIndex === blockIndex) {
+      return
+    }
+
+    state.entries = moveSelectedEntries(state.entries, state.selectedIndices, targetIndex)
+    setSelection(
+      state,
+      Array.from({ length: selectedCount }, (_, position) => targetIndex + position),
+      targetIndex,
+    )
+    state.dropTarget = { kind: 'none' }
+    sync()
+  }
+
   const exportPdf = async (): Promise<void> => {
     if (state.entries.length === 0) {
       return
@@ -598,6 +643,14 @@ export const mountPdfPageOrganizer = (container: HTMLElement, locale: Locale): v
   removeButton.addEventListener('click', () => {
     applyRemove()
     sync()
+  })
+
+  moveLeftButton?.addEventListener('click', () => {
+    applyMoveBy(-1)
+  })
+
+  moveRightButton?.addEventListener('click', () => {
+    applyMoveBy(1)
   })
 
   downloadButton.addEventListener('click', () => {
