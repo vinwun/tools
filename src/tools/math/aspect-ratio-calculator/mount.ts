@@ -9,45 +9,21 @@ import {
   DEFAULT_RESULT_TEXT,
   type AspectRatioResult,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 import { resolveNumberLocale } from '../../foundations/numbers.ts'
 
-const aspectRatioLocale = createLocaleSyncRegistry<[Messages]>('[data-aspect-ratio-calculator-root]')
-
-const queryAspectRatioElements = (container: HTMLElement): AspectRatioCalculatorElements | null => {
-  const widthInput = container.querySelector<HTMLInputElement>('[data-aspect-ratio-calculator-width]')
-  const heightInput = container.querySelector<HTMLInputElement>('[data-aspect-ratio-calculator-height]')
-  const reducedOutput = container.querySelector<HTMLOutputElement>('[data-aspect-ratio-calculator-reduced]')
-  const decimalOutput = container.querySelector<HTMLOutputElement>('[data-aspect-ratio-calculator-decimal]')
-  const widthLabel = container.querySelector<HTMLElement>('[data-aspect-ratio-calculator-width-label]')
-  const heightLabel = container.querySelector<HTMLElement>('[data-aspect-ratio-calculator-height-label]')
-  const reducedLabel = container.querySelector<HTMLElement>('[data-aspect-ratio-calculator-reduced-label]')
-  const decimalLabel = container.querySelector<HTMLElement>('[data-aspect-ratio-calculator-decimal-label]')
-
-  if (
-    !widthInput ||
-    !heightInput ||
-    !reducedOutput ||
-    !decimalOutput ||
-    !widthLabel ||
-    !heightLabel ||
-    !reducedLabel ||
-    !decimalLabel
-  ) {
-    return null
-  }
-
-  return {
-    widthInput,
-    heightInput,
-    reducedOutput,
-    decimalOutput,
-    widthLabel,
-    heightLabel,
-    reducedLabel,
-    decimalLabel,
-  }
-}
+const queryAspectRatioElements = (container: HTMLElement): AspectRatioCalculatorElements | null =>
+  queryRequired<AspectRatioCalculatorElements>(container, {
+    widthInput: '[data-aspect-ratio-calculator-width]',
+    heightInput: '[data-aspect-ratio-calculator-height]',
+    reducedOutput: '[data-aspect-ratio-calculator-reduced]',
+    decimalOutput: '[data-aspect-ratio-calculator-decimal]',
+    widthLabel: '[data-aspect-ratio-calculator-width-label]',
+    heightLabel: '[data-aspect-ratio-calculator-height-label]',
+    reducedLabel: '[data-aspect-ratio-calculator-reduced-label]',
+    decimalLabel: '[data-aspect-ratio-calculator-decimal-label]',
+  })
 
 const syncLocalizedText = (elements: AspectRatioCalculatorElements, messages: Messages): void => {
   const ratioMessages = messages.aspectRatioCalculator
@@ -70,18 +46,10 @@ const applyResult = (
   elements.decimalOutput.textContent = decimalText
 }
 
-export const mountAspectRatioCalculator = (
-  container: HTMLElement,
-  initialMessages: Messages,
-): void => {
-  const root = container.querySelector<HTMLElement>('[data-aspect-ratio-calculator-root]') ?? container
+export const mountAspectRatioCalculator: MountTool = (container, initialMessages) => {
   const elements = queryAspectRatioElements(container)
   if (!elements) {
-    return
-  }
-
-  if (aspectRatioLocale.resync(root, initialMessages)) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -107,8 +75,6 @@ export const mountAspectRatioCalculator = (
     messages = nextMessages
     syncUi()
   }
-
-  aspectRatioLocale.register(root, syncLocale)
 
   const handleInput = (): void => {
     state.widthValue = elements.widthInput.value
@@ -145,6 +111,6 @@ export const mountAspectRatioCalculator = (
   elements.heightInput.addEventListener('blur', revertInvalidInput)
 
   syncUi()
-}
 
-export const updateAspectRatioCalculatorLocale = aspectRatioLocale.update
+  return { updateLocale: syncLocale }
+}

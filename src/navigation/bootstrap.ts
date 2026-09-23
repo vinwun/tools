@@ -5,29 +5,42 @@ import { LOCALE_SELECT_ID } from './render.ts'
 import { hasLocale, type Locale } from '../i18n'
 import { initLocale, persistLocale, resolveInitialLocale } from '../i18n/manager.ts'
 import { isToolIdForCategory } from '../tools/catalog.ts'
-import { hasMountedToolContent, mountToolContent, updateMountedToolLocale } from '../tools/registry.ts'
+import { mountToolContent, unmountToolContent, updateMountedToolLocale } from '../tools/registry.ts'
 import { renderToolPage } from '../tools/render.ts'
 import { navigateToRoute, resolveCurrentRoute, type Route } from './router.ts'
+
+// Re-inserting the preserved tool resets every scroll position inside it (text fields, previews,
+// lists), so they are read before the swap and written back afterwards.
+const captureScrollPositions = (root: HTMLElement): (() => void) => {
+  const positions = Array.from(root.querySelectorAll<HTMLElement>('*'))
+    .filter((element) => element.scrollTop !== 0 || element.scrollLeft !== 0)
+    .map((element) => ({ element, top: element.scrollTop, left: element.scrollLeft }))
+
+  return () => {
+    for (const { element, top, left } of positions) {
+      element.scrollTop = top
+      element.scrollLeft = left
+    }
+  }
+}
 
 export const bootstrapApp = (): void => {
   const app = document.querySelector<HTMLDivElement>('#app')
   let currentLocale: Locale = resolveInitialLocale()
   let currentRoute: Route = resolveCurrentRoute()
 
-  const mount = (preserveMountedToolContent = false): void => {
+  const mount = (preserveToolContent = false): void => {
     if (!app) return
 
-    const scrollRestorationTarget =
-      preserveMountedToolContent && currentRoute.type === 'tool'
-        ? app.querySelector<HTMLElement>('.pdf-page-organizer-list-shell')
-        : null
-    const savedScrollLeft = scrollRestorationTarget?.scrollLeft ?? 0
-    const savedScrollTop = scrollRestorationTarget?.scrollTop ?? 0
-
+    // A locale switch keeps the mounted tool (and whatever the user entered) and only relabels it.
     const preservedToolContentRoot =
-      preserveMountedToolContent && currentRoute.type === 'tool' && hasMountedToolContent(currentRoute.toolId)
+      preserveToolContent && currentRoute.type === 'tool'
         ? app.querySelector<HTMLElement>('[data-tool-content-root]')
         : null
+    const restoreScrollPositions = preservedToolContentRoot && captureScrollPositions(preservedToolContentRoot)
+    if (!preservedToolContentRoot) {
+      unmountToolContent()
+    }
 
     currentRoute = resolveCurrentRoute()
     initLocale(currentLocale)
@@ -39,37 +52,19 @@ export const bootstrapApp = (): void => {
           ? renderCategoryPage(currentLocale, route.categoryId)
           : renderToolPage(currentLocale, route.categoryId, route.toolId)
 
-    if (preservedToolContentRoot) {
-      const toolContentRoot = app.querySelector<HTMLElement>('[data-tool-content-root]')
-      if (toolContentRoot) {
-        toolContentRoot.replaceWith(preservedToolContentRoot)
-      }
-    }
-
-    if (route.type === 'tool' && preservedToolContentRoot) {
-      updateMountedToolLocale(route.toolId, currentLocale)
-    }
-
-    bindLocaleSelector()
-
-    if (route.type === 'tool' && !preservedToolContentRoot) {
+    if (preservedToolContentRoot && restoreScrollPositions) {
+      app.querySelector<HTMLElement>('[data-tool-content-root]')?.replaceWith(preservedToolContentRoot)
+      // Restored before relabelling too, so a tool that rebuilds a scrolled element can carry its
+      // position over; again a frame later, once re-rendered content has settled its size.
+      restoreScrollPositions()
+      updateMountedToolLocale(currentLocale)
+      window.requestAnimationFrame(restoreScrollPositions)
+    } else if (route.type === 'tool') {
       // Tools with lazily loaded dependencies mount once their chunk arrives.
       void mountToolContent(route.toolId, currentLocale)
     }
 
-    if (scrollRestorationTarget) {
-      const restoredScrollTarget = app.querySelector<HTMLElement>('.pdf-page-organizer-list-shell')
-      if (restoredScrollTarget) {
-        const restoreScroll = (): void => {
-          restoredScrollTarget.scrollLeft = savedScrollLeft
-          restoredScrollTarget.scrollTop = savedScrollTop
-        }
-
-        restoreScroll()
-        window.requestAnimationFrame(restoreScroll)
-        window.setTimeout(restoreScroll, 0)
-      }
-    }
+    bindLocaleSelector()
   }
 
   const goToRoute = (route: Route) => {

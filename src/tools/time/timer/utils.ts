@@ -35,7 +35,6 @@ export const splitTimerDuration = (durationMs: number): { hours: number; minutes
   }
 }
 
-
 export const adjustTimerDuration = (durationMs: number, deltaSeconds: number): number => {
   const totalSeconds = Math.floor(durationMs / 1000)
   const nextTotalSeconds = clamp(totalSeconds + deltaSeconds, 0, MAX_TIMER_TOTAL_SECONDS)

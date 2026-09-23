@@ -17,68 +17,53 @@ import {
   parseUtf8,
   parseUtf16,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
-const unicodeConverterLocale = createLocaleSyncRegistry<[Messages]>('[data-unicode-converter-root]')
+type UnicodeMessages = Messages['unicodeConverter']
 
-const queryUnicodeConverterElements = (container: HTMLElement): UnicodeConverterElements | null => {
-  const characterInput = container.querySelector<HTMLInputElement>('[data-unicode-converter-character]')
-  const codePointInput = container.querySelector<HTMLInputElement>('[data-unicode-converter-codepoint]')
-  const decimalInput = container.querySelector<HTMLInputElement>('[data-unicode-converter-decimal]')
-  const binaryInput = container.querySelector<HTMLInputElement>('[data-unicode-converter-binary]')
-  const octalInput = container.querySelector<HTMLInputElement>('[data-unicode-converter-octal]')
-  const utf8Input = container.querySelector<HTMLInputElement>('[data-unicode-converter-utf8]')
-  const utf16Input = container.querySelector<HTMLInputElement>('[data-unicode-converter-utf16]')
-  const category = container.querySelector<HTMLElement>('[data-unicode-converter-category]')
-  const ascii = container.querySelector<HTMLElement>('[data-unicode-converter-ascii]')
-
-  if (
-    !characterInput ||
-    !codePointInput ||
-    !decimalInput ||
-    !binaryInput ||
-    !octalInput ||
-    !utf8Input ||
-    !utf16Input ||
-    !category ||
-    !ascii
-  ) {
-    return null
-  }
-
-  return {
-    characterInput,
-    codePointInput,
-    decimalInput,
-    binaryInput,
-    octalInput,
-    utf8Input,
-    utf16Input,
-    category,
-    ascii,
-  }
+const CATEGORY_LABEL_KEYS: Record<UnicodeCategoryKey, keyof UnicodeMessages> = {
+  letter: 'categoryLetter',
+  digit: 'categoryDigit',
+  punctuation: 'categoryPunctuation',
+  symbol: 'categorySymbol',
+  whitespace: 'categoryWhitespace',
+  control: 'categoryControl',
+  other: 'categoryOther',
 }
 
-const categoryLabelKey = (key: UnicodeCategoryKey): string =>
-  `category${key.charAt(0).toUpperCase()}${key.slice(1)}`
+const FIELD_LABEL_KEYS = [
+  ['codepoint', 'codePointLabel'],
+  ['decimal', 'decimalLabel'],
+  ['binary', 'binaryLabel'],
+  ['octal', 'octalLabel'],
+  ['utf8', 'utf8Label'],
+  ['utf16', 'utf16Label'],
+] as const satisfies readonly (readonly [string, keyof UnicodeMessages])[]
 
 const syncLocalizedText = (container: HTMLElement, messages: Messages): void => {
-  const unicodeMessages = messages.unicodeConverter
-  const labelFor = (attr: string): HTMLElement | null =>
-    container.querySelector<HTMLElement>(`[data-${attr}-label]`)
-  labelFor('unicode-converter-codepoint')!.textContent = unicodeMessages.codePointLabel
-  labelFor('unicode-converter-decimal')!.textContent = unicodeMessages.decimalLabel
-  labelFor('unicode-converter-binary')!.textContent = unicodeMessages.binaryLabel
-  labelFor('unicode-converter-octal')!.textContent = unicodeMessages.octalLabel
-  labelFor('unicode-converter-utf8')!.textContent = unicodeMessages.utf8Label
-  labelFor('unicode-converter-utf16')!.textContent = unicodeMessages.utf16Label
+  for (const [field, key] of FIELD_LABEL_KEYS) {
+    const label = container.querySelector<HTMLElement>(`[data-unicode-converter-${field}-label]`)
+    if (label) {
+      label.textContent = messages.unicodeConverter[key]
+    }
+  }
 }
 
-export const mountUnicodeConverter = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-unicode-converter-root]') ?? container
-  const elements = queryUnicodeConverterElements(container)
+export const mountUnicodeConverter: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<UnicodeConverterElements>(container, {
+    characterInput: '[data-unicode-converter-character]',
+    codePointInput: '[data-unicode-converter-codepoint]',
+    decimalInput: '[data-unicode-converter-decimal]',
+    binaryInput: '[data-unicode-converter-binary]',
+    octalInput: '[data-unicode-converter-octal]',
+    utf8Input: '[data-unicode-converter-utf8]',
+    utf16Input: '[data-unicode-converter-utf16]',
+    category: '[data-unicode-converter-category]',
+    ascii: '[data-unicode-converter-ascii]',
+  })
   if (!elements) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -93,9 +78,7 @@ export const mountUnicodeConverter = (container: HTMLElement, initialMessages: M
     elements.utf8Input.value = formatUtf8(state.cp)
     elements.utf16Input.value = formatUtf16(state.cp)
     const unicodeMessages = messages.unicodeConverter
-    elements.category.textContent = unicodeMessages[
-      categoryLabelKey(categorizeCodePoint(state.cp)) as keyof typeof unicodeMessages
-    ] as string
+    elements.category.textContent = unicodeMessages[CATEGORY_LABEL_KEYS[categorizeCodePoint(state.cp)]]
     elements.ascii.textContent = isAsciiCodePoint(state.cp)
       ? unicodeMessages.asciiYes
       : unicodeMessages.asciiNo
@@ -122,8 +105,6 @@ export const mountUnicodeConverter = (container: HTMLElement, initialMessages: M
     syncLocalizedText(container, messages)
     syncAll()
   }
-
-  unicodeConverterLocale.register(root, syncLocale)
 
   elements.characterInput.addEventListener('input', () => {
     resetOnInvalid(parseCharacter(elements.characterInput.value))
@@ -158,6 +139,5 @@ export const mountUnicodeConverter = (container: HTMLElement, initialMessages: M
   })
 
   syncAll()
+  return { updateLocale: syncLocale }
 }
-
-export const updateUnicodeConverterLocale = unicodeConverterLocale.update

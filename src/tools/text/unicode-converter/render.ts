@@ -1,6 +1,7 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { UnicodeConverterState } from './types.ts'
 import {
+  createInitialUnicodeConverterState,
   formatBinary,
   formatCodePointHex,
   formatOctal,
@@ -10,7 +11,7 @@ import {
 
 export const renderUnicodeConverter = (
   messages: Messages,
-  state: UnicodeConverterState,
+  state: UnicodeConverterState = createInitialUnicodeConverterState(),
 ): string => {
   const m = messages.unicodeConverter
   const character = String.fromCodePoint(state.cp)

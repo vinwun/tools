@@ -15,7 +15,6 @@ export const enMessages: Messages = {
     availableTools: 'Available tools',
   },
   toolPage: {
-    comingSoon: 'This tool page is prepared and will be implemented next.',
     loading: 'Loading tool…',
     loadFailed: 'The tool could not be loaded. Please check your connection.',
     retryAction: 'Retry',
@@ -112,7 +111,6 @@ export const enMessages: Messages = {
     statusEmpty: 'Upload PDF to start.',
     statusExtracting: 'Extracting text…',
     statusReady: 'Ready to download.',
-    statusReadySelect: 'Select the file to download.',
     statusFailed: 'Extraction failed.',
     resultsTitle: 'Extracted text',
     resultsEmpty: 'No extracted text yet.',
@@ -368,7 +366,6 @@ export const enMessages: Messages = {
     outputLabel: 'Generated text',
   },
   unicodeConverter: {
-    characterLabel: 'Character',
     codePointLabel: 'Code point (hex)',
     decimalLabel: 'Decimal',
     binaryLabel: 'Binary',

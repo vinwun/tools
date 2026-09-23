@@ -4,51 +4,23 @@ import {
   calculateMatrixMultiplierState,
   createInitialMatrixMultiplierState,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 import { resolveNumberLocale } from '../../foundations/numbers.ts'
 
-const matrixMultiplierLocale = createLocaleSyncRegistry<[Messages]>('[data-matrix-multiplier-root]')
-
-const queryMatrixMultiplierElements = (container: HTMLElement): MatrixMultiplierElements | null => {
-  const matrixAInput = container.querySelector<HTMLTextAreaElement>('[data-matrix-multiplier-a]')
-  const matrixBInput = container.querySelector<HTMLTextAreaElement>('[data-matrix-multiplier-b]')
-  const output = container.querySelector<HTMLPreElement>('[data-matrix-multiplier-output]')
-  const status = container.querySelector<HTMLElement>('[data-matrix-multiplier-status]')
-  const matrixALabel = container.querySelector<HTMLElement>('[data-matrix-multiplier-a-label]')
-  const matrixBLabel = container.querySelector<HTMLElement>('[data-matrix-multiplier-b-label]')
-  const matrixHint = container.querySelector<HTMLElement>('[data-matrix-multiplier-hint]')
-  const resultLabel = container.querySelector<HTMLElement>('[data-matrix-multiplier-result-label]')
-  const matrixADimensions = container.querySelector<HTMLElement>('[data-matrix-multiplier-a-dimensions]')
-  const matrixBDimensions = container.querySelector<HTMLElement>('[data-matrix-multiplier-b-dimensions]')
-
-  if (
-    !matrixAInput ||
-    !matrixBInput ||
-    !output ||
-    !status ||
-    !matrixALabel ||
-    !matrixBLabel ||
-    !matrixHint ||
-    !resultLabel ||
-    !matrixADimensions ||
-    !matrixBDimensions
-  ) {
-    return null
-  }
-
-  return {
-    matrixAInput,
-    matrixBInput,
-    output,
-    status,
-    matrixALabel,
-    matrixBLabel,
-    matrixHint,
-    resultLabel,
-    matrixADimensions,
-    matrixBDimensions,
-  }
-}
+const queryMatrixMultiplierElements = (container: HTMLElement): MatrixMultiplierElements | null =>
+  queryRequired<MatrixMultiplierElements>(container, {
+    matrixAInput: '[data-matrix-multiplier-a]',
+    matrixBInput: '[data-matrix-multiplier-b]',
+    output: '[data-matrix-multiplier-output]',
+    status: '[data-matrix-multiplier-status]',
+    matrixALabel: '[data-matrix-multiplier-a-label]',
+    matrixBLabel: '[data-matrix-multiplier-b-label]',
+    matrixHint: '[data-matrix-multiplier-hint]',
+    resultLabel: '[data-matrix-multiplier-result-label]',
+    matrixADimensions: '[data-matrix-multiplier-a-dimensions]',
+    matrixBDimensions: '[data-matrix-multiplier-b-dimensions]',
+  })
 
 const syncLocalizedText = (elements: MatrixMultiplierElements, messages: Messages): void => {
   const matrixMessages = messages.matrixMultiplier
@@ -58,15 +30,10 @@ const syncLocalizedText = (elements: MatrixMultiplierElements, messages: Message
   elements.resultLabel.textContent = matrixMessages.resultLabel
 }
 
-export const mountMatrixMultiplier = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-matrix-multiplier-root]') ?? container
-  const elements = queryMatrixMultiplierElements(root)
+export const mountMatrixMultiplier: MountTool = (container, initialMessages) => {
+  const elements = queryMatrixMultiplierElements(container)
   if (!elements) {
-    return
-  }
-
-  if (matrixMultiplierLocale.resync(root, initialMessages)) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -103,8 +70,6 @@ export const mountMatrixMultiplier = (container: HTMLElement, initialMessages: M
     syncUi()
   }
 
-  matrixMultiplierLocale.register(root, syncLocale)
-
   const handleInput = (): void => {
     state.matrixAValue = elements.matrixAInput.value
     state.matrixBValue = elements.matrixBInput.value
@@ -115,6 +80,6 @@ export const mountMatrixMultiplier = (container: HTMLElement, initialMessages: M
   elements.matrixBInput.addEventListener('input', handleInput)
 
   syncUi()
-}
 
-export const updateMatrixMultiplierLocale = matrixMultiplierLocale.update
+  return { updateLocale: syncLocale }
+}

@@ -2,33 +2,8 @@ import type { Messages } from '../../../i18n/schema.ts'
 import type { TimezoneConverterElements } from './types.ts'
 import { TIMEZONE_GROUPS } from './timezones.ts'
 import { formatTimeInput, getLocalOffsetMinutes, normalizeMinutes, parseTimeInput } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
-
-const timezoneLocale = createLocaleSyncRegistry<[Messages]>('[data-timezone-root]')
-
-const queryTimezoneElements = (container: HTMLElement): TimezoneConverterElements | null => {
-  const root = container.querySelector<HTMLElement>('[data-timezone-root]') ?? container
-  const statusText = container.querySelector<HTMLElement>('[data-timezone-status-text]')
-  const statusAction = container.querySelector<HTMLButtonElement>('[data-timezone-status-action]')
-  const localInput = container.querySelector<HTMLInputElement>('[data-timezone-local-input]')
-  const localLabel = container.querySelector<HTMLElement>('[data-timezone-local-label]')
-  const localHint = container.querySelector<HTMLElement>('[data-timezone-local-hint]')
-  const zoneInputs = Array.from(container.querySelectorAll<HTMLInputElement>('[data-timezone-input]'))
-
-  if (!statusText || !statusAction || !localInput || !localLabel || zoneInputs.length === 0) {
-    return null
-  }
-
-  return {
-    root,
-    statusText,
-    statusAction,
-    localInput,
-    localLabel,
-    localHint,
-    zoneInputs,
-  }
-}
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
 const buildOffsetLookup = (): Map<string, number> => {
   const offsets = new Map<string, number>()
@@ -40,18 +15,20 @@ const buildOffsetLookup = (): Map<string, number> => {
   return offsets
 }
 
-export const mountTimezoneConverter = (container: HTMLElement, initialMessages: Messages): void => {
-  const elements = queryTimezoneElements(container)
-  if (!elements) {
-    return
-  }
-
-  if (timezoneLocale.resync(elements.root, initialMessages)) {
-    return
+export const mountTimezoneConverter: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<TimezoneConverterElements>(container, {
+    statusText: '[data-timezone-status-text]',
+    statusAction: '[data-timezone-status-action]',
+    localInput: '[data-timezone-local-input]',
+    localLabel: '[data-timezone-local-label]',
+    localHint: '[data-timezone-local-hint]',
+  })
+  const zoneInputs = Array.from(container.querySelectorAll<HTMLInputElement>('[data-timezone-input]'))
+  if (!elements || zoneInputs.length === 0) {
+    return {}
   }
 
   let messages = initialMessages
-  let isSyncing = false
   const offsetById = buildOffsetLookup()
 
   const now = new Date()
@@ -61,15 +38,13 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
   let autoSyncIntervalId: number | null = null
 
   const applyTimes = (): void => {
-    isSyncing = true
     elements.localInput.value = formatTimeInput(baseUtcMinutes + localOffsetMinutes)
 
-    elements.zoneInputs.forEach((input) => {
+    zoneInputs.forEach((input) => {
       const zoneId = input.dataset.timezoneId
       const offset = zoneId ? offsetById.get(zoneId) ?? 0 : 0
       input.value = formatTimeInput(baseUtcMinutes + offset)
     })
-    isSyncing = false
   }
 
   const getMinuteDiff = (left: number, right: number): number => {
@@ -106,8 +81,8 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
     autoSyncTimeoutId = window.setTimeout(() => {
       autoSyncTimeoutId = null
       refreshToCurrentTime()
-      autoSyncIntervalId = window.setInterval(refreshToCurrentTime, 60000) as unknown as number
-    }, msToNextMinute) as unknown as number
+      autoSyncIntervalId = window.setInterval(refreshToCurrentTime, 60000)
+    }, msToNextMinute)
   }
 
   const updateAutoSyncState = (): void => {
@@ -132,12 +107,10 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
     messages = nextMessages
     elements.statusAction.textContent = messages.timezoneConverter.setCurrentAction
     elements.localLabel.textContent = messages.timezoneConverter.localTimeLabel
-    if (elements.localHint) {
-      elements.localHint.textContent = messages.timezoneConverter.localTimeHint
-    }
+    elements.localHint.textContent = messages.timezoneConverter.localTimeHint
     elements.localInput.setAttribute('aria-label', messages.timezoneConverter.localTimeLabel)
 
-    elements.zoneInputs.forEach((input) => {
+    zoneInputs.forEach((input) => {
       const zoneId = input.dataset.timezoneId
       if (!zoneId) {
         return
@@ -145,7 +118,6 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
 
       const label = messages.timezoneConverter.zones[zoneId] ?? zoneId
       const ariaLabel = messages.timezoneConverter.timeInputLabel.replace('{zone}', label)
-      input.dataset.timezoneLabel = label
       input.setAttribute('aria-label', ariaLabel)
 
       const entry = input.closest<HTMLElement>('.timezone-entry')
@@ -159,10 +131,6 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
   }
 
   const handleInputChange = (offsetMinutes: number, input: HTMLInputElement): void => {
-    if (isSyncing) {
-      return
-    }
-
     const minutes = parseTimeInput(input.value)
     if (minutes === null) {
       return
@@ -177,7 +145,7 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
     handleInputChange(localOffsetMinutes, elements.localInput)
   })
 
-  elements.zoneInputs.forEach((input) => {
+  zoneInputs.forEach((input) => {
     const zoneId = input.dataset.timezoneId
     const offset = zoneId ? offsetById.get(zoneId) ?? 0 : 0
     input.addEventListener('input', () => {
@@ -190,10 +158,9 @@ export const mountTimezoneConverter = (container: HTMLElement, initialMessages: 
     updateAutoSyncState()
   })
 
-  timezoneLocale.register(elements.root, syncLocale)
   syncLocale(messages)
   applyTimes()
   updateAutoSyncState()
-}
 
-export const updateTimezoneConverterLocale = timezoneLocale.update
+  return { updateLocale: syncLocale, destroy: clearAutoSync }
+}

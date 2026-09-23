@@ -11,47 +11,21 @@ import {
   parseExpandedInput,
   parseExponentInput,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
-const primeFactorizerLocale = createLocaleSyncRegistry<[Messages]>('[data-prime-factorizer-root]')
-
-const queryPrimeFactorizerElements = (container: HTMLElement): PrimeFactorizerElements | null => {
-  const decimalInput = container.querySelector<HTMLInputElement>('[data-prime-factorizer-decimal]')
-  const expandedInput = container.querySelector<HTMLInputElement>('[data-prime-factorizer-expanded]')
-  const exponentInput = container.querySelector<HTMLInputElement>('[data-prime-factorizer-exponent]')
-  const decimalLabel = container.querySelector<HTMLElement>('[data-prime-factorizer-decimal-label]')
-  const decimalHint = container.querySelector<HTMLElement>('[data-prime-factorizer-decimal-hint]')
-  const expandedLabel = container.querySelector<HTMLElement>('[data-prime-factorizer-expanded-label]')
-  const expandedHint = container.querySelector<HTMLElement>('[data-prime-factorizer-expanded-hint]')
-  const exponentLabel = container.querySelector<HTMLElement>('[data-prime-factorizer-exponent-label]')
-  const exponentHint = container.querySelector<HTMLElement>('[data-prime-factorizer-exponent-hint]')
-
-  if (
-    !decimalInput ||
-    !expandedInput ||
-    !exponentInput ||
-    !decimalLabel ||
-    !decimalHint ||
-    !expandedLabel ||
-    !expandedHint ||
-    !exponentLabel ||
-    !exponentHint
-  ) {
-    return null
-  }
-
-  return {
-    decimalInput,
-    expandedInput,
-    exponentInput,
-    decimalLabel,
-    decimalHint,
-    expandedLabel,
-    expandedHint,
-    exponentLabel,
-    exponentHint,
-  }
-}
+const queryPrimeFactorizerElements = (container: HTMLElement): PrimeFactorizerElements | null =>
+  queryRequired<PrimeFactorizerElements>(container, {
+    decimalInput: '[data-prime-factorizer-decimal]',
+    expandedInput: '[data-prime-factorizer-expanded]',
+    exponentInput: '[data-prime-factorizer-exponent]',
+    decimalLabel: '[data-prime-factorizer-decimal-label]',
+    decimalHint: '[data-prime-factorizer-decimal-hint]',
+    expandedLabel: '[data-prime-factorizer-expanded-label]',
+    expandedHint: '[data-prime-factorizer-expanded-hint]',
+    exponentLabel: '[data-prime-factorizer-exponent-label]',
+    exponentHint: '[data-prime-factorizer-exponent-hint]',
+  })
 
 const syncLocalizedText = (elements: PrimeFactorizerElements, messages: Messages): void => {
   const primeMessages = messages.primeFactorizer
@@ -87,15 +61,10 @@ const updateOutputs = (
   }
 }
 
-export const mountPrimeFactorizer = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-prime-factorizer-root]') ?? container
+export const mountPrimeFactorizer: MountTool = (container, initialMessages) => {
   const elements = queryPrimeFactorizerElements(container)
   if (!elements) {
-    return
-  }
-
-  if (primeFactorizerLocale.resync(root, initialMessages)) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -115,8 +84,6 @@ export const mountPrimeFactorizer = (container: HTMLElement, initialMessages: Me
     messages = nextMessages
     syncUi()
   }
-
-  primeFactorizerLocale.register(root, syncLocale)
 
   const handleDecimalInput = (): void => {
     state.decimalValue = elements.decimalInput.value
@@ -195,6 +162,6 @@ export const mountPrimeFactorizer = (container: HTMLElement, initialMessages: Me
   elements.exponentInput.addEventListener('blur', revertExponentIfInvalid)
 
   syncUi()
-}
 
-export const updatePrimeFactorizerLocale = primeFactorizerLocale.update
+  return { updateLocale: syncLocale }
+}

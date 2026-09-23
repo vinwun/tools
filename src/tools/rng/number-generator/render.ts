@@ -1,7 +1,11 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { NumberGeneratorState } from './types.ts'
+import { createInitialNumberGeneratorState } from './utils.ts'
 
-export const renderNumberGenerator = (messages: Messages, state: NumberGeneratorState): string => {
+export const renderNumberGenerator = (
+  messages: Messages,
+  state: NumberGeneratorState = createInitialNumberGeneratorState(),
+): string => {
   const numberMessages = messages.rngNumberGenerator
 
   return `

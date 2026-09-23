@@ -1,9 +1,10 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { LoremIpsumGeneratorState } from './types.ts'
+import { createInitialLoremIpsumGeneratorState } from './utils.ts'
 
 export const renderLoremIpsumGenerator = (
   messages: Messages,
-  state: LoremIpsumGeneratorState,
+  state: LoremIpsumGeneratorState = createInitialLoremIpsumGeneratorState(),
 ): string => {
   const loremMessages = messages.loremIpsumGenerator
 

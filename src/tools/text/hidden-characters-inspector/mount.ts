@@ -3,80 +3,13 @@ import type { HiddenCharCategory, HiddenCharactersInspectorElements } from './ty
 import {
   countHiddenCharacters,
   createInitialHiddenCharactersInspectorState,
-  escapeHtml,
   EXAMPLE_TEXT,
   splitSegments,
   toCodePointHex,
   type PreviewSegment,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
-
-const hiddenCharactersInspectorLocale = createLocaleSyncRegistry<[Messages]>(
-  '[data-hidden-characters-inspector-root]',
-)
-
-const queryHiddenCharactersInspectorElements = (
-  container: HTMLElement,
-): HiddenCharactersInspectorElements | null => {
-  const form = container.querySelector<HTMLFormElement>(
-    '[data-hidden-characters-inspector-form]',
-  )
-  const input = container.querySelector<HTMLTextAreaElement>(
-    '[data-hidden-characters-inspector-input]',
-  )
-  const clearButton = container.querySelector<HTMLButtonElement>(
-    '[data-hidden-characters-inspector-clear]',
-  )
-  const exampleButton = container.querySelector<HTMLButtonElement>(
-    '[data-hidden-characters-inspector-example]',
-  )
-  const inputLabel = container.querySelector<HTMLElement>(
-    '[data-hidden-characters-inspector-input-label]',
-  )
-  const countValue = container.querySelector<HTMLElement>(
-    '[data-hidden-characters-inspector-count]',
-  )
-  const countLabel = container.querySelector<HTMLElement>(
-    '[data-hidden-characters-inspector-count-label]',
-  )
-  const previewLabel = container.querySelector<HTMLElement>(
-    '[data-hidden-characters-inspector-preview-label]',
-  )
-  const preview = container.querySelector<HTMLElement>(
-    '[data-hidden-characters-inspector-preview]',
-  )
-  const empty = container.querySelector<HTMLElement>(
-    '[data-hidden-characters-inspector-empty]',
-  )
-
-  if (
-    !form ||
-    !input ||
-    !clearButton ||
-    !exampleButton ||
-    !inputLabel ||
-    !countValue ||
-    !countLabel ||
-    !previewLabel ||
-    !preview ||
-    !empty
-  ) {
-    return null
-  }
-
-  return {
-    form,
-    input,
-    clearButton,
-    exampleButton,
-    inputLabel,
-    countValue,
-    countLabel,
-    previewLabel,
-    preview,
-    empty,
-  }
-}
+import { escapeHtml, queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
 const renderSegment = (segment: PreviewSegment, messages: Messages): string => {
   if (segment.type !== 'flagged') {
@@ -114,15 +47,20 @@ const renderSegment = (segment: PreviewSegment, messages: Messages): string => {
   )}</span>`
 }
 
-export const mountHiddenCharactersInspector = (
-  container: HTMLElement,
-  initialMessages: Messages,
-): void => {
-  const root =
-    container.querySelector<HTMLElement>('[data-hidden-characters-inspector-root]') ?? container
-  const elements = queryHiddenCharactersInspectorElements(container)
+export const mountHiddenCharactersInspector: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<HiddenCharactersInspectorElements>(container, {
+    input: '[data-hidden-characters-inspector-input]',
+    clearButton: '[data-hidden-characters-inspector-clear]',
+    exampleButton: '[data-hidden-characters-inspector-example]',
+    inputLabel: '[data-hidden-characters-inspector-input-label]',
+    countValue: '[data-hidden-characters-inspector-count]',
+    countLabel: '[data-hidden-characters-inspector-count-label]',
+    previewLabel: '[data-hidden-characters-inspector-preview-label]',
+    preview: '[data-hidden-characters-inspector-preview]',
+    empty: '[data-hidden-characters-inspector-empty]',
+  })
   if (!elements) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -152,8 +90,6 @@ export const mountHiddenCharactersInspector = (
     renderPreview()
   }
 
-  hiddenCharactersInspectorLocale.register(root, syncLocale)
-
   elements.input.addEventListener('input', () => {
     state.inputValue = elements.input.value
     renderPreview()
@@ -174,6 +110,5 @@ export const mountHiddenCharactersInspector = (
   })
 
   syncLocale(messages)
+  return { updateLocale: syncLocale }
 }
-
-export const updateHiddenCharactersInspectorLocale = hiddenCharactersInspectorLocale.update

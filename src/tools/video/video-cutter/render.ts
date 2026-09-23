@@ -7,17 +7,17 @@ export const renderVideoCutter = (messages: Messages): string => `
   <section class="tool-layout tool-layout-split video-cutter-layout" data-video-cutter-root>
     <div class="tool-panel video-cutter-panel video-cutter-panel-main">
       <div class="tool-field">
-        <span>${messages.videoCutter.uploadLabel}</span>
+        <span data-video-cutter-upload-label>${messages.videoCutter.uploadLabel}</span>
         ${renderFilePicker({
           accept: ACCEPTED_VIDEO_TYPES,
           browseLabel: messages.videoCutter.browseAction,
           emptyLabel: messages.videoCutter.noFileSelected,
         })}
       </div>
-      <p class="tool-hint">${messages.videoCutter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_VIDEO_TYPES)}</p>
+      <p class="tool-hint" data-video-cutter-upload-hint>${messages.videoCutter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_VIDEO_TYPES)}</p>
 
       <div class="video-cutter-preview-block">
-        <h2>${messages.videoCutter.previewLabel}</h2>
+        <h2 data-video-cutter-preview-heading>${messages.videoCutter.previewLabel}</h2>
         <video class="tool-media-preview" data-video-cutter-preview controls preload="metadata"></video>
       </div>
     </div>
@@ -25,7 +25,7 @@ export const renderVideoCutter = (messages: Messages): string => `
     <div class="tool-panel video-cutter-panel video-cutter-panel-sidebar">
       <div class="video-cutter-range">
         <label class="tool-field" for="video-cutter-start-input">
-          <span>${messages.videoCutter.startLabel}</span>
+          <span data-video-cutter-start-label>${messages.videoCutter.startLabel}</span>
           <div class="video-cutter-range-field">
             <button type="button" class="video-cutter-step-btn" data-video-cutter-start-down tabindex="-1" disabled>−</button>
             <input type="text" id="video-cutter-start-input" inputmode="decimal" placeholder="0" value="0,00" data-video-cutter-start disabled />
@@ -33,7 +33,7 @@ export const renderVideoCutter = (messages: Messages): string => `
           </div>
         </label>
         <label class="tool-field" for="video-cutter-end-input">
-          <span>${messages.videoCutter.endLabel}</span>
+          <span data-video-cutter-end-label>${messages.videoCutter.endLabel}</span>
           <div class="video-cutter-range-field">
             <button type="button" class="video-cutter-step-btn" data-video-cutter-end-down tabindex="-1" disabled>−</button>
             <input type="text" id="video-cutter-end-input" inputmode="decimal" placeholder="0" value="0,00" data-video-cutter-end disabled />
@@ -50,7 +50,7 @@ export const renderVideoCutter = (messages: Messages): string => `
       <div class="video-cutter-ending-row">
         <button type="button" class="tool-action video-cutter-play-ending" data-video-cutter-play-ending disabled>${messages.videoCutter.playEndingAction}</button>
         <label class="video-cutter-preview-duration-field">
-          <span>${messages.videoCutter.previewDurationLabel}</span>
+          <span data-video-cutter-preview-duration-label>${messages.videoCutter.previewDurationLabel}</span>
           <input type="number" inputmode="decimal" min="1" step="1" value="1" data-video-cutter-preview-duration disabled />
           <span>s</span>
         </label>

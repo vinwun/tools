@@ -17,12 +17,10 @@ export type TextCounterStatKey =
   | 'symbols'
 
 export type TextCounterElements = {
-  form: HTMLFormElement
   input: HTMLTextAreaElement
   clearButton: HTMLButtonElement
   inputLabel: HTMLElement
   resultsLabel: HTMLElement
-  results: HTMLElement
   statValues: Record<TextCounterStatKey, HTMLElement>
   statLabels: Record<TextCounterStatKey, HTMLElement>
 }

@@ -28,14 +28,13 @@ const renderToolLinks = (locale: Locale, categoryId: CategoryId): string => {
     .join('')
 }
 
-
 export const renderCategoryPage = (locale: Locale, categoryId: CategoryId) => {
   const messages = messagesByLocale[locale]
   const category = messages.categories[categoryId]
   const dashboardPath = buildDashboardPath()
 
   return `
-    <main class="page-shell category-page">
+    <main class="page-shell">
       ${renderPageHeader(locale, `
             <nav class="breadcrumbs" aria-label="${messages.navigation.breadcrumbAriaLabel}">
               <a href="${dashboardPath}" data-dashboard-link>${messages.navigation.toolsSegment}</a>
@@ -57,5 +56,3 @@ export const renderCategoryPage = (locale: Locale, categoryId: CategoryId) => {
     </main>
   `
 }
-
-

@@ -13,7 +13,6 @@ export type PdfPageEntry = {
   thumbnailError: string | null
 }
 
-
 export const buildSelectionRange = (anchorIndex: number, currentIndex: number): number[] => {
   const start = Math.min(anchorIndex, currentIndex)
   const end = Math.max(anchorIndex, currentIndex)

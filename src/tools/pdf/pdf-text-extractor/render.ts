@@ -11,8 +11,8 @@ export const renderPdfTextExtractor = (messages: Messages): string => {
       <div class="tool-panel pdf-text-extractor-panel pdf-text-extractor-panel-upload">
         <div class="pdf-text-extractor-panel-header">
           <div>
-            <h2>${pdfMessages.uploadLabel}</h2>
-            <p class="tool-hint">${pdfMessages.dropHint}</p>
+            <h2 data-pdf-text-extractor-upload-label>${pdfMessages.uploadLabel}</h2>
+            <p class="tool-hint" data-pdf-text-extractor-drop-hint>${pdfMessages.dropHint}</p>
           </div>
         </div>
 
@@ -26,7 +26,7 @@ export const renderPdfTextExtractor = (messages: Messages): string => {
 
       <div class="tool-panel pdf-text-extractor-panel pdf-text-extractor-panel-output">
         <div class="tool-panel-header pdf-text-extractor-output-header">
-          <h2>${pdfMessages.outputTitle}</h2>
+          <h2 data-pdf-text-extractor-output-title>${pdfMessages.outputTitle}</h2>
           <div class="pdf-text-extractor-output-controls">
             <select class="pdf-text-extractor-format-select" data-pdf-text-extractor-output aria-label="${pdfMessages.outputTitle}">
               <option value="md">${pdfMessages.outputFormatMarkdown}</option>
@@ -41,7 +41,7 @@ export const renderPdfTextExtractor = (messages: Messages): string => {
       </div>
 
       <div class="tool-panel pdf-text-extractor-panel pdf-text-extractor-panel-results">
-        <h2>${pdfMessages.resultsTitle}</h2>
+        <h2 data-pdf-text-extractor-results-title>${pdfMessages.resultsTitle}</h2>
         <div class="pdf-text-extractor-results" data-pdf-text-extractor-results></div>
       </div>
     </section>

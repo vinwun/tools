@@ -1,8 +1,6 @@
 import { isCategoryId, type CategoryId } from '../dashboard/category-data.ts'
 import { getToolsForCategory, type ToolId } from '../tools/catalog'
 
-const BASE_URL = import.meta.env.BASE_URL || '/'
-
 const ensureLeadingSlash = (value: string): string =>
   value.startsWith('/') ? value : `/${value}`
 
@@ -12,7 +10,7 @@ const ensureTrailingSlash = (value: string): string =>
 const normalizePath = (value: string): string =>
   ensureTrailingSlash(ensureLeadingSlash(value.trim()))
 
-const BASE_PATH = normalizePath(BASE_URL)
+const BASE_PATH = normalizePath(import.meta.env.BASE_URL)
 
 export type Route =
   | { type: 'dashboard' }
@@ -29,13 +27,8 @@ export const buildCategoryPath = (categoryId: CategoryId): string =>
   `${BASE_PATH}${categoryId}/`
 
 // URLs use kebab-case slugs while `ToolId` keys stay camelCase across catalog, schema and locales.
-const TOOL_SLUG_OVERRIDES: Partial<Record<ToolId, string>> = {}
-
-const toKebabCase = (value: string): string =>
-  value.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
-
 const buildToolSlug = (toolId: ToolId): string =>
-  TOOL_SLUG_OVERRIDES[toolId] ?? toKebabCase(toolId)
+  toolId.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 
 const toolIdFromSlug = (categoryId: CategoryId, slug: string): ToolId | undefined =>
   getToolsForCategory(categoryId).find((toolId) => buildToolSlug(toolId) === slug)
@@ -53,45 +46,17 @@ export const getRoutePath = (route: Route): string =>
       : buildToolPath(route.categoryId, route.toolId)
 
 const routeFromSegments = (segments: string[]): Route => {
-  if (segments.length === 0) {
+  const [categorySegment, toolSegment, ...rest] = segments
+  if (!categorySegment || !isCategoryId(categorySegment) || rest.length > 0) {
     return { type: 'dashboard' }
   }
 
-  if (segments.length === 1) {
-    if (segments[0].toLowerCase() === 'tools') {
-      return { type: 'dashboard' }
-    }
-
-    if (isCategoryId(segments[0])) {
-      return { type: 'category', categoryId: segments[0] }
-    }
-
-    return { type: 'dashboard' }
+  if (toolSegment === undefined) {
+    return { type: 'category', categoryId: categorySegment }
   }
 
-  if (segments.length === 2 && isCategoryId(segments[0])) {
-    const toolId = toolIdFromSlug(segments[0], segments[1])
-
-    if (toolId) {
-      return { type: 'tool', categoryId: segments[0], toolId }
-    }
-
-    return { type: 'dashboard' }
-  }
-
-  if (segments[0].toLowerCase() === 'tools' && segments.length === 2 && isCategoryId(segments[1])) {
-    return { type: 'category', categoryId: segments[1] }
-  }
-
-  if (segments[0].toLowerCase() === 'tools' && segments.length === 3 && isCategoryId(segments[1])) {
-    const toolId = toolIdFromSlug(segments[1], segments[2])
-
-    if (toolId) {
-      return { type: 'tool', categoryId: segments[1], toolId }
-    }
-  }
-
-  return { type: 'dashboard' }
+  const toolId = toolIdFromSlug(categorySegment, toolSegment)
+  return toolId ? { type: 'tool', categoryId: categorySegment, toolId } : { type: 'dashboard' }
 }
 
 export const parseRoute = (pathname: string): Route => {

@@ -6,7 +6,6 @@ import { getToolsForCategory } from '../tools/catalog'
 
 const renderToolList = (tools: string[]) => tools.map((tool) => `<li>${tool}</li>`).join('')
 
-
 const renderCategoryCard = (category: DashboardCategory, locale: Locale) => {
   const messages = messagesByLocale[locale]
   const localizedCategory = messages.categories[category.id]

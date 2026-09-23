@@ -1,5 +1,4 @@
 import type { Mp4Analysis } from '../mp4-utils.ts'
-import type { Locale } from '../../../i18n'
 
 export type VideoCutterState = {
   fileName: string
@@ -10,7 +9,6 @@ export type VideoCutterState = {
   isProcessing: boolean
   start: number
   end: number
-  locale: Locale
 }
 
 export type VideoCutterElements = {
@@ -27,4 +25,10 @@ export type VideoCutterElements = {
   previewDuration: HTMLInputElement
   actualStartLabel: HTMLElement
   cutDownload: HTMLButtonElement
+  uploadLabel: HTMLElement
+  uploadHint: HTMLElement
+  previewHeading: HTMLElement
+  startLabel: HTMLElement
+  endLabel: HTMLElement
+  previewDurationLabel: HTMLElement
 }

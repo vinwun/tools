@@ -9,55 +9,25 @@ import {
   randomIntegerInclusive,
   resolveDecimalPrecision,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 import { parseDecimalNumber, resolveNumberLocale } from '../../foundations/numbers.ts'
 
-const numberGeneratorLocale = createLocaleSyncRegistry<[Messages]>('[data-rng-number-generator-root]')
-
-const queryNumberGeneratorElements = (container: HTMLElement): NumberGeneratorElements | null => {
-  const form = container.querySelector<HTMLFormElement>('[data-rng-number-generator-form]')
-  const minInput = container.querySelector<HTMLInputElement>('[data-rng-number-generator-min]')
-  const maxInput = container.querySelector<HTMLInputElement>('[data-rng-number-generator-max]')
-  const modeInputs = container.querySelectorAll<HTMLInputElement>('[data-rng-number-generator-mode]')
-  const resultOutput = container.querySelector<HTMLOutputElement>('[data-rng-number-generator-result]')
-  const generateButton = container.querySelector<HTMLButtonElement>('[data-rng-number-generator-generate]')
-  const settingsLegend = container.querySelector<HTMLElement>('[data-rng-number-generator-settings-legend]')
-  const minLabel = container.querySelector<HTMLElement>('[data-rng-number-generator-min-label]')
-  const maxLabel = container.querySelector<HTMLElement>('[data-rng-number-generator-max-label]')
-  const integerModeLabel = container.querySelector<HTMLElement>('[data-rng-number-generator-integer-label]')
-  const decimalModeLabel = container.querySelector<HTMLElement>('[data-rng-number-generator-decimal-label]')
-
-  if (
-    !form ||
-    !minInput ||
-    !maxInput ||
-    modeInputs.length < 2 ||
-    !resultOutput ||
-    !generateButton ||
-    !settingsLegend ||
-    !minLabel ||
-    !maxLabel ||
-    !integerModeLabel ||
-    !decimalModeLabel
-  ) {
-    return null
-  }
-
-  return {
-    form,
-    minInput,
-    maxInput,
-    integerModeInput: modeInputs[0],
-    decimalModeInput: modeInputs[1],
-    resultOutput,
-    generateButton,
-    settingsLegend,
-    minLabel,
-    maxLabel,
-    integerModeLabel,
-    decimalModeLabel,
-  }
-}
+const queryNumberGeneratorElements = (container: HTMLElement): NumberGeneratorElements | null =>
+  queryRequired<NumberGeneratorElements>(container, {
+    form: '[data-rng-number-generator-form]',
+    minInput: '[data-rng-number-generator-min]',
+    maxInput: '[data-rng-number-generator-max]',
+    integerModeInput: '[data-rng-number-generator-mode][value="integer"]',
+    decimalModeInput: '[data-rng-number-generator-mode][value="decimal"]',
+    resultOutput: '[data-rng-number-generator-result]',
+    generateButton: '[data-rng-number-generator-generate]',
+    settingsLegend: '[data-rng-number-generator-settings-legend]',
+    minLabel: '[data-rng-number-generator-min-label]',
+    maxLabel: '[data-rng-number-generator-max-label]',
+    integerModeLabel: '[data-rng-number-generator-integer-label]',
+    decimalModeLabel: '[data-rng-number-generator-decimal-label]',
+  })
 
 const syncLocalizedText = (elements: NumberGeneratorElements, messages: Messages): void => {
   const numberMessages = messages.rngNumberGenerator
@@ -123,11 +93,10 @@ const generateNumber = (
   elements.resultOutput.textContent = state.resultText
 }
 
-export const mountNumberGenerator = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-rng-number-generator-root]') ?? container
+export const mountNumberGenerator: MountTool = (container, initialMessages) => {
   const elements = queryNumberGeneratorElements(container)
   if (!elements) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -153,8 +122,6 @@ export const mountNumberGenerator = (container: HTMLElement, initialMessages: Me
     messages = nextMessages
     syncUi()
   }
-
-  numberGeneratorLocale.register(root, syncLocale)
 
   elements.minInput.addEventListener('input', () => {
     state.minValue = elements.minInput.value
@@ -183,6 +150,6 @@ export const mountNumberGenerator = (container: HTMLElement, initialMessages: Me
 
   syncUi()
   generateNumber(elements, state)
-}
 
-export const updateNumberGeneratorLocale = numberGeneratorLocale.update
+  return { updateLocale: syncLocale }
+}

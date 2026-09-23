@@ -17,99 +17,51 @@ import {
   parseDecimalInput,
   getInterpretationLabel,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 import { resolveNumberLocale } from '../../foundations/numbers.ts'
-
-const floatingPointConverterLocale = createLocaleSyncRegistry<[Messages]>('[data-floating-point-converter-root]')
 
 const queryFormatElements = (
   container: HTMLElement,
   formatId: FloatingPointFormatId,
-): FloatingPointFormatElements | null => {
-  const signInput = container.querySelector<HTMLInputElement>(`[data-floating-point-sign="${formatId}"]`)
-  const exponentInput = container.querySelector<HTMLInputElement>(
-    `[data-floating-point-exponent="${formatId}"]`,
-  )
-  const mantissaInput = container.querySelector<HTMLInputElement>(
-    `[data-floating-point-mantissa="${formatId}"]`,
-  )
-  const title = container.querySelector<HTMLElement>(`[data-floating-point-format-title="${formatId}"]`)
-  const signLabel = container.querySelector<HTMLElement>(`[data-floating-point-sign-label="${formatId}"]`)
-  const exponentLabel = container.querySelector<HTMLElement>(
-    `[data-floating-point-exponent-label="${formatId}"]`,
-  )
-  const mantissaLabel = container.querySelector<HTMLElement>(
-    `[data-floating-point-mantissa-label="${formatId}"]`,
-  )
-  const valueLabel = container.querySelector<HTMLElement>(`[data-floating-point-value-label="${formatId}"]`)
-  const deltaLabel = container.querySelector<HTMLElement>(`[data-floating-point-delta-label="${formatId}"]`)
-  const interpretationLabel = container.querySelector<HTMLElement>(
-    `[data-floating-point-interpretation-label="${formatId}"]`,
-  )
-  const valueText = container.querySelector<HTMLElement>(`[data-floating-point-value="${formatId}"]`)
-  const deltaText = container.querySelector<HTMLElement>(`[data-floating-point-delta="${formatId}"]`)
-  const interpretationText = container.querySelector<HTMLElement>(
-    `[data-floating-point-interpretation="${formatId}"]`,
-  )
-
-  if (
-    !signInput ||
-    !exponentInput ||
-    !mantissaInput ||
-    !title ||
-    !signLabel ||
-    !exponentLabel ||
-    !mantissaLabel ||
-    !valueLabel ||
-    !deltaLabel ||
-    !interpretationLabel ||
-    !valueText ||
-    !deltaText ||
-    !interpretationText
-  ) {
-    return null
-  }
-
-  return {
-    signInput,
-    exponentInput,
-    mantissaInput,
-    title,
-    signLabel,
-    exponentLabel,
-    mantissaLabel,
-    valueLabel,
-    deltaLabel,
-    interpretationLabel,
-    valueText,
-    deltaText,
-    interpretationText,
-  }
-}
+): FloatingPointFormatElements | null =>
+  queryRequired<FloatingPointFormatElements>(container, {
+    signInput: `[data-floating-point-sign="${formatId}"]`,
+    exponentInput: `[data-floating-point-exponent="${formatId}"]`,
+    mantissaInput: `[data-floating-point-mantissa="${formatId}"]`,
+    title: `[data-floating-point-format-title="${formatId}"]`,
+    signLabel: `[data-floating-point-sign-label="${formatId}"]`,
+    exponentLabel: `[data-floating-point-exponent-label="${formatId}"]`,
+    mantissaLabel: `[data-floating-point-mantissa-label="${formatId}"]`,
+    valueLabel: `[data-floating-point-value-label="${formatId}"]`,
+    deltaLabel: `[data-floating-point-delta-label="${formatId}"]`,
+    interpretationLabel: `[data-floating-point-interpretation-label="${formatId}"]`,
+    valueText: `[data-floating-point-value="${formatId}"]`,
+    deltaText: `[data-floating-point-delta="${formatId}"]`,
+    interpretationText: `[data-floating-point-interpretation="${formatId}"]`,
+  })
 
 const queryFloatingPointConverterElements = (
   container: HTMLElement,
 ): FloatingPointConverterElements | null => {
-  const decimalInput = container.querySelector<HTMLInputElement>('[data-floating-point-decimal]')
-  const decimalLabel = container.querySelector<HTMLElement>('[data-floating-point-decimal-label]')
-
-  if (!decimalInput || !decimalLabel) {
+  const decimalElements = queryRequired<Omit<FloatingPointConverterElements, 'formats'>>(container, {
+    decimalInput: '[data-floating-point-decimal]',
+    decimalLabel: '[data-floating-point-decimal-label]',
+  })
+  if (!decimalElements) {
     return null
   }
 
-  const formats = Object.fromEntries(
-    FLOATING_POINT_FORMATS.map((format) => [format.id, queryFormatElements(container, format.id)]),
-  ) as Record<FloatingPointFormatId, FloatingPointFormatElements | null>
-
-  if (Object.values(formats).some((format) => format === null)) {
-    return null
+  const formats: Partial<FloatingPointConverterElements['formats']> = {}
+  for (const format of FLOATING_POINT_FORMATS) {
+    const formatElements = queryFormatElements(container, format.id)
+    if (!formatElements) {
+      return null
+    }
+    formats[format.id] = formatElements
   }
 
-  return {
-    decimalInput,
-    decimalLabel,
-    formats: formats as Record<FloatingPointFormatId, FloatingPointFormatElements>,
-  }
+  return { ...decimalElements, formats: formats as FloatingPointConverterElements['formats'] }
 }
 
 const syncLocalizedText = (elements: FloatingPointConverterElements, messages: Messages): void => {
@@ -156,15 +108,10 @@ const updateFormatOutputs = (
   )
 }
 
-export const mountFloatingPointConverter = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-floating-point-converter-root]') ?? container
+export const mountFloatingPointConverter: MountTool = (container, initialMessages) => {
   const elements = queryFloatingPointConverterElements(container)
   if (!elements) {
-    return
-  }
-
-  if (floatingPointConverterLocale.resync(root, initialMessages)) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -197,8 +144,6 @@ export const mountFloatingPointConverter = (container: HTMLElement, initialMessa
     messages = nextMessages
     syncUi()
   }
-
-  floatingPointConverterLocale.register(root, syncLocale)
 
   const updateAllFromDecimalValue = (value: number): void => {
     decimalNumber = value
@@ -324,6 +269,6 @@ export const mountFloatingPointConverter = (container: HTMLElement, initialMessa
   }
 
   syncUi()
-}
 
-export const updateFloatingPointConverterLocale = floatingPointConverterLocale.update
+  return { updateLocale: syncLocale }
+}

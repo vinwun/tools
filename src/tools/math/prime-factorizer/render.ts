@@ -1,7 +1,11 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { PrimeFactorizerState } from './types.ts'
+import { createInitialPrimeFactorizerState } from './utils.ts'
 
-export const renderPrimeFactorizer = (messages: Messages, state: PrimeFactorizerState): string => {
+export const renderPrimeFactorizer = (
+  messages: Messages,
+  state: PrimeFactorizerState = createInitialPrimeFactorizerState(),
+): string => {
   const primeMessages = messages.primeFactorizer
   const fields = [
     {

@@ -1,17 +1,14 @@
 import type { FileConverterConfig, ConverterResult } from '../foundations/file-converter/types'
-import {conversionFailed, createFileConverterTool} from '../foundations/file-converter/utils'
-import {stripExtension} from '../foundations/files.ts'
-import {ACCEPTED_AUDIO_TYPES, decodeAudioFile, encodeWav, readAudioSampleRate} from './audio-utils.ts'
-
-const isWav = (file: File): boolean =>
-  file.type === 'audio/wav' || file.type === 'audio/x-wav' || file.name.toLowerCase().endsWith('.wav')
+import { conversionFailed, createFileConverterTool } from '../foundations/file-converter/utils'
+import { stripExtension } from '../foundations/files.ts'
+import { ACCEPTED_AUDIO_TYPES, decodeAudioFile, encodeWav, isWavFile, readAudioSampleRate } from './audio-utils.ts'
 
 const convertAudioFile = async (file: File, outputFormatId: string): Promise<ConverterResult> => {
   if (outputFormatId !== 'wav') {
     return { ok: false, reason: 'unsupportedOutput' }
   }
 
-  if (isWav(file)) {
+  if (isWavFile(file)) {
     return {
       ok: true,
       data: {
@@ -55,10 +52,4 @@ const audioConverterConfig: FileConverterConfig = {
   convert: convertAudioFile,
 }
 
-const audioConverterTool = createFileConverterTool(audioConverterConfig)
-
-export const renderAudioConverter = audioConverterTool.render
-export const mountAudioConverter = audioConverterTool.mount
-export function updateAudioConverterLocale(container: HTMLElement, messages: import('../../i18n/schema.ts').Messages): void {
-  audioConverterTool.updateLocale(container, messages)
-}
+export const audioConverterTool = createFileConverterTool(audioConverterConfig)

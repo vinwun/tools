@@ -1,3 +1,4 @@
+import { isIntegerText } from '../../foundations/numbers.ts'
 import type { BaseConverterState } from './types.ts'
 
 const DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz'
@@ -6,8 +7,6 @@ const MAX_BASE = 36
 const DEFAULT_DECIMAL_VALUE = '42'
 const DEFAULT_CUSTOM_BASE = 12
 const MAX_ROMAN_VALUE = 3999
-
-const isIntegerText = (value: string): boolean => /^[-+]?\d+$/.test(value)
 
 export const parseBaseInput = (value: string): number | null => {
   const trimmed = value.trim()

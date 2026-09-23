@@ -1,10 +1,7 @@
-import { escapeHtml, formatMessage } from '../dom.ts'
-import { formatAcceptList } from '../files.ts'
-import { createLocaleSyncRegistry } from '../locale-sync.ts'
+import { escapeHtml, formatMessage, queryRequired } from '../dom.ts'
+import { downloadBlob, formatAcceptList } from '../files.ts'
 import { wireFilePicker } from '../file-picker/mount.ts'
 import type { ConverterMessages, FileConverterConfig, ConverterResultData } from './types.ts'
-
-const fileConverterLocale = createLocaleSyncRegistry<[ConverterMessages]>('[data-file-converter-root]')
 
 type PreviewItem =
   | { kind: 'success'; data: ConverterResultData }
@@ -70,6 +67,12 @@ const createPreviewListMarkup = (items: readonly PreviewItem[], messages: Conver
 const createPreviewMessageMarkup = (message: string): string =>
   `<p class="file-converter-preview-message" data-file-converter-preview-message>${message}</p>`
 
+// Same shape as `MountedTool`, but relabels from the converter's own message group.
+type FileConverterMount = {
+  updateLocale?: (messages: ConverterMessages) => void
+  destroy?: () => void
+}
+
 const revokePreviewUrls = (previewElement: HTMLElement): void => {
   previewElement.querySelectorAll<HTMLElement>('[data-preview-url]').forEach((element) => {
     const url = element.dataset.previewUrl
@@ -83,15 +86,31 @@ export const mountFileConverter = (
   root: HTMLElement,
   config: FileConverterConfig,
   initialMessages: ConverterMessages,
-): void => {
+): FileConverterMount => {
   const filePicker = wireFilePicker(root, { onFiles: (files) => setSelectedFiles(files) })
-  const outputSelect = root.querySelector<HTMLSelectElement>('[data-file-converter-output]')
-  const previewElement = root.querySelector<HTMLElement>('[data-file-converter-preview]')
-  const downloadLink = root.querySelector<HTMLAnchorElement>('[data-file-converter-download]')
+  const elements = queryRequired<{
+    outputSelect: HTMLSelectElement
+    previewElement: HTMLElement
+    downloadLink: HTMLAnchorElement
+    uploadLabel: HTMLElement
+    uploadHint: HTMLElement
+    outputLabel: HTMLElement
+    previewTitle: HTMLElement
+  }>(root, {
+    outputSelect: '[data-file-converter-output]',
+    previewElement: '[data-file-converter-preview]',
+    downloadLink: '[data-file-converter-download]',
+    uploadLabel: '[data-file-converter-upload-label]',
+    uploadHint: '[data-file-converter-upload-hint]',
+    outputLabel: '[data-file-converter-output-label]',
+    previewTitle: '[data-file-converter-preview-title]',
+  })
 
-  if (!filePicker || !outputSelect || !previewElement || !downloadLink) {
-    return
+  if (!filePicker || !elements) {
+    return {}
   }
+
+  const { outputSelect, previewElement, downloadLink } = elements
 
   let messages = initialMessages
   let downloadableResults: ConverterResultData[] = []
@@ -101,21 +120,7 @@ export const mountFileConverter = (
   const setSelectedFiles = (files: readonly File[]): void => {
     selectedFiles = [...files]
     setSelectedFileLabel(selectedFiles)
-    syncFileInputFromSelectedFiles()
     void runConversion()
-  }
-
-  const syncFileInputFromSelectedFiles = (): void => {
-    if (typeof DataTransfer === 'undefined') {
-      return
-    }
-
-    const transfer = new DataTransfer()
-    selectedFiles.forEach((file) => {
-      transfer.items.add(file)
-    })
-
-    filePicker.input.files = transfer.files
   }
 
   const setDownloadDisabled = (): void => {
@@ -175,37 +180,16 @@ export const mountFileConverter = (
   const getFailureMessage = (details?: string): string =>
     details ? `${messages.statusFailed}: ${details}` : messages.statusFailed
 
-  const triggerDownloadForResult = (result: ConverterResultData): void => {
-    const downloadUrl = URL.createObjectURL(result.blob)
-    const tempLink = document.createElement('a')
-    tempLink.href = downloadUrl
-    tempLink.download = result.fileName
-    tempLink.style.display = 'none'
-
-    document.body.append(tempLink)
-    tempLink.click()
-    tempLink.remove()
-
-    setTimeout(() => {
-      URL.revokeObjectURL(downloadUrl)
-    }, 1000)
-  }
-
   downloadLink.textContent = messages.downloadAllAction
   setDownloadDisabled()
   setSelectedFileLabel([])
 
   const syncStaticTexts = (): void => {
-    const uploadLabel = root.querySelector<HTMLElement>('[data-file-converter-upload-label]')
-    const uploadHint = root.querySelector<HTMLElement>('[data-file-converter-upload-hint]')
-    const outputLabel = root.querySelector<HTMLElement>('[data-file-converter-output-label]')
-    const previewTitle = root.querySelector<HTMLElement>('[data-file-converter-preview-title]')
-
-    if (uploadLabel) uploadLabel.textContent = messages.uploadLabel
-    if (uploadHint) uploadHint.textContent = `${messages.uploadHintLabel}: ${formatAcceptList(config.inputAccept)}`
+    elements.uploadLabel.textContent = messages.uploadLabel
+    elements.uploadHint.textContent = `${messages.uploadHintLabel}: ${formatAcceptList(config.inputAccept)}`
     filePicker.browseButton.textContent = messages.browseAction
-    if (outputLabel) outputLabel.textContent = messages.outputLabel
-    if (previewTitle) previewTitle.textContent = messages.previewTitle
+    elements.outputLabel.textContent = messages.outputLabel
+    elements.previewTitle.textContent = messages.previewTitle
     downloadLink.textContent = messages.downloadAllAction
   }
 
@@ -239,8 +223,6 @@ export const mountFileConverter = (
     syncDownloadFromPreviewItems()
   }
 
-  fileConverterLocale.register(root, syncLocale)
-
   downloadLink.addEventListener('click', (event) => {
     event.preventDefault()
 
@@ -249,7 +231,7 @@ export const mountFileConverter = (
     }
 
     downloadableResults.forEach((result) => {
-      triggerDownloadForResult(result)
+      downloadBlob(result.blob, result.fileName)
     })
   })
 
@@ -277,7 +259,6 @@ export const mountFileConverter = (
     const nextItems = currentPreviewItems.filter((_, itemIndex) => itemIndex !== index)
     selectedFiles = selectedFiles.filter((_, fileIndex) => fileIndex !== index)
     setSelectedFileLabel(selectedFiles)
-    syncFileInputFromSelectedFiles()
 
     if (nextItems.length === 0) {
       setPreviewMessage(messages.statusNoFile)
@@ -341,6 +322,13 @@ export const mountFileConverter = (
   outputSelect.addEventListener('change', () => {
     void runConversion()
   })
-}
 
-export const updateFileConverterLocale = fileConverterLocale.update
+  return {
+    updateLocale: syncLocale,
+    destroy: () => {
+      // A conversion still running must not write previews that nobody revokes.
+      conversionRequestId += 1
+      revokePreviewUrls(previewElement)
+    },
+  }
+}

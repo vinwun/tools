@@ -7,35 +7,35 @@ export const renderVideoAudioSplitter = (messages: Messages): string => `
   <section class="tool-layout tool-layout-split video-audio-splitter-layout" data-video-audio-splitter-root>
     <div class="tool-panel video-audio-splitter-panel video-audio-splitter-panel-main">
       <div class="tool-field">
-        <span>${messages.videoAudioSplitter.uploadLabel}</span>
+        <span data-video-audio-splitter-upload-label>${messages.videoAudioSplitter.uploadLabel}</span>
         ${renderFilePicker({
           accept: ACCEPTED_VIDEO_TYPES,
           browseLabel: messages.videoAudioSplitter.browseAction,
           emptyLabel: messages.videoAudioSplitter.noFileSelected,
         })}
       </div>
-      <p class="tool-hint">${messages.videoAudioSplitter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_VIDEO_TYPES)}</p>
+      <p class="tool-hint" data-video-audio-splitter-upload-hint>${messages.videoAudioSplitter.uploadHintLabel}: ${formatAcceptList(ACCEPTED_VIDEO_TYPES)}</p>
 
       <div class="video-audio-splitter-preview-block">
-        <h2>${messages.videoAudioSplitter.previewLabel}</h2>
+        <h2 data-video-audio-splitter-preview-heading>${messages.videoAudioSplitter.previewLabel}</h2>
         <video class="tool-media-preview" data-video-audio-splitter-preview controls preload="metadata"></video>
       </div>
     </div>
 
     <div class="tool-panel video-audio-splitter-panel video-audio-splitter-panel-sidebar">
       <div class="video-audio-splitter-info">
-        <h2>${messages.videoAudioSplitter.infoTitle}</h2>
+        <h2 data-video-audio-splitter-info-heading>${messages.videoAudioSplitter.infoTitle}</h2>
         <dl class="video-audio-splitter-info-list">
           <div class="video-audio-splitter-info-row">
-            <dt>${messages.videoAudioSplitter.durationLabel}</dt>
+            <dt data-video-audio-splitter-duration-label>${messages.videoAudioSplitter.durationLabel}</dt>
             <dd data-video-audio-splitter-duration>—</dd>
           </div>
           <div class="video-audio-splitter-info-row">
-            <dt>${messages.videoAudioSplitter.formatLabel}</dt>
+            <dt data-video-audio-splitter-format-label>${messages.videoAudioSplitter.formatLabel}</dt>
             <dd data-video-audio-splitter-format>—</dd>
           </div>
           <div class="video-audio-splitter-info-row">
-            <dt>${messages.videoAudioSplitter.tracksLabel}</dt>
+            <dt data-video-audio-splitter-tracks-label>${messages.videoAudioSplitter.tracksLabel}</dt>
             <dd data-video-audio-splitter-tracks>—</dd>
           </div>
         </dl>

@@ -1,7 +1,11 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { BaseConverterState } from './types.ts'
+import { createInitialBaseConverterState } from './utils.ts'
 
-export const renderBaseConverter = (messages: Messages, state: BaseConverterState): string => {
+export const renderBaseConverter = (
+  messages: Messages,
+  state: BaseConverterState = createInitialBaseConverterState(),
+): string => {
   const baseMessages = messages.baseConverter
   const fields = [
     { key: 'binary', label: baseMessages.binaryLabel, value: state.binaryValue, inputMode: 'text' },

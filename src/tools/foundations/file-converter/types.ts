@@ -24,9 +24,3 @@ export type FileConverterConfig = {
   outputFormats: readonly ConverterOutputFormat[]
   convert: (file: File, outputFormatId: string) => Promise<ConverterResult>
 }
-
-export type FileConverterTool = {
-  render: (messages: Messages) => string
-  mount: (container: HTMLElement, messages: Messages) => void
-  updateLocale: (container: HTMLElement, messages: Messages) => void
-}

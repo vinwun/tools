@@ -1,9 +1,10 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { AspectRatioCalculatorState } from './types.ts'
+import { createInitialAspectRatioCalculatorState } from './utils.ts'
 
 export const renderAspectRatioCalculator = (
   messages: Messages,
-  state: AspectRatioCalculatorState,
+  state: AspectRatioCalculatorState = createInitialAspectRatioCalculatorState(),
 ): string => {
   const ratioMessages = messages.aspectRatioCalculator
 

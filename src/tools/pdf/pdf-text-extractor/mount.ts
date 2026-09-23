@@ -1,269 +1,206 @@
-import {type Locale, messagesByLocale} from '../../../i18n'
-import {configurePdfWorker} from '../pdf-worker.ts'
-import { createUniqueId, escapeHtml } from '../../foundations/dom.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import type { Messages } from '../../../i18n/schema.ts'
+import type { MountTool } from '../../types.ts'
+import { configurePdfWorker } from '../pdf-worker.ts'
+import { escapeHtml, queryRequired } from '../../foundations/dom.ts'
 import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import { downloadBlob, formatAcceptList } from '../../foundations/files.ts'
-import { ACCEPTED_PDF_TYPES } from '../pdf-utils.ts'
-import type {PdfTextExtractorEntry, PdfTextExtractorFormat} from './types.ts'
-import {buildDownloadFileName, extractPdfText, isPdfFile} from './utils.ts'
+import { ACCEPTED_PDF_TYPES, isPdfFile } from '../pdf-utils.ts'
+import type { PdfTextExtractorFormat, PdfTextExtractorResult } from './types.ts'
+import { buildDownloadFileName, extractPdfText } from './utils.ts'
 
 type PdfTextExtractorState = {
-  entries: PdfTextExtractorEntry[]
+  result: PdfTextExtractorResult | null
   isBusy: boolean
   outputFormat: PdfTextExtractorFormat
-  selectedEntryId: string | null
 }
 
-const pdfTextExtractorLocale = createLocaleSyncRegistry<[Locale]>('[data-pdf-text-extractor-root]')
-let stateGeneration = 0
+type PdfTextExtractorElements = {
+  uploadLabel: HTMLElement
+  dropHint: HTMLElement
+  uploadHint: HTMLElement
+  outputTitle: HTMLElement
+  outputSelect: HTMLSelectElement
+  markdownOption: HTMLOptionElement
+  textOption: HTMLOptionElement
+  downloadButton: HTMLButtonElement
+  status: HTMLElement
+  resultsTitle: HTMLElement
+  results: HTMLElement
+}
 
-const getMessages = (locale: Locale) => messagesByLocale[locale]
-
-const updateEntry = (entries: PdfTextExtractorEntry[], entryId: string, patch: Partial<PdfTextExtractorEntry>): PdfTextExtractorEntry[] =>
-  entries.map((entry) => (entry.id === entryId ? { ...entry, ...patch } : entry))
-
-const renderResults = (state: PdfTextExtractorState, locale: Locale): string => {
-  const messages = getMessages(locale).pdfTextExtractor
-
-  if (state.entries.length === 0) {
+const renderResult = (state: PdfTextExtractorState, messages: Messages['pdfTextExtractor']): string => {
+  const { result } = state
+  if (!result) {
     return `<p class="tool-hint">${messages.resultsEmpty}</p>`
   }
 
-  return state.entries
-    .map((entry) => {
-      const isSelected = state.selectedEntryId === entry.id
-      const statusLabel =
-        entry.status === 'ready'
-          ? messages.entryStatusReady
-          : entry.status === 'error'
-            ? messages.entryStatusFailed
-            : messages.entryStatusExtracting
+  const statusLabel =
+    result.status === 'ready'
+      ? messages.entryStatusReady
+      : result.status === 'error'
+        ? messages.entryStatusFailed
+        : messages.entryStatusExtracting
+  const statusDetail = result.status === 'error' && result.error ? ` ${escapeHtml(result.error)}` : ''
+  const previewText = state.outputFormat === 'md' ? result.markdownText : result.plainText
+  const previewMarkup = result.status === 'ready'
+    ? `<pre class="pdf-text-extractor-preview">${escapeHtml(previewText)}</pre>`
+    : `<p class="tool-hint">${messages.previewUnavailable}</p>`
 
-      const statusDetail = entry.status === 'error' && entry.error ? ` ${escapeHtml(entry.error)}` : ''
-      const previewText = state.outputFormat === 'md' ? entry.markdownText : entry.plainText
-      const previewMarkup = entry.status === 'ready'
-        ? `<pre class="pdf-text-extractor-preview">${escapeHtml(previewText)}</pre>`
-        : `<p class="tool-hint">${messages.previewUnavailable}</p>`
-
-      return `
-        <article class="tool-card pdf-text-extractor-entry${isSelected ? ' is-selected' : ''}" data-pdf-text-extractor-entry="${entry.id}" aria-selected="${isSelected ? 'true' : 'false'}">
-          <header class="tool-panel-header pdf-text-extractor-entry-header">
-            <div class="pdf-text-extractor-entry-meta">
-              <h3 class="pdf-text-extractor-entry-title">${escapeHtml(entry.fileName)}</h3>
-            </div>
-            <span class="pdf-text-extractor-entry-status${entry.status === 'error' ? ' is-error' : ''}">${statusLabel}${statusDetail}</span>
-          </header>
-           <div class="pdf-text-extractor-entry-preview">
-              ${previewMarkup}
-            </div>
-         </article>
-       `
-    })
-    .join('')
+  return `
+    <article class="tool-card pdf-text-extractor-entry is-selected">
+      <header class="tool-panel-header pdf-text-extractor-entry-header">
+        <div class="pdf-text-extractor-entry-meta">
+          <h3 class="pdf-text-extractor-entry-title">${escapeHtml(result.fileName)}</h3>
+        </div>
+        <span class="pdf-text-extractor-entry-status${result.status === 'error' ? ' is-error' : ''}">${statusLabel}${statusDetail}</span>
+      </header>
+      <div class="pdf-text-extractor-entry-preview">
+        ${previewMarkup}
+      </div>
+    </article>
+  `
 }
 
-const resolveStatusText = (state: PdfTextExtractorState, locale: Locale): string => {
-  const messages = getMessages(locale).pdfTextExtractor
-
+const resolveStatusText = (state: PdfTextExtractorState, messages: Messages['pdfTextExtractor']): string => {
   if (state.isBusy) {
     return messages.statusExtracting
   }
 
-  if (state.entries.length === 0) {
+  if (!state.result) {
     return messages.statusEmpty
   }
 
-  const readyEntries = state.entries.filter((entry) => entry.status === 'ready')
-  const failedEntries = state.entries.filter((entry) => entry.status === 'error')
-
-  if (failedEntries.length > 0) {
-    return messages.statusFailed
-  }
-
-  if (!state.selectedEntryId || !readyEntries.some((entry) => entry.id === state.selectedEntryId)) {
-    return messages.statusReadySelect
-  }
-
-  return messages.statusReady
+  return state.result.status === 'error' ? messages.statusFailed : messages.statusReady
 }
 
-export const mountPdfTextExtractor = (container: HTMLElement, locale: Locale): void => {
+export const mountPdfTextExtractor: MountTool = (container, initialMessages) => {
   configurePdfWorker()
-  stateGeneration += 1
   const root = container.querySelector<HTMLElement>('[data-pdf-text-extractor-root]')
-  if (!root) {
-    return
+  const filePicker = root ? wireFilePicker(root, { onFiles: (files) => void extractFile(files.slice(0, 1)) }) : null
+  const elements = root
+    ? queryRequired<PdfTextExtractorElements>(root, {
+        uploadLabel: '[data-pdf-text-extractor-upload-label]',
+        dropHint: '[data-pdf-text-extractor-drop-hint]',
+        uploadHint: '[data-pdf-text-extractor-upload-hint]',
+        outputTitle: '[data-pdf-text-extractor-output-title]',
+        outputSelect: '[data-pdf-text-extractor-output]',
+        markdownOption: '[data-pdf-text-extractor-output] option[value="md"]',
+        textOption: '[data-pdf-text-extractor-output] option[value="txt"]',
+        downloadButton: '[data-pdf-text-extractor-download-selected]',
+        status: '[data-pdf-text-extractor-status]',
+        resultsTitle: '[data-pdf-text-extractor-results-title]',
+        results: '[data-pdf-text-extractor-results]',
+      })
+    : null
+  if (!filePicker || !elements) {
+    return {}
   }
 
-  let currentLocale = locale
-
-  const filePicker = wireFilePicker(root, { onFiles: (files) => void extractFiles(files.slice(0, 1)) })
-  const outputSelect = root.querySelector<HTMLSelectElement>('[data-pdf-text-extractor-output]')
-  const downloadSelectedButton = root.querySelector<HTMLButtonElement>('[data-pdf-text-extractor-download-selected]')
-  const statusElement = root.querySelector<HTMLElement>('[data-pdf-text-extractor-status]')
-  const resultsElement = root.querySelector<HTMLElement>('[data-pdf-text-extractor-results]')
-
-  if (!filePicker || !outputSelect || !downloadSelectedButton || !statusElement || !resultsElement) {
-    return
-  }
-
+  let messages = initialMessages
+  // Bumped per extraction and on destroy, so a stale extraction never writes its result.
+  let generation = 0
   const state: PdfTextExtractorState = {
-    entries: [],
+    result: null,
     isBusy: false,
     outputFormat: 'md',
-    selectedEntryId: null,
   }
 
   const sync = (): void => {
-    statusElement.textContent = resolveStatusText(state, currentLocale)
-    resultsElement.innerHTML = renderResults(state, currentLocale)
-
-    const currentFileName = state.entries[0]?.fileName ?? ''
-    filePicker.setName(currentFileName || getMessages(currentLocale).pdfTextExtractor.noFileSelected)
-
-    const selectedEntry = state.entries.find((entry) => entry.id === state.selectedEntryId) ?? null
-    const hasReadySelection = Boolean(selectedEntry && selectedEntry.status === 'ready')
-
+    const pdfMessages = messages.pdfTextExtractor
+    elements.status.textContent = resolveStatusText(state, pdfMessages)
+    // The preview is rebuilt on every sync (locale, output format), so keep the reader's place.
+    const previewScrollTop = elements.results.querySelector('.pdf-text-extractor-preview')?.scrollTop ?? 0
+    elements.results.innerHTML = renderResult(state, pdfMessages)
+    elements.results.querySelector('.pdf-text-extractor-preview')?.scrollTo({ top: previewScrollTop })
+    filePicker.setName(state.result?.fileName || pdfMessages.noFileSelected)
     filePicker.input.disabled = state.isBusy
-    downloadSelectedButton.disabled = state.isBusy || !hasReadySelection
+    elements.downloadButton.disabled = state.isBusy || state.result?.status !== 'ready'
   }
 
-  const syncLocale = (nextLocale: Locale): void => {
-    currentLocale = nextLocale
-
-    const messages = getMessages(currentLocale).pdfTextExtractor
-    const uploadHint = root.querySelector<HTMLElement>('[data-pdf-text-extractor-upload-hint]')
-    const outputSelect = root.querySelector<HTMLSelectElement>('[data-pdf-text-extractor-output]')
-
-    if (uploadHint) uploadHint.textContent = `${messages.uploadHintLabel}: ${formatAcceptList(ACCEPTED_PDF_TYPES)}`
-    if (!state.entries[0]?.fileName) {
-      filePicker.setName(messages.noFileSelected)
-    }
-    if (outputSelect) {
-      outputSelect.options[0].textContent = messages.outputFormatMarkdown
-      outputSelect.options[1].textContent = messages.outputFormatText
-    }
-
-    const uploadHeading = root.querySelector<HTMLElement>('.pdf-text-extractor-panel-upload h2')
-    const dropHint = root.querySelector<HTMLElement>('.pdf-text-extractor-panel-upload .tool-hint')
-    const outputHeading = root.querySelector<HTMLElement>('.pdf-text-extractor-panel-output h2')
-    const resultsHeading = root.querySelector<HTMLElement>('.pdf-text-extractor-panel-results h2')
-
-    if (uploadHeading) uploadHeading.textContent = messages.uploadLabel
-    if (dropHint) dropHint.textContent = messages.dropHint
-    if (outputHeading) outputHeading.textContent = messages.outputTitle
-    if (resultsHeading) resultsHeading.textContent = messages.resultsTitle
-
-    downloadSelectedButton.textContent = messages.downloadAction
-
+  const syncLocale = (nextMessages: Messages): void => {
+    messages = nextMessages
+    const pdfMessages = messages.pdfTextExtractor
+    elements.uploadLabel.textContent = pdfMessages.uploadLabel
+    elements.dropHint.textContent = pdfMessages.dropHint
+    elements.uploadHint.textContent = `${pdfMessages.uploadHintLabel}: ${formatAcceptList(ACCEPTED_PDF_TYPES)}`
+    filePicker.browseButton.textContent = pdfMessages.browseAction
+    elements.outputTitle.textContent = pdfMessages.outputTitle
+    elements.outputSelect.setAttribute('aria-label', pdfMessages.outputTitle)
+    elements.markdownOption.textContent = pdfMessages.outputFormatMarkdown
+    elements.textOption.textContent = pdfMessages.outputFormatText
+    elements.downloadButton.textContent = pdfMessages.downloadAction
+    elements.resultsTitle.textContent = pdfMessages.resultsTitle
     sync()
   }
-
-  pdfTextExtractorLocale.register(root, syncLocale)
 
   const setBusy = (busy: boolean): void => {
     state.isBusy = busy
     sync()
   }
 
-  const triggerDownload = (text: string, fileName: string, format: PdfTextExtractorFormat): void => {
-    const blob = new Blob([text], { type: format === 'md' ? 'text/markdown' : 'text/plain' })
-    downloadBlob(blob, buildDownloadFileName(fileName, format))
-  }
-
-  const extractFiles = async (files: readonly File[]): Promise<void> => {
+  const extractFile = async (files: readonly File[]): Promise<void> => {
     const pdfFile = files.find(isPdfFile)
     if (!pdfFile) {
       return
     }
 
-    const generation = ++stateGeneration
+    const currentGeneration = ++generation
+    const fileName = pdfFile.name
+    state.result = { fileName, status: 'extracting', plainText: '', markdownText: '', error: null }
     setBusy(true)
 
-    const nextEntry: PdfTextExtractorEntry = {
-      id: createUniqueId(),
-      file: pdfFile,
-      fileName: pdfFile.name,
-      status: 'extracting',
-      pageCount: null,
-      plainText: '',
-      markdownText: '',
-      error: null,
-    }
-
-    state.entries = [nextEntry]
-    state.selectedEntryId = nextEntry.id
-    sync()
-
     try {
-      const result = await extractPdfText(nextEntry.file)
-      if (generation !== stateGeneration) {
+      const extracted = await extractPdfText(pdfFile)
+      if (currentGeneration !== generation) {
         return
       }
 
-      state.entries = updateEntry(state.entries, nextEntry.id, {
+      state.result = {
+        fileName,
         status: 'ready',
-        pageCount: result.pageCount,
-        plainText: result.plainText,
-        markdownText: result.markdownText,
+        plainText: extracted.plainText,
+        markdownText: extracted.markdownText,
         error: null,
-      })
+      }
     } catch (error) {
-      if (generation !== stateGeneration) {
+      if (currentGeneration !== generation) {
         return
       }
 
-      state.entries = updateEntry(state.entries, nextEntry.id, {
+      state.result = {
+        fileName,
         status: 'error',
-        error: error instanceof Error ? error.message : getMessages(currentLocale).pdfTextExtractor.entryStatusFailed,
-      })
+        plainText: '',
+        markdownText: '',
+        error: error instanceof Error ? error.message : messages.pdfTextExtractor.entryStatusFailed,
+      }
     }
 
-    sync()
     setBusy(false)
   }
 
-  outputSelect.addEventListener('change', () => {
-    state.outputFormat = outputSelect.value === 'txt' ? 'txt' : 'md'
+  elements.outputSelect.addEventListener('change', () => {
+    state.outputFormat = elements.outputSelect.value === 'txt' ? 'txt' : 'md'
     sync()
   })
 
-  downloadSelectedButton.addEventListener('click', () => {
-    if (downloadSelectedButton.disabled) {
+  elements.downloadButton.addEventListener('click', () => {
+    const { result, outputFormat } = state
+    if (state.isBusy || result?.status !== 'ready') {
       return
     }
 
-    const entry = state.entries.find((item) => item.id === state.selectedEntryId)
-    if (!entry || entry.status !== 'ready') {
-      return
-    }
-
-    const text = state.outputFormat === 'md' ? entry.markdownText : entry.plainText
-    triggerDownload(text, entry.fileName, state.outputFormat)
-  })
-
-  resultsElement.addEventListener('click', (event) => {
-    const target = event.target
-    if (!(target instanceof HTMLElement)) {
-      return
-    }
-
-    const entryCard = target.closest<HTMLElement>('[data-pdf-text-extractor-entry]')
-    if (!entryCard) {
-      return
-    }
-
-    const entryId = entryCard.dataset.pdfTextExtractorEntry
-    if (!entryId) {
-      return
-    }
-
-    state.selectedEntryId = entryId
-    sync()
+    const text = outputFormat === 'md' ? result.markdownText : result.plainText
+    const blob = new Blob([text], { type: outputFormat === 'md' ? 'text/markdown' : 'text/plain' })
+    downloadBlob(blob, buildDownloadFileName(result.fileName, outputFormat))
   })
 
   sync()
-}
 
-export const updatePdfTextExtractorLocale = pdfTextExtractorLocale.update
+  return {
+    updateLocale: syncLocale,
+    destroy: () => {
+      generation += 1
+    },
+  }
+}

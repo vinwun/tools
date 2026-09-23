@@ -1,55 +1,10 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import { downloadBlob, formatAcceptList, readFileAsText } from '../../foundations/files.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
 import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import type { MarkdownViewerElements, MarkdownViewerState } from './types.ts'
 import { createInitialMarkdownViewerState, renderMarkdownToHtml, wrapHtmlDocument } from './utils.ts'
-
-const markdownViewerLocale = createLocaleSyncRegistry<[Messages]>('[data-markdown-viewer-root]')
-
-const queryMarkdownViewerElements = (container: HTMLElement): MarkdownViewerElements | null => {
-  const form = container.querySelector<HTMLFormElement>('[data-markdown-viewer-form]')
-  const uploadLabel = container.querySelector<HTMLElement>('[data-markdown-viewer-upload-label]')
-  const uploadHint = container.querySelector<HTMLElement>('[data-markdown-viewer-upload-hint]')
-  const input = container.querySelector<HTMLTextAreaElement>('[data-markdown-viewer-input]')
-  const renderButton = container.querySelector<HTMLButtonElement>('[data-markdown-viewer-render]')
-  const clearButton = container.querySelector<HTMLButtonElement>('[data-markdown-viewer-clear]')
-  const downloadButton = container.querySelector<HTMLButtonElement>('[data-markdown-viewer-download]')
-  const inputLabel = container.querySelector<HTMLElement>('[data-markdown-viewer-input-label]')
-  const outputLabel = container.querySelector<HTMLElement>('[data-markdown-viewer-output-label]')
-  const status = container.querySelector<HTMLElement>('[data-markdown-viewer-status]')
-  const outputContainer = container.querySelector<HTMLElement>('[data-markdown-viewer-output]')
-
-  if (
-    !form ||
-    !uploadLabel ||
-    !uploadHint ||
-    !input ||
-    !renderButton ||
-    !clearButton ||
-    !downloadButton ||
-    !inputLabel ||
-    !outputLabel ||
-    !status ||
-    !outputContainer
-  ) {
-    return null
-  }
-
-  return {
-    form,
-    uploadLabel,
-    uploadHint,
-    input,
-    renderButton,
-    clearButton,
-    downloadButton,
-    inputLabel,
-    outputLabel,
-    status,
-    outputContainer,
-  }
-}
+import type { MountTool } from '../../types.ts'
 
 const INPUT_ACCEPT = '.md,.txt'
 const INPUT_ACCEPT_LABEL = formatAcceptList(INPUT_ACCEPT)
@@ -121,12 +76,23 @@ const renderMarkdownInput = (
   elements.downloadButton.disabled = false
 }
 
-export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-markdown-viewer-root]') ?? container
-  const elements = queryMarkdownViewerElements(container)
-  const filePicker = wireFilePicker(root, { onFiles: (files) => void loadFile(files[0]) })
+export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<MarkdownViewerElements>(container, {
+    form: '[data-markdown-viewer-form]',
+    uploadLabel: '[data-markdown-viewer-upload-label]',
+    uploadHint: '[data-markdown-viewer-upload-hint]',
+    input: '[data-markdown-viewer-input]',
+    renderButton: '[data-markdown-viewer-render]',
+    clearButton: '[data-markdown-viewer-clear]',
+    downloadButton: '[data-markdown-viewer-download]',
+    inputLabel: '[data-markdown-viewer-input-label]',
+    outputLabel: '[data-markdown-viewer-output-label]',
+    status: '[data-markdown-viewer-status]',
+    outputContainer: '[data-markdown-viewer-output]',
+  })
+  const filePicker = wireFilePicker(container, { onFiles: (files) => void loadFile(files[0]) })
   if (!elements || !filePicker) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -150,8 +116,6 @@ export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Mes
     messages = nextMessages
     syncUi()
   }
-
-  markdownViewerLocale.register(root, syncLocale)
 
   const updateFileName = (fileName: string | null): void => {
     state.selectedFileName = fileName
@@ -216,6 +180,12 @@ export const mountMarkdownViewer = (container: HTMLElement, initialMessages: Mes
   })
 
   syncUi()
+  return {
+    updateLocale: syncLocale,
+    destroy: () => {
+      if (renderDelayId !== null) {
+        window.clearTimeout(renderDelayId)
+      }
+    },
+  }
 }
-
-export const updateMarkdownViewerLocale = markdownViewerLocale.update

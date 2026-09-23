@@ -18,7 +18,6 @@ const renderTimezoneEntries = (messages: Messages): string => {
             class="timezone-time-input"
             data-timezone-input
             data-timezone-id="${zone.id}"
-            data-timezone-label="${label}"
             aria-label="${ariaLabel}"
           />
         </label>

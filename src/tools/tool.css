@@ -157,13 +157,6 @@
   font-size: 0.95rem;
 }
 
-.tool-placeholder {
-  padding: 1rem;
-  border: 1px dashed var(--border);
-  border-radius: 0.75rem;
-  background: var(--panel);
-}
-
 .tool-load-status {
   display: flex;
   flex-wrap: wrap;

@@ -110,13 +110,15 @@ const readMp3Metadata = (headerBuffer: ArrayBuffer): WavMetadata | null => {
   return null
 }
 
+export const isWavFile = (file: File): boolean =>
+  file.type === 'audio/wav' || file.type === 'audio/x-wav' || file.name.toLowerCase().endsWith('.wav')
+
 export const readAudioSampleRate = async (file: File): Promise<number | null> => {
-  const lowerName = file.name.toLowerCase()
-  if (file.type === 'audio/wav' || file.type === 'audio/x-wav' || lowerName.endsWith('.wav')) {
+  if (isWavFile(file)) {
     return (await readWavMetadata(file))?.sampleRate ?? null
   }
 
-  if (file.type === 'audio/mpeg' || lowerName.endsWith('.mp3')) {
+  if (file.type === 'audio/mpeg' || file.name.toLowerCase().endsWith('.mp3')) {
     const headerBuffer = await file.slice(0, 131072).arrayBuffer()
     return readMp3Metadata(headerBuffer)?.sampleRate ?? null
   }

@@ -17,65 +17,27 @@ import {
 } from './utils.ts'
 import { formatMessage } from '../../foundations/dom.ts'
 import { copyText } from '../../foundations/clipboard.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
-const colorPickerLocale = createLocaleSyncRegistry<[Messages]>('[data-color-picker-root]')
-
-const queryColorPickerElements = (container: HTMLElement): ColorPickerElements | null => {
-  const spectrumCanvas = container.querySelector<HTMLCanvasElement>('[data-color-picker-spectrum]')
-  const spectrumHandle = container.querySelector<HTMLElement>('[data-color-picker-spectrum-handle]')
-  const hueCanvas = container.querySelector<HTMLCanvasElement>('[data-color-picker-hue]')
-  const hueHandle = container.querySelector<HTMLElement>('[data-color-picker-hue-handle]')
-  const hexInput = container.querySelector<HTMLInputElement>('[data-color-picker-hex]')
-  const hexCopyButton = container.querySelector<HTMLButtonElement>('[data-color-picker-copy]')
-  const copyPopup = container.querySelector<HTMLElement>('[data-color-picker-popup]')
-  const redInput = container.querySelector<HTMLInputElement>('[data-color-picker-r]')
-  const greenInput = container.querySelector<HTMLInputElement>('[data-color-picker-g]')
-  const blueInput = container.querySelector<HTMLInputElement>('[data-color-picker-b]')
-  const hueInput = container.querySelector<HTMLInputElement>('[data-color-picker-h]')
-  const saturationInput = container.querySelector<HTMLInputElement>('[data-color-picker-s]')
-  const lightnessInput = container.querySelector<HTMLInputElement>('[data-color-picker-l]')
-
-  if (
-    !spectrumCanvas ||
-    !spectrumHandle ||
-    !hueCanvas ||
-    !hueHandle ||
-    !hexInput ||
-    !hexCopyButton ||
-    !copyPopup ||
-    !redInput ||
-    !greenInput ||
-    !blueInput ||
-    !hueInput ||
-    !saturationInput ||
-    !lightnessInput
-  ) {
-    return null
-  }
-
-  return {
-    spectrumCanvas,
-    spectrumHandle,
-    hueCanvas,
-    hueHandle,
-    hexInput,
-    hexCopyButton,
-    copyPopup,
-    redInput,
-    greenInput,
-    blueInput,
-    hueInput,
-    saturationInput,
-    lightnessInput,
-  }
-}
-
-export const mountColorPicker = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-color-picker-root]') ?? container
-  const elements = queryColorPickerElements(container)
+export const mountColorPicker: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<ColorPickerElements>(container, {
+    spectrumCanvas: '[data-color-picker-spectrum]',
+    spectrumHandle: '[data-color-picker-spectrum-handle]',
+    hueCanvas: '[data-color-picker-hue]',
+    hueHandle: '[data-color-picker-hue-handle]',
+    hexInput: '[data-color-picker-hex]',
+    hexCopyButton: '[data-color-picker-copy]',
+    copyPopup: '[data-color-picker-popup]',
+    redInput: '[data-color-picker-r]',
+    greenInput: '[data-color-picker-g]',
+    blueInput: '[data-color-picker-b]',
+    hueInput: '[data-color-picker-h]',
+    saturationInput: '[data-color-picker-s]',
+    lightnessInput: '[data-color-picker-l]',
+  })
   if (!elements) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -122,26 +84,10 @@ export const mountColorPicker = (container: HTMLElement, initialMessages: Messag
   }
 
   const syncLocalizedText = (): void => {
-    const heading = root.querySelector<HTMLElement>('.color-picker-text-block h2')
-    const hint = root.querySelector<HTMLElement>('.color-picker-hint')
-    const legends = root.querySelectorAll<HTMLElement>('.color-picker-fieldset legend')
-    const hexInputLabel = root.querySelector<HTMLElement>('.color-picker-hex-input-field > span')
-    const rgbLabels = root.querySelectorAll<HTMLElement>('.color-picker-panel-right .color-picker-grid .tool-field > span')
-    const copyButton = elements.hexCopyButton
-
-    if (heading) heading.textContent = messages.colorPicker.squareLabel
-    if (hint) hint.textContent = messages.colorPicker.squareHint
-    if (legends[0]) legends[0].textContent = messages.colorPicker.hexLabel
-    if (legends[1]) legends[1].textContent = messages.colorPicker.rgbGroupLabel
-    if (legends[2]) legends[2].textContent = messages.colorPicker.hslGroupLabel
-    if (hexInputLabel) hexInputLabel.textContent = messages.colorPicker.hexInputLabel
-    if (rgbLabels[0]) rgbLabels[0].textContent = messages.colorPicker.redLabel
-    if (rgbLabels[1]) rgbLabels[1].textContent = messages.colorPicker.greenLabel
-    if (rgbLabels[2]) rgbLabels[2].textContent = messages.colorPicker.blueLabel
-    if (rgbLabels[3]) rgbLabels[3].textContent = messages.colorPicker.hueLabel
-    if (rgbLabels[4]) rgbLabels[4].textContent = messages.colorPicker.saturationLabel
-    if (rgbLabels[5]) rgbLabels[5].textContent = messages.colorPicker.lightnessLabel
-    copyButton.textContent = messages.colorPicker.copyHexAction
+    container.querySelectorAll<HTMLElement>('[data-color-picker-text]').forEach((element) => {
+      const key = element.dataset.colorPickerText as keyof Messages['colorPicker']
+      element.textContent = messages.colorPicker[key]
+    })
     elements.spectrumCanvas.setAttribute('aria-label', messages.colorPicker.squareLabel)
     elements.hueCanvas.setAttribute('aria-label', messages.colorPicker.hueBarLabel)
   }
@@ -151,8 +97,6 @@ export const mountColorPicker = (container: HTMLElement, initialMessages: Messag
     syncLocalizedText()
     syncAll()
   }
-
-  colorPickerLocale.register(root, syncLocale)
 
   const setPopupMessage = (message: string): void => {
     if (copyPopupTimer !== undefined) {
@@ -332,12 +276,16 @@ export const mountColorPicker = (container: HTMLElement, initialMessages: Messag
     )
   })
 
-  const refresh = () => {
-    syncAll()
+  const listeners = new AbortController()
+  window.addEventListener('resize', syncAll, { signal: listeners.signal })
+  const initialFrame = window.requestAnimationFrame(syncAll)
+
+  return {
+    updateLocale: syncLocale,
+    destroy: () => {
+      listeners.abort()
+      window.cancelAnimationFrame(initialFrame)
+      window.clearTimeout(copyPopupTimer)
+    },
   }
-
-  window.addEventListener('resize', refresh)
-  window.requestAnimationFrame(refresh)
 }
-
-export const updateColorPickerLocale = colorPickerLocale.update

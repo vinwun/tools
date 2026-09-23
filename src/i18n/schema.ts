@@ -26,7 +26,6 @@ export type Messages = {
     availableTools: string
   }
   toolPage: {
-    comingSoon: string
     loading: string
     loadFailed: string
     retryAction: string
@@ -123,7 +122,6 @@ export type Messages = {
     statusEmpty: string
     statusExtracting: string
     statusReady: string
-    statusReadySelect: string
     statusFailed: string
     resultsTitle: string
     resultsEmpty: string
@@ -348,7 +346,6 @@ export type Messages = {
     outputLabel: string
   }
   unicodeConverter: {
-    characterLabel: string
     codePointLabel: string
     decimalLabel: string
     binaryLabel: string

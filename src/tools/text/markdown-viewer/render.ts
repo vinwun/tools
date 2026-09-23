@@ -2,10 +2,11 @@ import type { Messages } from '../../../i18n/schema.ts'
 import { formatAcceptList } from '../../foundations/files.ts'
 import { renderFilePicker } from '../../foundations/file-picker/render.ts'
 import type { MarkdownViewerState } from './types.ts'
+import { createInitialMarkdownViewerState } from './utils.ts'
 
 export const renderMarkdownViewer = (
   messages: Messages,
-  state: MarkdownViewerState,
+  state: MarkdownViewerState = createInitialMarkdownViewerState(),
 ): string => {
   const markdownMessages = messages.markdownViewer
   const inputAccept = '.md,.txt'

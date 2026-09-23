@@ -11,7 +11,6 @@ export type HiddenCharactersInspectorState = {
 }
 
 export type HiddenCharactersInspectorElements = {
-  form: HTMLFormElement
   input: HTMLTextAreaElement
   clearButton: HTMLButtonElement
   exampleButton: HTMLButtonElement

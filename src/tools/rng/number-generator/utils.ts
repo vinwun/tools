@@ -1,14 +1,11 @@
 import { formatDecimalNumber } from '../../foundations/numbers.ts'
-import type {NumberGeneratorState} from './types.ts'
+import type { NumberGeneratorState } from './types.ts'
 
 const DEFAULT_MIN_VALUE = '0'
 const DEFAULT_MAX_VALUE = '100'
 const DEFAULT_RESULT_TEXT = '—'
 const MAX_DECIMAL_PRECISION = 10
 const MIN_DECIMAL_PRECISION = 2
-
-const hasCryptoRandomValues = (): boolean =>
-  typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
 
 export const createInitialNumberGeneratorState = (): NumberGeneratorState => ({
   minValue: DEFAULT_MIN_VALUE,
@@ -31,7 +28,7 @@ export const randomIntegerInclusive = (minValue: number, maxValue: number): numb
     return lowerBound
   }
 
-  if (!hasCryptoRandomValues() || span > 0x100000000) {
+  if (span > 0x100000000) {
     return lowerBound + Math.floor(Math.random() * span)
   }
 

@@ -1,11 +1,17 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { FloatingPointConverterState } from './types.ts'
-import { FLOATING_POINT_FORMATS, formatDelta, formatValueWithDelta, getInterpretationLabel } from './utils.ts'
+import {
+  FLOATING_POINT_FORMATS,
+  createInitialFloatingPointConverterState,
+  formatDelta,
+  formatValueWithDelta,
+  getInterpretationLabel,
+} from './utils.ts'
 import { resolveNumberLocale } from '../../foundations/numbers.ts'
 
 export const renderFloatingPointConverter = (
   messages: Messages,
-  state: FloatingPointConverterState,
+  state: FloatingPointConverterState = createInitialFloatingPointConverterState(),
 ): string => {
   const fpMessages = messages.floatingPointConverter
   const locale = resolveNumberLocale()

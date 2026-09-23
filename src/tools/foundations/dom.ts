@@ -20,3 +20,24 @@ export const createUniqueId = (): string => {
 
   return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
+
+/**
+ * Looks up one element per selector and returns them as a typed record, or `null` as soon as one
+ * is missing, so a mount can bail out with a single check. Element types are the caller's claim,
+ * the same as with `querySelector<T>`.
+ */
+export const queryRequired = <T extends Record<string, Element>>(
+  root: ParentNode,
+  selectors: { [K in keyof T]: string },
+): T | null => {
+  const elements: Partial<T> = {}
+  for (const key in selectors) {
+    const element = root.querySelector(selectors[key])
+    if (!element) {
+      return null
+    }
+    elements[key] = element as T[typeof key]
+  }
+
+  return elements as T
+}

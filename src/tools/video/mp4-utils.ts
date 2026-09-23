@@ -1,5 +1,5 @@
 // Shared MP4 (ISO BMFF) parsing and lossless rewriting utilities used by the
-// video converter (audio-track stripping) and the video cutter.
+// video-audio splitter (audio-track stripping) and the video cutter.
 
 export type Mp4Box = {
   type: string
@@ -38,9 +38,19 @@ export type Mp4Analysis = {
   tracks: Mp4TrackInfo[]
 }
 
+export type Mp4FailureReason =
+  | 'emptyRange'
+  | 'notMp4'
+  | 'fragmented'
+  | 'noTracks'
+  | 'noVideoTrack'
+  | 'unsupported'
+  | 'tooLarge'
+  | 'noVideoFragments'
+
 export type Mp4Result =
   | { ok: true; bytes: ArrayBuffer }
-  | { ok: false; reason: string }
+  | { ok: false; reason: Mp4FailureReason }
 
 export type CutSpec = {
   startSeconds: number
@@ -306,8 +316,8 @@ const collectSamples = (
 }
 
 export const analyzeMp4 = (bytes: Uint8Array): Mp4Analysis => {
-  const ftyp = findBox(parseTopLevel(bytes), 'ftyp') ?? null
   const topBoxes = parseTopLevel(bytes)
+  const ftyp = findBox(topBoxes, 'ftyp') ?? null
   const moov = findBox(topBoxes, 'moov') ?? null
   const moofBoxes = findBoxes(topBoxes, 'moof')
   const moovChildren = moov ? childBoxes(bytes, moov) : []
@@ -470,7 +480,7 @@ const patchDuration = (
   return out
 }
 
-const buildRunsBox = (type: string, values: readonly number[]): Uint8Array => {
+const toRuns = (values: readonly number[]): { count: number; value: number }[] => {
   const runs: { count: number; value: number }[] = []
   for (const value of values) {
     const lastRun = runs[runs.length - 1]
@@ -480,7 +490,11 @@ const buildRunsBox = (type: string, values: readonly number[]): Uint8Array => {
       runs.push({ count: 1, value })
     }
   }
+  return runs
+}
 
+const buildRunsBox = (type: string, values: readonly number[]): Uint8Array => {
+  const runs = toRuns(values)
   const parts: Uint8Array[] = [u32b(runs.length)]
   for (const run of runs) {
     parts.push(u32b(run.count), u32b(run.value))
@@ -524,16 +538,7 @@ const buildCtts = (compositionOffsets: readonly number[]): Uint8Array | null => 
   }
 
   const version = compositionOffsets.some((offset) => offset < 0) ? 1 : 0
-  const runs: { count: number; value: number }[] = []
-  for (const offset of compositionOffsets) {
-    const lastRun = runs[runs.length - 1]
-    if (lastRun && lastRun.value === offset) {
-      lastRun.count += 1
-    } else {
-      runs.push({ count: 1, value: offset })
-    }
-  }
-
+  const runs = toRuns(compositionOffsets)
   const parts: Uint8Array[] = [u32b(runs.length)]
   for (const run of runs) {
     parts.push(u32b(run.count), version === 1 ? i32b(run.value) : u32b(run.value))
@@ -554,17 +559,65 @@ const buildStss = (syncSampleNumbers: readonly number[]): Uint8Array | null => {
   return fullbox('stss', 0, 0, concatBytes(parts))
 }
 
+type ByteRange = { start: number; end: number }
+
+const rangesLength = (ranges: readonly ByteRange[]): number =>
+  ranges.reduce((sum, range) => sum + (range.end - range.start), 0)
+
+// One contiguous source range per chunk, in sample order.
+const groupChunkRanges = (samples: readonly Mp4Sample[]): ByteRange[] => {
+  const ranges: ByteRange[] = []
+  samples.forEach((sample, index) => {
+    const lastRange = ranges[ranges.length - 1]
+    if (lastRange && sample.chunkIndex === samples[index - 1]?.chunkIndex) {
+      lastRange.end = sample.offset + sample.size
+    } else {
+      ranges.push({ start: sample.offset, end: sample.offset + sample.size })
+    }
+  })
+  return ranges
+}
+
+// Writes each group's boxes followed by one mdat holding the group's source ranges.
+const writeMp4 = (
+  source: Uint8Array,
+  groups: readonly { boxes: readonly Uint8Array[]; ranges: readonly ByteRange[] }[],
+): ArrayBuffer => {
+  const totalLength = groups.reduce(
+    (sum, group) => sum + group.boxes.reduce((boxSum, part) => boxSum + part.length, 0) + 8 + rangesLength(group.ranges),
+    0,
+  )
+  const output = new Uint8Array(totalLength)
+  let position = 0
+
+  for (const group of groups) {
+    for (const part of group.boxes) {
+      output.set(part, position)
+      position += part.length
+    }
+
+    output.set(u32b(8 + rangesLength(group.ranges)), position)
+    output.set(fccb('mdat'), position + 4)
+    position += 8
+
+    for (const range of group.ranges) {
+      output.set(source.subarray(range.start, range.end), position)
+      position += range.end - range.start
+    }
+  }
+
+  return output.buffer
+}
+
 // ---------------------------------------------------------------------------
 // Lossless cut (non-fragmented MP4)
 // ---------------------------------------------------------------------------
 
 type CutTrackSpec = {
   track: Mp4TrackInfo
-  kept: boolean
   chunks: { count: number; sampleDescriptionIndex: number }[]
   keptSamples: Mp4Sample[]
-  sourceRanges: { start: number; end: number }[]
-  mediaTime: number
+  sourceRanges: ByteRange[]
   segmentDuration: number
 }
 
@@ -677,7 +730,7 @@ const buildCutMoov = (
     } else if (child.type === 'trak') {
       const track = analysis.tracks.find((candidate) => sameBox(candidate.trakBox, child))
       const spec = track ? specByTrack.get(track) : undefined
-      if (spec && spec.kept) {
+      if (spec) {
         const trakBytes = buildCutTrak(bytes, spec, (chunkIndex) =>
           getTrackChunkOffsets(spec.track, spec.chunks.length)[chunkIndex] ?? 0,
         )
@@ -735,7 +788,7 @@ const buildCutSpecs = (
   startSeconds: number,
   endSeconds: number,
   movieTimescale: number,
-): { specs: CutTrackSpec[]; empty: boolean; effectiveStartSeconds: number } => {
+): { specs: CutTrackSpec[]; effectiveStartSeconds: number } => {
   const effectiveStartSeconds = getKeyframeStartSeconds(analysis, startSeconds)
 
   const specs: CutTrackSpec[] = []
@@ -775,36 +828,19 @@ const buildCutSpecs = (
         }
       }
 
-      const sourceRanges: { start: number; end: number }[] = []
-      let rangeStart = 0
-      let rangeEnd = 0
-
-      keptSamples.forEach((sample, index) => {
-        if (index === 0 || sample.chunkIndex !== keptSamples[index - 1]?.chunkIndex) {
-          if (index > 0) {
-            sourceRanges.push({ start: rangeStart, end: rangeEnd })
-          }
-          rangeStart = sample.offset
-        }
-        rangeEnd = sample.offset + sample.size
-      })
-      sourceRanges.push({ start: rangeStart, end: rangeEnd })
-
       const totalKeptDuration = keptSamples.reduce((sum, sample) => sum + sample.duration, 0)
 
       specs.push({
         track,
-        kept: true,
         chunks,
         keptSamples,
-        sourceRanges,
-        mediaTime: 0,
+        sourceRanges: groupChunkRanges(keptSamples),
         segmentDuration: Math.max(1, totalKeptDuration),
       })
     }
   }
 
-  return { specs, empty: specs.length === 0 || specs.every((spec) => spec.keptSamples.length === 0), effectiveStartSeconds }
+  return { specs, effectiveStartSeconds }
 }
 
 export const cutMp4 = (source: Uint8Array, spec: CutSpec): Mp4Result => {
@@ -863,12 +899,6 @@ export const cutMp4 = (source: Uint8Array, spec: CutSpec): Mp4Result => {
     trackOffsets.set(cutSpec.track, offsets)
   }
 
-  const payloadLength = specs.reduce(
-    (sum, cutSpec) =>
-      sum + cutSpec.sourceRanges.reduce((rangeSum, range) => rangeSum + (range.end - range.start), 0),
-    0,
-  )
-
   const moovBytes = buildCutMoov(source, analysis, specByTrack, movieDuration, (track, chunkCount) => {
     const offsets = trackOffsets.get(track)
     if (!offsets || offsets.length < chunkCount) {
@@ -877,55 +907,13 @@ export const cutMp4 = (source: Uint8Array, spec: CutSpec): Mp4Result => {
     return offsets
   })
 
-  const output = new Uint8Array(ftypBytes.length + moovBytes.length + 8 + payloadLength)
-  let position = 0
-  output.set(ftypBytes, position)
-  position += ftypBytes.length
-  output.set(moovBytes, position)
-  position += moovBytes.length
-
-  const mdatSize = 8 + payloadLength
-  output.set(u32b(mdatSize), position)
-  output.set(fccb('mdat'), position + 4)
-  position += 8
-
-  for (const cutSpec of specs) {
-    for (const range of cutSpec.sourceRanges) {
-      output.set(source.subarray(range.start, range.end), position)
-      position += range.end - range.start
-    }
-  }
-
-  return { ok: true, bytes: output.buffer }
+  const ranges = specs.flatMap((cutSpec) => cutSpec.sourceRanges)
+  return { ok: true, bytes: writeMp4(source, [{ boxes: [ftypBytes, moovBytes], ranges }]) }
 }
 
 // ---------------------------------------------------------------------------
 // Lossless audio-track stripping (non-fragmented MP4)
 // ---------------------------------------------------------------------------
-
-const groupVideoChunks = (track: Mp4TrackInfo): { ranges: { start: number; end: number }[]; chunkCount: number } => {
-  const ranges: { start: number; end: number }[] = []
-  let rangeStart = 0
-  let rangeEnd = 0
-  let chunkCount = 0
-
-  track.samples.forEach((sample, index) => {
-    if (index === 0 || sample.chunkIndex !== track.samples[index - 1]?.chunkIndex) {
-      if (index > 0) {
-        ranges.push({ start: rangeStart, end: rangeEnd })
-      }
-      rangeStart = sample.offset
-      chunkCount += 1
-    }
-    rangeEnd = sample.offset + sample.size
-  })
-
-  if (track.samples.length > 0) {
-    ranges.push({ start: rangeStart, end: rangeEnd })
-  }
-
-  return { ranges, chunkCount }
-}
 
 const buildMoovWithPatchedOffsets = (
   bytes: Uint8Array,
@@ -992,11 +980,8 @@ const stripNonFragmentedMp4 = (source: Uint8Array): Mp4Result => {
     return { ok: false, reason: 'noVideoTrack' }
   }
 
-  if (videoTrack.encrypted) {
-    return { ok: false, reason: 'encrypted' }
-  }
-
-  const { ranges, chunkCount } = groupVideoChunks(videoTrack)
+  const ranges = groupChunkRanges(videoTrack.samples)
+  const chunkCount = ranges.length
   if (chunkCount === 0) {
     return { ok: false, reason: 'unsupported' }
   }
@@ -1021,26 +1006,8 @@ const stripNonFragmentedMp4 = (source: Uint8Array): Mp4Result => {
     }
   }
 
-  const payloadLength = ranges.reduce((sum, range) => sum + (range.end - range.start), 0)
   const moovBytes = buildMoovWithPatchedOffsets(source, analysis, keptTracks, videoTrack, chunkOffsets)
-
-  const output = new Uint8Array(ftypBytes.length + moovBytes.length + 8 + payloadLength)
-  let position = 0
-  output.set(ftypBytes, position)
-  position += ftypBytes.length
-  output.set(moovBytes, position)
-  position += moovBytes.length
-
-  output.set(u32b(8 + payloadLength), position)
-  output.set(fccb('mdat'), position + 4)
-  position += 8
-
-  for (const range of ranges) {
-    output.set(source.subarray(range.start, range.end), position)
-    position += range.end - range.start
-  }
-
-  return { ok: true, bytes: output.buffer }
+  return { ok: true, bytes: writeMp4(source, [{ boxes: [ftypBytes, moovBytes], ranges }]) }
 }
 
 // ---------------------------------------------------------------------------
@@ -1172,9 +1139,6 @@ const stripFragmentedMp4 = (source: Uint8Array): Mp4Result => {
   if (!videoTrack) {
     return { ok: false, reason: 'noVideoTrack' }
   }
-  if (videoTrack.encrypted) {
-    return { ok: false, reason: 'encrypted' }
-  }
 
   const videoTrackId = videoTrack.trackId
   const ftypBytes = analysis.ftyp ? exportBoxBytes(source, analysis.ftyp) : synthesizeFtyp()
@@ -1212,15 +1176,15 @@ const stripFragmentedMp4 = (source: Uint8Array): Mp4Result => {
 
   type Fragment = {
     moof: Mp4Box
-    ranges: { start: number; end: number }[]
+    ranges: ByteRange[]
   }
 
   const fragments: Fragment[] = []
-  let errorReason: string | null = null
+  let errorReason: Mp4FailureReason | null = null
 
   for (const moof of moofBoxes) {
     const trafs = findBoxes(childBoxes(source, moof), 'traf')
-    const ranges: { start: number; end: number }[] = []
+    const ranges: ByteRange[] = []
     let dataEnd: number | null = null
     let detectedIssue = false
 
@@ -1328,36 +1292,15 @@ const stripFragmentedMp4 = (source: Uint8Array): Mp4Result => {
   let cursor = ftypBytes.length + moovBytes.length
   fragments.forEach((fragment, index) => {
     const moofLength = moofLengths[index] ?? 0
-    const payloadLength = fragment.ranges.reduce((sum, range) => sum + (range.end - range.start), 0)
     baseOffsets.push(cursor + moofLength + 8)
-    cursor += moofLength + 8 + payloadLength
+    cursor += moofLength + 8 + rangesLength(fragment.ranges)
   })
 
-  const output = new Uint8Array(cursor)
-  let position = 0
-  output.set(ftypBytes, position)
-  position += ftypBytes.length
-  output.set(moovBytes, position)
-  position += moovBytes.length
-
-  fragments.forEach((fragment, index) => {
-    const baseOffset = baseOffsets[index] ?? 0
-    const moofBytes = buildMoofBytes(fragment.moof, baseOffset)
-    output.set(moofBytes, position)
-    position += moofBytes.length
-
-    const payloadLength = fragment.ranges.reduce((sum, range) => sum + (range.end - range.start), 0)
-    output.set(u32b(8 + payloadLength), position)
-    output.set(fccb('mdat'), position + 4)
-    position += 8
-
-    for (const range of fragment.ranges) {
-      output.set(source.subarray(range.start, range.end), position)
-      position += range.end - range.start
-    }
+  const groups = fragments.map((fragment, index) => {
+    const moofBytes = buildMoofBytes(fragment.moof, baseOffsets[index] ?? 0)
+    return { boxes: index === 0 ? [ftypBytes, moovBytes, moofBytes] : [moofBytes], ranges: fragment.ranges }
   })
-
-  return { ok: true, bytes: output.buffer }
+  return { ok: true, bytes: writeMp4(source, groups) }
 }
 
 export const stripAudioTracks = (source: Uint8Array): Mp4Result => {

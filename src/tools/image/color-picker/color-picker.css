@@ -12,7 +12,6 @@
   min-height: 100%;
 }
 
-
 .color-picker-canvas-stack {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 3.3rem;

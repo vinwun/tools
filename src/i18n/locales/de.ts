@@ -15,7 +15,6 @@ export const deMessages: Messages = {
     availableTools: 'Verfügbare Tools',
   },
   toolPage: {
-    comingSoon: 'Diese Tool-Seite ist vorbereitet und wird als Nächstes umgesetzt.',
     loading: 'Tool wird geladen…',
     loadFailed: 'Das Tool konnte nicht geladen werden. Bitte prüfe die Verbindung.',
     retryAction: 'Erneut versuchen',
@@ -112,7 +111,6 @@ export const deMessages: Messages = {
     statusEmpty: 'PDF hochladen, um zu beginnen.',
     statusExtracting: 'Text wird extrahiert…',
     statusReady: 'Bereit zum Download.',
-    statusReadySelect: 'Datei zum Download auswählen.',
     statusFailed: 'Extraktion fehlgeschlagen.',
     resultsTitle: 'Extrahierter Text',
     resultsEmpty: 'Noch kein extrahierter Text vorhanden.',
@@ -368,7 +366,6 @@ export const deMessages: Messages = {
     outputLabel: 'Generierter Text',
   },
   unicodeConverter: {
-    characterLabel: 'Zeichen',
     codePointLabel: 'Codepunkt (hex)',
     decimalLabel: 'Dezimal',
     binaryLabel: 'Binär',

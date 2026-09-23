@@ -4,11 +4,9 @@ export type TimezoneDefinition = {
 }
 
 export type TimezoneConverterElements = {
-  root: HTMLElement
   statusText: HTMLElement
   statusAction: HTMLButtonElement
   localInput: HTMLInputElement
   localLabel: HTMLElement
-  localHint: HTMLElement | null
-  zoneInputs: HTMLInputElement[]
+  localHint: HTMLElement
 }

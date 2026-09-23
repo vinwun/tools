@@ -170,13 +170,8 @@
   white-space: nowrap;
 }
 
-.pdf-page-organizer-guidance,
 .pdf-page-organizer-reorder-hint {
   max-width: 70ch;
-}
-
-.pdf-page-organizer-guidance {
-  max-width: none;
 }
 
 .pdf-page-organizer-panel-upload {

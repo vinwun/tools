@@ -1,6 +1,6 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import { downloadBlob, formatAcceptList, readFileAsText } from '../../foundations/files.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
 import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import type { JsonPrettyPrinterElements, JsonPrettyPrinterState } from './types.ts'
 import {
@@ -9,64 +9,7 @@ import {
   parseJsonOrJsonLines,
   parseIndentValue,
 } from './utils.ts'
-
-const jsonPrettyPrinterLocale = createLocaleSyncRegistry<[Messages]>('[data-json-pretty-printer-root]')
-
-const queryJsonPrettyPrinterElements = (container: HTMLElement): JsonPrettyPrinterElements | null => {
-  const form = container.querySelector<HTMLFormElement>('[data-json-pretty-printer-form]')
-  const uploadLabel = container.querySelector<HTMLElement>('[data-json-pretty-printer-upload-label]')
-  const uploadHint = container.querySelector<HTMLElement>('[data-json-pretty-printer-upload-hint]')
-  const input = container.querySelector<HTMLTextAreaElement>('[data-json-pretty-printer-input]')
-  const indentSelect = container.querySelector<HTMLSelectElement>('[data-json-pretty-printer-indent]')
-  const formatButton = container.querySelector<HTMLButtonElement>('[data-json-pretty-printer-format]')
-  const clearButton = container.querySelector<HTMLButtonElement>('[data-json-pretty-printer-clear]')
-  const downloadButton = container.querySelector<HTMLButtonElement>('[data-json-pretty-printer-download]')
-  const inputLabel = container.querySelector<HTMLElement>('[data-json-pretty-printer-input-label]')
-  const indentLabel = container.querySelector<HTMLElement>('[data-json-pretty-printer-indent-label]')
-  const indentOptionTwo = container.querySelector<HTMLOptionElement>('[data-json-pretty-printer-indent-two]')
-  const indentOptionFour = container.querySelector<HTMLOptionElement>('[data-json-pretty-printer-indent-four]')
-  const status = container.querySelector<HTMLElement>('[data-json-pretty-printer-status]')
-  const outputLabel = container.querySelector<HTMLElement>('[data-json-pretty-printer-output-label]')
-  const outputContainer = container.querySelector<HTMLElement>('[data-json-pretty-printer-output]')
-
-  if (
-    !form ||
-    !uploadLabel ||
-    !uploadHint ||
-    !input ||
-    !indentSelect ||
-    !formatButton ||
-    !clearButton ||
-    !downloadButton ||
-    !inputLabel ||
-    !indentLabel ||
-    !indentOptionTwo ||
-    !indentOptionFour ||
-    !status ||
-    !outputLabel ||
-    !outputContainer
-  ) {
-    return null
-  }
-
-  return {
-    form,
-    uploadLabel,
-    uploadHint,
-    input,
-    indentSelect,
-    formatButton,
-    clearButton,
-    downloadButton,
-    inputLabel,
-    indentLabel,
-    indentOptionTwo,
-    indentOptionFour,
-    status,
-    outputLabel,
-    outputContainer,
-  }
-}
+import type { MountTool } from '../../types.ts'
 
 const INPUT_ACCEPT = '.json,.txt'
 const INPUT_ACCEPT_LABEL = formatAcceptList(INPUT_ACCEPT)
@@ -260,12 +203,27 @@ const formatJsonInput = (
   }
 }
 
-export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-json-pretty-printer-root]') ?? container
-  const elements = queryJsonPrettyPrinterElements(container)
-  const filePicker = wireFilePicker(root, { onFiles: (files) => void loadFile(files[0]) })
+export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<JsonPrettyPrinterElements>(container, {
+    form: '[data-json-pretty-printer-form]',
+    uploadLabel: '[data-json-pretty-printer-upload-label]',
+    uploadHint: '[data-json-pretty-printer-upload-hint]',
+    input: '[data-json-pretty-printer-input]',
+    indentSelect: '[data-json-pretty-printer-indent]',
+    formatButton: '[data-json-pretty-printer-format]',
+    clearButton: '[data-json-pretty-printer-clear]',
+    downloadButton: '[data-json-pretty-printer-download]',
+    inputLabel: '[data-json-pretty-printer-input-label]',
+    indentLabel: '[data-json-pretty-printer-indent-label]',
+    indentOptionTwo: '[data-json-pretty-printer-indent-two]',
+    indentOptionFour: '[data-json-pretty-printer-indent-four]',
+    status: '[data-json-pretty-printer-status]',
+    outputLabel: '[data-json-pretty-printer-output-label]',
+    outputContainer: '[data-json-pretty-printer-output]',
+  })
+  const filePicker = wireFilePicker(container, { onFiles: (files) => void loadFile(files[0]) })
   if (!elements || !filePicker) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -290,8 +248,6 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
     messages = nextMessages
     syncUi()
   }
-
-  jsonPrettyPrinterLocale.register(root, syncLocale)
 
   const updateFileName = (fileName: string | null): void => {
     state.selectedFileName = fileName
@@ -364,6 +320,12 @@ export const mountJsonPrettyPrinter = (container: HTMLElement, initialMessages: 
   })
 
   syncUi()
+  return {
+    updateLocale: syncLocale,
+    destroy: () => {
+      if (validateDelayId !== null) {
+        window.clearTimeout(validateDelayId)
+      }
+    },
+  }
 }
-
-export const updateJsonPrettyPrinterLocale = jsonPrettyPrinterLocale.update

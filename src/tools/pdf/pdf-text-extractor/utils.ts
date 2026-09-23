@@ -382,8 +382,3 @@ export const buildDownloadFileName = (fileName: string, format: PdfTextExtractor
   const baseName = trimmedName.length > 0 ? trimmedName : 'pdf-text'
   return `${baseName}.${format}`
 }
-
-export const isPdfFile = (file: File): boolean => {
-  const lowerName = file.name.toLowerCase()
-  return file.type === 'application/pdf' || lowerName.endsWith('.pdf')
-}

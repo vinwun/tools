@@ -1,8 +1,11 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { TextCounterState } from './types.ts'
-import { TEXT_COUNTER_STAT_KEYS } from './utils.ts'
+import { createInitialTextCounterState, TEXT_COUNTER_STAT_KEYS } from './utils.ts'
 
-export const renderTextCounter = (messages: Messages, state: TextCounterState): string => {
+export const renderTextCounter = (
+  messages: Messages,
+  state: TextCounterState = createInitialTextCounterState(),
+): string => {
   const textMessages = messages.textCounter
   const statRows = TEXT_COUNTER_STAT_KEYS.map(
     (key) => `

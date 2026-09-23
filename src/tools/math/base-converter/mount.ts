@@ -13,62 +13,26 @@ import {
   parseRomanInput,
   parseValueInBase,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
-const baseConverterLocale = createLocaleSyncRegistry<[Messages]>('[data-base-converter-root]')
-
-const queryBaseConverterElements = (container: HTMLElement): BaseConverterElements | null => {
-  const binaryInput = container.querySelector<HTMLInputElement>('[data-base-converter-binary]')
-  const octalInput = container.querySelector<HTMLInputElement>('[data-base-converter-octal]')
-  const decimalInput = container.querySelector<HTMLInputElement>('[data-base-converter-decimal]')
-  const hexInput = container.querySelector<HTMLInputElement>('[data-base-converter-hex]')
-  const customBaseInput = container.querySelector<HTMLInputElement>('[data-base-converter-custom-base]')
-  const customValueInput = container.querySelector<HTMLInputElement>('[data-base-converter-custom-value]')
-  const romanInput = container.querySelector<HTMLInputElement>('[data-base-converter-roman]')
-  const binaryLabel = container.querySelector<HTMLElement>('[data-base-converter-binary-label]')
-  const octalLabel = container.querySelector<HTMLElement>('[data-base-converter-octal-label]')
-  const decimalLabel = container.querySelector<HTMLElement>('[data-base-converter-decimal-label]')
-  const hexLabel = container.querySelector<HTMLElement>('[data-base-converter-hex-label]')
-  const customBaseLabel = container.querySelector<HTMLElement>('[data-base-converter-custom-base-label]')
-  const customValueLabel = container.querySelector<HTMLElement>('[data-base-converter-custom-value-label]')
-  const romanLabel = container.querySelector<HTMLElement>('[data-base-converter-roman-label]')
-
-  if (
-    !binaryInput ||
-    !octalInput ||
-    !decimalInput ||
-    !hexInput ||
-    !customBaseInput ||
-    !customValueInput ||
-    !romanInput ||
-    !binaryLabel ||
-    !octalLabel ||
-    !decimalLabel ||
-    !hexLabel ||
-    !customBaseLabel ||
-    !customValueLabel ||
-    !romanLabel
-  ) {
-    return null
-  }
-
-  return {
-    binaryInput,
-    octalInput,
-    decimalInput,
-    hexInput,
-    customBaseInput,
-    customValueInput,
-    romanInput,
-    binaryLabel,
-    octalLabel,
-    decimalLabel,
-    hexLabel,
-    customBaseLabel,
-    customValueLabel,
-    romanLabel,
-  }
-}
+const queryBaseConverterElements = (container: HTMLElement): BaseConverterElements | null =>
+  queryRequired<BaseConverterElements>(container, {
+    binaryInput: '[data-base-converter-binary]',
+    octalInput: '[data-base-converter-octal]',
+    decimalInput: '[data-base-converter-decimal]',
+    hexInput: '[data-base-converter-hex]',
+    customBaseInput: '[data-base-converter-custom-base]',
+    customValueInput: '[data-base-converter-custom-value]',
+    romanInput: '[data-base-converter-roman]',
+    binaryLabel: '[data-base-converter-binary-label]',
+    octalLabel: '[data-base-converter-octal-label]',
+    decimalLabel: '[data-base-converter-decimal-label]',
+    hexLabel: '[data-base-converter-hex-label]',
+    customBaseLabel: '[data-base-converter-custom-base-label]',
+    customValueLabel: '[data-base-converter-custom-value-label]',
+    romanLabel: '[data-base-converter-roman-label]',
+  })
 
 const syncLocalizedText = (elements: BaseConverterElements, messages: Messages): void => {
   const baseMessages = messages.baseConverter
@@ -120,15 +84,10 @@ const updateOutputs = (
   }
 }
 
-export const mountBaseConverter = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-base-converter-root]') ?? container
+export const mountBaseConverter: MountTool = (container, initialMessages) => {
   const elements = queryBaseConverterElements(container)
   if (!elements) {
-    return
-  }
-
-  if (baseConverterLocale.resync(root, initialMessages)) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -157,8 +116,6 @@ export const mountBaseConverter = (container: HTMLElement, initialMessages: Mess
     messages = nextMessages
     syncUi()
   }
-
-  baseConverterLocale.register(root, syncLocale)
 
   const handleBinaryInput = (): void => {
     state.binaryValue = elements.binaryInput.value
@@ -371,6 +328,6 @@ export const mountBaseConverter = (container: HTMLElement, initialMessages: Mess
   elements.romanInput.addEventListener('blur', revertRomanIfInvalid)
 
   syncUi()
-}
 
-export const updateBaseConverterLocale = baseConverterLocale.update
+  return { updateLocale: syncLocale }
+}

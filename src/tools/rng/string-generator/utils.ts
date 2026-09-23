@@ -6,19 +6,12 @@ const DEFAULT_STRING_ENTRIES = ['Alpha', 'Beta', 'Gamma'] as const
 
 const DEFAULT_RESULT_TEXT = '—'
 
-const hasCryptoRandomValues = (): boolean =>
-  typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
-
 const parseWeight = (value: string): number | null => {
   const parsedValue = parseDecimalNumber(value)
   return parsedValue !== null && parsedValue > 0 ? parsedValue : null
 }
 
 const randomUnitValue = (): number => {
-  if (!hasCryptoRandomValues()) {
-    return Math.random()
-  }
-
   const randomBuffer = new Uint32Array(1)
   crypto.getRandomValues(randomBuffer)
   return randomBuffer[0] / 0x100000000
@@ -106,5 +99,3 @@ export const formatStringGeneratorStatus = (
 
   return stringMessages.readyMessage.replace('{count}', String(entriesCount))
 }
-
-export { escapeHtml } from '../../foundations/dom.ts'

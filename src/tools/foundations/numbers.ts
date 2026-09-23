@@ -1,5 +1,7 @@
 export const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
 
+export const isIntegerText = (value: string): boolean => /^[-+]?\d+$/.test(value)
+
 // Either separator is accepted regardless of locale, but never both in one value and never more
 // than one comma, so a grouped "1,000" is rejected instead of silently parsed as 1.
 export const parseDecimalNumber = (value: string): number | null => {

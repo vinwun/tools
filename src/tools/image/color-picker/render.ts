@@ -2,7 +2,10 @@ import type { Messages } from '../../../i18n/schema'
 import { DEFAULT_COLOR, rgbToHex, rgbToHsl } from './utils.ts'
 import type { ColorState } from './types.ts'
 
-const render = (messages: Messages, state: ColorState): string => {
+export const renderColorPicker = (
+  messages: Messages,
+  state: ColorState = { rgb: DEFAULT_COLOR, hsl: rgbToHsl(DEFAULT_COLOR) },
+): string => {
   const hex = rgbToHex(state.rgb)
 
   return `
@@ -11,8 +14,8 @@ const render = (messages: Messages, state: ColorState): string => {
         <div class="color-picker-side-box">
           <div class="color-picker-canvas-stack">
             <div class="color-picker-text-block">
-              <h2>${messages.colorPicker.squareLabel}</h2>
-              <p class="tool-hint color-picker-hint">${messages.colorPicker.squareHint}</p>
+              <h2 data-color-picker-text="squareLabel">${messages.colorPicker.squareLabel}</h2>
+              <p class="tool-hint color-picker-hint" data-color-picker-text="squareHint">${messages.colorPicker.squareHint}</p>
             </div>
 
             <div class="color-picker-canvas-shell color-picker-square-shell">
@@ -41,10 +44,10 @@ const render = (messages: Messages, state: ColorState): string => {
       <section class="tool-panel color-picker-panel color-picker-panel-right">
         <div class="color-picker-side-box">
           <fieldset class="color-picker-fieldset color-picker-hex-fieldset">
-            <legend>${messages.colorPicker.hexLabel}</legend>
+            <legend data-color-picker-text="hexLabel">${messages.colorPicker.hexLabel}</legend>
             <div class="color-picker-hex-row">
               <label class="tool-field color-picker-hex-input-field" for="color-picker-hex-input">
-                <span>${messages.colorPicker.hexInputLabel}</span>
+                <span data-color-picker-text="hexInputLabel">${messages.colorPicker.hexInputLabel}</span>
                 <input
                   id="color-picker-hex-input"
                   data-color-picker-hex
@@ -70,23 +73,23 @@ const render = (messages: Messages, state: ColorState): string => {
           </fieldset>
 
           <fieldset class="color-picker-fieldset">
-            <legend>${messages.colorPicker.rgbGroupLabel}</legend>
+            <legend data-color-picker-text="rgbGroupLabel">${messages.colorPicker.rgbGroupLabel}</legend>
             <div class="color-picker-grid">
-              ${renderChannelFields([
-                { key: 'r', label: messages.colorPicker.redLabel, max: 255, value: state.rgb.r },
-                { key: 'g', label: messages.colorPicker.greenLabel, max: 255, value: state.rgb.g },
-                { key: 'b', label: messages.colorPicker.blueLabel, max: 255, value: state.rgb.b },
+              ${renderChannelFields(messages, [
+                { key: 'r', labelKey: 'redLabel', max: 255, value: state.rgb.r },
+                { key: 'g', labelKey: 'greenLabel', max: 255, value: state.rgb.g },
+                { key: 'b', labelKey: 'blueLabel', max: 255, value: state.rgb.b },
               ])}
             </div>
           </fieldset>
 
           <fieldset class="color-picker-fieldset">
-            <legend>${messages.colorPicker.hslGroupLabel}</legend>
+            <legend data-color-picker-text="hslGroupLabel">${messages.colorPicker.hslGroupLabel}</legend>
             <div class="color-picker-grid">
-              ${renderChannelFields([
-                { key: 'h', label: messages.colorPicker.hueLabel, max: 360, value: state.hsl.h },
-                { key: 's', label: messages.colorPicker.saturationLabel, max: 100, value: state.hsl.s },
-                { key: 'l', label: messages.colorPicker.lightnessLabel, max: 100, value: state.hsl.l },
+              ${renderChannelFields(messages, [
+                { key: 'h', labelKey: 'hueLabel', max: 360, value: state.hsl.h },
+                { key: 's', labelKey: 'saturationLabel', max: 100, value: state.hsl.s },
+                { key: 'l', labelKey: 'lightnessLabel', max: 100, value: state.hsl.l },
               ])}
             </div>
           </fieldset>
@@ -96,20 +99,15 @@ const render = (messages: Messages, state: ColorState): string => {
   `
 }
 
-type ChannelField = { key: string; label: string; max: number; value: number }
+type ChannelField = { key: string; labelKey: keyof Messages['colorPicker']; max: number; value: number }
 
-const renderChannelFields = (fields: readonly ChannelField[]): string =>
+const renderChannelFields = (messages: Messages, fields: readonly ChannelField[]): string =>
   fields
     .map(
-      ({ key, label, max, value }) => `
+      ({ key, labelKey, max, value }) => `
               <label class="tool-field">
-                <span>${label}</span>
+                <span data-color-picker-text="${labelKey}">${messages.colorPicker[labelKey]}</span>
                 <input data-color-picker-${key} type="number" min="0" max="${max}" step="1" value="${value}" />
               </label>`,
     )
     .join('')
-
-export const renderColorPicker = (messages: Messages): string => render(messages, {
-  rgb: DEFAULT_COLOR,
-  hsl: rgbToHsl(DEFAULT_COLOR),
-})

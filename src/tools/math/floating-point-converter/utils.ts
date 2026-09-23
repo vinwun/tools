@@ -11,14 +11,12 @@ type FloatingPointFormat = {
   id: FloatingPointFormatId
   exponentBits: number
   mantissaBits: number
-  totalBits: number
-  exponentBias: number
 }
 
 export const FLOATING_POINT_FORMATS: FloatingPointFormat[] = [
-  { id: 'half', exponentBits: 5, mantissaBits: 10, totalBits: 16, exponentBias: 15 },
-  { id: 'float', exponentBits: 8, mantissaBits: 23, totalBits: 32, exponentBias: 127 },
-  { id: 'double', exponentBits: 11, mantissaBits: 52, totalBits: 64, exponentBias: 1023 },
+  { id: 'half', exponentBits: 5, mantissaBits: 10 },
+  { id: 'float', exponentBits: 8, mantissaBits: 23 },
+  { id: 'double', exponentBits: 11, mantissaBits: 52 },
 ]
 
 const DEFAULT_DECIMAL_VALUE = '314.159265'
@@ -280,7 +278,7 @@ export const isTransientDecimalInput = (value: string): boolean => {
     return true
   }
 
-  return /e[+-]?$/i.test(trimmed);
+  return /e[+-]?$/i.test(trimmed)
 }
 
 // Emits the exact digits with a '.' separator; use `localizeDecimalNumber` for display.
@@ -450,8 +448,8 @@ export const createInitialFloatingPointConverterState = (
   }
 }
 
-export const getInterpretationLabel = (messages: Messages, key: string): string => {
-  const lookup: Record<string, string> = {
+export const getInterpretationLabel = (messages: Messages, key: FloatingPointInterpretation): string => {
+  const lookup: Record<FloatingPointInterpretation, string> = {
     zero: messages.floatingPointConverter.interpretationZero,
     subnormal: messages.floatingPointConverter.interpretationSubnormal,
     normal: messages.floatingPointConverter.interpretationNormal,
@@ -459,5 +457,5 @@ export const getInterpretationLabel = (messages: Messages, key: string): string 
     nan: messages.floatingPointConverter.interpretationNaN,
   }
 
-  return lookup[key] ?? key
+  return lookup[key]
 }

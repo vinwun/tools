@@ -1,8 +1,12 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import { renderFilePicker } from '../../foundations/file-picker/render.ts'
 import type { JsonPrettyPrinterState } from './types.ts'
+import { createInitialJsonPrettyPrinterState } from './utils.ts'
 
-export const renderJsonPrettyPrinter = (messages: Messages, state: JsonPrettyPrinterState): string => {
+export const renderJsonPrettyPrinter = (
+  messages: Messages,
+  state: JsonPrettyPrinterState = createInitialJsonPrettyPrinterState(),
+): string => {
   const jsonMessages = messages.jsonPrettyPrinter
   const inputAccept = '.json,.txt'
   const inputAcceptLabel = inputAccept.replaceAll(',', ' / ')

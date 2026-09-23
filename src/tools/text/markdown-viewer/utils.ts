@@ -34,13 +34,6 @@ export const createInitialMarkdownViewerState = (): MarkdownViewerState => ({
   selectedFileName: null,
 })
 
-const escapeAttribute = (value: string): string =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-
 const sanitizeUrl = (rawUrl: string): string => {
   const trimmed = rawUrl.trim()
   if (!trimmed) {
@@ -67,7 +60,7 @@ const renderInlineText = (value: string): string => {
   const withBold = withStrike.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   const withItalic = withBold.replace(/\*([^*]+)\*/g, '<em>$1</em>')
   return withItalic.replace(/\[([^\]]+)]\(([^)]+)\)/g, (_, label: string, url: string) => {
-    const safeUrl = escapeAttribute(sanitizeUrl(url))
+    const safeUrl = escapeHtml(sanitizeUrl(url))
     return `<a href="${safeUrl}" target="_blank" rel="noopener">${label}</a>`
   })
 }
@@ -406,7 +399,7 @@ export const renderMarkdownToHtml = (markdown: string): string => {
       case 'blockquote':
         return `<blockquote><p>${renderInlineWithBreaks(block.text)}</p></blockquote>`
       case 'code':
-        return `<pre><code${block.language ? ` class="language-${escapeAttribute(block.language)}"` : ''}>${escapeHtml(
+        return `<pre><code${block.language ? ` class="language-${escapeHtml(block.language)}"` : ''}>${escapeHtml(
           block.text,
         )}</code></pre>`
       case 'table': {

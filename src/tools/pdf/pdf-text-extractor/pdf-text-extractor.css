@@ -58,8 +58,6 @@
   display: grid;
   gap: 0.75rem;
   background: #fff;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .pdf-text-extractor-entry-header {

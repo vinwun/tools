@@ -1,12 +1,16 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { StringGeneratorState } from './types.ts'
+import { escapeHtml } from '../../foundations/dom.ts'
 import {
-  escapeHtml,
+  createInitialStringGeneratorState,
   formatStringGeneratorStatus,
   parseStringGeneratorEntries,
 } from './utils.ts'
 
-export const renderStringGenerator = (messages: Messages, state: StringGeneratorState): string => {
+export const renderStringGenerator = (
+  messages: Messages,
+  state: StringGeneratorState = createInitialStringGeneratorState(),
+): string => {
   const stringMessages = messages.rngStringGenerator
   const entries = parseStringGeneratorEntries(state.entriesText)
   const statusText = formatStringGeneratorStatus(

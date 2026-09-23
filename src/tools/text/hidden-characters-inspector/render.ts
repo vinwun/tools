@@ -1,9 +1,10 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { HiddenCharactersInspectorState } from './types.ts'
+import { createInitialHiddenCharactersInspectorState } from './utils.ts'
 
 export const renderHiddenCharactersInspector = (
   messages: Messages,
-  state: HiddenCharactersInspectorState,
+  state: HiddenCharactersInspectorState = createInitialHiddenCharactersInspectorState(),
 ): string => {
   const m = messages.hiddenCharactersInspector
   return `

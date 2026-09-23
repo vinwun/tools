@@ -1,7 +1,11 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { MatrixMultiplierState } from './types.ts'
+import { createInitialMatrixMultiplierState } from './utils.ts'
 
-export const renderMatrixMultiplier = (messages: Messages, state: MatrixMultiplierState): string => {
+export const renderMatrixMultiplier = (
+  messages: Messages,
+  state: MatrixMultiplierState = createInitialMatrixMultiplierState(messages),
+): string => {
   const matrixMessages = messages.matrixMultiplier
 
   return `

@@ -5,30 +5,105 @@ import {
   createInitialTimerState,
   renderTimerDisplayMarkup,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
-const timerLocale = createLocaleSyncRegistry<[Messages]>('[data-timer-root]')
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext
+  }
+}
 
-const queryTimerElements = (container: HTMLElement): TimerElements | null => {
-  const display = container.querySelector<HTMLOutputElement>('[data-timer-display]')
-  const hint = container.querySelector<HTMLElement>('[data-timer-hint]')
-  const primaryButton = container.querySelector<HTMLButtonElement>('[data-timer-primary]')
-  const secondaryButton = container.querySelector<HTMLButtonElement>('[data-timer-secondary]')
-  const soundToggle = container.querySelector<HTMLButtonElement>('[data-timer-sound]')
-  const notifyToggle = container.querySelector<HTMLButtonElement>('[data-timer-notify]')
+const SOUND_PREF_KEY = 'timer:playSound'
+const NOTIFY_PREF_KEY = 'timer:notify'
+// Touch devices get no wheel event, so the display is draggable too.
+const DRAG_PIXELS_PER_STEP = 22
 
-  if (!display || !primaryButton || !secondaryButton) {
-    return null
+// Storage can be unavailable (private mode, blocked site data); the timer then keeps its defaults.
+const readPref = (key: string, defaultValue = true): boolean => {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw === null ? defaultValue : raw === '1'
+  } catch {
+    return defaultValue
+  }
+}
+
+const writePref = (key: string, value: boolean): void => {
+  try {
+    localStorage.setItem(key, value ? '1' : '0')
+  } catch {}
+}
+
+type Beeper = {
+  // Browsers only let audio start from a user gesture, so the context is created on the first click.
+  prime: () => void
+  beep: () => void
+  close: () => void
+}
+
+const createBeeper = (): Beeper => {
+  const AudioContextCtor = window.AudioContext ?? window.webkitAudioContext
+  let audioCtx: AudioContext | null = null
+
+  const ensureContext = (): AudioContext | null => {
+    if (!audioCtx && AudioContextCtor) {
+      try {
+        audioCtx = new AudioContextCtor()
+      } catch {
+        audioCtx = null
+      }
+    }
+    if (audioCtx?.state === 'suspended') {
+      audioCtx.resume().catch(() => {})
+    }
+    return audioCtx
   }
 
   return {
-    display,
-    hint,
-    primaryButton,
-    secondaryButton,
-    soundToggle: soundToggle ?? undefined,
-    notifyToggle: notifyToggle ?? undefined,
+    prime: () => {
+      ensureContext()
+    },
+    beep: (volume = 0.08, duration = 220, frequency = 880) => {
+      const ctx = ensureContext()
+      if (!ctx) return
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = frequency
+      gain.gain.value = volume
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      const now = ctx.currentTime
+      osc.start(now)
+      gain.gain.setValueAtTime(volume, now)
+      gain.gain.linearRampToValueAtTime(0.0001, now + duration / 1000)
+      osc.stop(now + (duration + 20) / 1000)
+    },
+    close: () => {
+      audioCtx?.close().catch(() => {})
+      audioCtx = null
+    },
   }
+}
+
+const requestNotificationPermission = async (): Promise<NotificationPermission> => {
+  if (!('Notification' in window)) return 'denied'
+  try {
+    return await Notification.requestPermission()
+  } catch {
+    return 'denied'
+  }
+}
+
+const showCompletionNotification = (title: string, body: string, icon: string): void => {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
+  try {
+    new Notification(title, { body, icon, silent: true })
+  } catch {}
 }
 
 const resolvePrimaryLabel = (messages: Messages, state: TimerState): string => {
@@ -45,126 +120,56 @@ const resolvePrimaryLabel = (messages: Messages, state: TimerState): string => {
   return timerMessages.startAction
 }
 
-export const mountTimer = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-timer-root]') ?? container
-  const elements = queryTimerElements(container)
-
+export const mountTimer: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<TimerElements>(container, {
+    display: '[data-timer-display]',
+    hint: '[data-timer-hint]',
+    primaryButton: '[data-timer-primary]',
+    secondaryButton: '[data-timer-secondary]',
+    soundToggle: '[data-timer-sound]',
+    notifyToggle: '[data-timer-notify]',
+  })
   if (!elements) {
-    return
-  }
-
-  if (timerLocale.resync(root, initialMessages)) {
-    return
+    return {}
   }
 
   let messages = initialMessages
   const state = createInitialTimerState()
+  const beeper = createBeeper()
   let rafId: number | null = null
   let completionTimeoutId: number | null = null
 
-  // Preferences keys
-  const SOUND_PREF_KEY = 'timer:playSound'
-  const NOTIFY_PREF_KEY = 'timer:notify'
-
-  const readPref = (key: string, defaultValue = true): boolean => {
-    try {
-      const raw = localStorage.getItem(key)
-      return raw === null ? defaultValue : raw === '1'
-    } catch {
-      return defaultValue
+  const cancelRaf = (): void => {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
+      rafId = null
     }
   }
 
-  const writePref = (key: string, value: boolean): void => {
-    try { localStorage.setItem(key, value ? '1' : '0') } catch {}
-  }
-
-  // WebAudio helpers
-  let audioCtx: AudioContext | null = null
-  let audioPrimed = false
-
-  const primeAudio = (): void => {
-    if (audioPrimed) return
-    const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext
-    if (!Ctor) return
-    try {
-      audioCtx = new Ctor()
-      // resume in case it's suspended
-      const ctx = audioCtx
-      ctx?.resume?.().catch(() => {})
-      audioPrimed = true
-    } catch {
-      audioCtx = null
+  const cancelCompletionTimeout = (): void => {
+    if (completionTimeoutId !== null) {
+      clearTimeout(completionTimeoutId)
+      completionTimeoutId = null
     }
-  }
-
-  const playBeep = (volume = 0.08, duration = 220, frequency = 880): void => {
-    try {
-      const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext
-      if (!Ctor) return
-      const ctx = audioCtx ?? new Ctor()
-      if (!audioCtx) audioCtx = ctx
-      if (ctx.state === 'suspended') ctx.resume().catch(() => {})
-
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.type = 'sine'
-      osc.frequency.value = frequency
-      gain.gain.value = volume
-
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-
-      const now = ctx.currentTime
-      osc.start(now)
-      gain.gain.setValueAtTime(volume, now)
-      gain.gain.linearRampToValueAtTime(0.0001, now + duration / 1000)
-
-      setTimeout(() => {
-        try { osc.stop() } catch {}
-      }, duration + 20)
-    } catch {
-      // noop
-    }
-  }
-
-  // Notification helpers
-  const requestNotificationPermission = async (): Promise<NotificationPermission> => {
-    if (!('Notification' in window)) return 'denied'
-    try { return await Notification.requestPermission() } catch { return 'denied' }
-  }
-
-  const showCompletionNotification = (title = 'Timer', body?: string, icon?: string): void => {
-    if (!('Notification' in window)) return
-    if (Notification.permission !== 'granted') return
-    try {
-      new Notification(title, { body: body ?? '', icon, silent: true })
-    } catch {}
   }
 
   const updateToggleUI = (): void => {
-    try {
-      if (elements.soundToggle) {
-        const on = readPref(SOUND_PREF_KEY, true)
-        elements.soundToggle.setAttribute('aria-pressed', on ? 'true' : 'false')
-        elements.soundToggle.textContent = on ? '🔔' : '🔕'
-      }
-      if (elements.notifyToggle) {
-        const on = readPref(NOTIFY_PREF_KEY, true)
-        elements.notifyToggle.setAttribute('aria-pressed', on ? 'true' : 'false')
-        elements.notifyToggle.textContent = on ? '🖥️' : '✖️'
-      }
-    } catch {}
+    const soundOn = readPref(SOUND_PREF_KEY, true)
+    elements.soundToggle.setAttribute('aria-pressed', soundOn ? 'true' : 'false')
+    elements.soundToggle.textContent = soundOn ? '🔔' : '🔕'
+
+    const notifyOn = readPref(NOTIFY_PREF_KEY, true)
+    elements.notifyToggle.setAttribute('aria-pressed', notifyOn ? 'true' : 'false')
+    elements.notifyToggle.textContent = notifyOn ? '🖥️' : '✖️'
   }
 
   const updateDisplay = (remainingMs: number): void => {
     const boundedMs = Math.max(0, remainingMs)
     state.remainingMs = boundedMs
     const isActive = state.status !== 'idle'
+    // A running timer shows whole seconds rounded up, so 00:00:00 only appears at completion.
     const displayMs = isActive ? Math.ceil(boundedMs / 1000) * 1000 : boundedMs
     elements.display.innerHTML = renderTimerDisplayMarkup(displayMs, isActive)
-
-    // Keep the display mode aligned with the current timer state.
     elements.display.classList.toggle('disabled', isActive)
   }
 
@@ -200,8 +205,6 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     setDuration(adjustTimerDuration(state.durationMs, direction * resolveStepSeconds(event.clientX)))
   }
 
-  // Touch devices get no wheel event, so the display is draggable too.
-  const DRAG_PIXELS_PER_STEP = 22
   let dragPointerId: number | null = null
   let dragStepSeconds = 1
   let dragOriginY = 0
@@ -222,7 +225,7 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     try {
       elements.display.setPointerCapture(event.pointerId)
     } catch {
-      // ignore
+      // The pointer can already be gone by the time the handler runs.
     }
   }
 
@@ -252,7 +255,7 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     try {
       elements.display.releasePointerCapture(event.pointerId)
     } catch {
-      // ignore
+      // Capture may already have been released by the browser.
     }
   }
 
@@ -264,53 +267,28 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
   }
 
   const complete = (): void => {
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-      rafId = null
-    }
-
-    // Cancel any pending completion/reset timers
-    if (completionTimeoutId !== null) {
-      clearTimeout(completionTimeoutId)
-      completionTimeoutId = null
-    }
+    cancelRaf()
+    cancelCompletionTimeout()
 
     state.status = 'completed'
-    // show 0 on completion
     state.remainingMs = 0
     updateDisplay(0)
     updateButtons()
 
-    // Play sound and show notification according to user preferences
-    const playSound = readPref(SOUND_PREF_KEY, true)
-    const wantNotify = readPref(NOTIFY_PREF_KEY, true)
-
-    if (playSound) {
-      primeAudio()
-      playBeep()
+    if (readPref(SOUND_PREF_KEY, true)) {
+      beeper.beep()
     }
 
-    if (wantNotify && 'Notification' in window && Notification.permission === 'granted') {
-      // try to resolve an icon path that works on GH Pages
-      let iconUrl: string | undefined
-      try {
-        const base = location.origin + (location.pathname.replace(/\/$/, ''))
-        iconUrl = `${base}/images/tool.png`
-      } catch {
-        iconUrl = undefined
-      }
-      showCompletionNotification('Timer', 'Die Zeit ist abgelaufen.', iconUrl)
+    if (readPref(NOTIFY_PREF_KEY, true)) {
+      const base = location.origin + location.pathname.replace(/\/$/, '')
+      showCompletionNotification('Timer', 'Die Zeit ist abgelaufen.', `${base}/images/tool.png`)
     }
 
-    // After a short pause showing 0s, reset back to idle (re-enable scrolling/grid view)
-    try {
-      completionTimeoutId = window.setTimeout(() => {
-        completionTimeoutId = null
-        reset()
-      }, 1000) as unknown as number
-    } catch {
-      // ignore
-    }
+    // Show 0 for a moment, then return to the adjustable idle display.
+    completionTimeoutId = window.setTimeout(() => {
+      completionTimeoutId = null
+      reset()
+    }, 1000)
   }
 
   const tick = (): void => {
@@ -331,21 +309,14 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
   }
 
   const start = (): void => {
-    // cancel any pending completion auto-reset when user starts again
-    if (completionTimeoutId !== null) {
-      clearTimeout(completionTimeoutId)
-      completionTimeoutId = null
-    }
+    cancelCompletionTimeout()
     const previousStatus = state.status
 
     if (state.durationMs === 0) {
       return
     }
 
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-      rafId = null
-    }
+    cancelRaf()
 
     state.status = 'running'
     if (previousStatus !== 'paused') {
@@ -353,23 +324,15 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     }
     state.startTimestamp = performance.now() - (state.durationMs - state.remainingMs)
     updateDisplay(state.remainingMs)
-
-    // Remove class to un-gray the timer display and reset text color when resumed
     elements.display.classList.remove('paused')
 
     updateButtons()
     rafId = requestAnimationFrame(tick)
-
-    // Disable wheel event listener when started
     elements.display.removeEventListener('wheel', handleDisplayWheel)
   }
 
   const pause = (): void => {
-    // cancel any pending completion auto-reset when pausing
-    if (completionTimeoutId !== null) {
-      clearTimeout(completionTimeoutId)
-      completionTimeoutId = null
-    }
+    cancelCompletionTimeout()
     if (state.status !== 'running') {
       return
     }
@@ -377,57 +340,35 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     const elapsedMs = performance.now() - state.startTimestamp
     const remainingMs = Math.max(0, state.durationMs - elapsedMs)
 
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-      rafId = null
-    }
+    cancelRaf()
 
     state.status = 'paused'
     state.remainingMs = remainingMs
     updateDisplay(remainingMs)
-
-    // Add class to gray out the timer display and change text color when paused
     elements.display.classList.add('paused')
 
-    updateButtons() // Ensure the button text updates correctly
-
-    // Disable wheel event listener when paused
+    updateButtons()
     elements.display.removeEventListener('wheel', handleDisplayWheel)
   }
 
   const reset = (): void => {
-    // cancel any pending completion auto-reset when resetting
-    if (completionTimeoutId !== null) {
-      clearTimeout(completionTimeoutId)
-      completionTimeoutId = null
-    }
-
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-      rafId = null
-    }
+    cancelCompletionTimeout()
+    cancelRaf()
 
     state.status = 'idle'
     state.remainingMs = state.durationMs
     updateDisplay(state.durationMs)
     updateButtons()
-
-    // Re-enable wheel event listener when reset
     elements.display.addEventListener('wheel', handleDisplayWheel, { passive: false })
   }
 
   const syncLocale = (nextMessages: Messages): void => {
     messages = nextMessages
     elements.display.setAttribute('aria-label', messages.timer.remainingLabel)
-
-    if (elements.hint) {
-      elements.hint.textContent = messages.timer.adjustHint
-    }
-
+    elements.hint.textContent = messages.timer.adjustHint
     updateButtons()
   }
 
-  timerLocale.register(root, syncLocale)
   elements.display.addEventListener('wheel', handleDisplayWheel, { passive: false })
   // Capture retargets move/up here; these guard on status, so they are never detached.
   elements.display.addEventListener('pointerdown', handleDisplayPointerDown)
@@ -436,11 +377,10 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
   elements.display.addEventListener('pointercancel', handleDisplayPointerEnd)
 
   elements.primaryButton.addEventListener('click', () => {
-    // Prime audio and request notification permission on first user gesture
-    if (!audioPrimed) primeAudio()
+    // Audio and the permission prompt both need a user gesture, so ask on the first click.
+    beeper.prime()
     if (readPref(NOTIFY_PREF_KEY, true) && 'Notification' in window && Notification.permission === 'default') {
-      // fire and forget; do not block start
-      requestNotificationPermission().catch(() => {})
+      void requestNotificationPermission()
     }
 
     if (state.status === 'running') {
@@ -454,32 +394,32 @@ export const mountTimer = (container: HTMLElement, initialMessages: Messages): v
     reset()
   })
 
-  // Toggle handlers (optional elements)
-  if (elements.soundToggle) {
-    elements.soundToggle.addEventListener('click', () => {
-      const cur = readPref(SOUND_PREF_KEY, true)
-      writePref(SOUND_PREF_KEY, !cur)
-      updateToggleUI()
-    })
-  }
+  elements.soundToggle.addEventListener('click', () => {
+    writePref(SOUND_PREF_KEY, !readPref(SOUND_PREF_KEY, true))
+    updateToggleUI()
+  })
 
-  if (elements.notifyToggle) {
-    elements.notifyToggle.addEventListener('click', async () => {
-      const cur = readPref(NOTIFY_PREF_KEY, true)
-      const next = !cur
-      writePref(NOTIFY_PREF_KEY, next)
+  elements.notifyToggle.addEventListener('click', async () => {
+    const next = !readPref(NOTIFY_PREF_KEY, true)
+    writePref(NOTIFY_PREF_KEY, next)
+    updateToggleUI()
+    if (next && 'Notification' in window && Notification.permission === 'default') {
+      await requestNotificationPermission()
       updateToggleUI()
-      if (next && 'Notification' in window && Notification.permission === 'default') {
-        await requestNotificationPermission().catch(() => {})
-        updateToggleUI()
-      }
-    })
-  }
+    }
+  })
 
   syncLocale(messages)
   updateDisplay(state.durationMs)
   updateButtons()
   updateToggleUI()
-}
 
-export const updateTimerLocale = timerLocale.update
+  return {
+    updateLocale: syncLocale,
+    destroy: () => {
+      cancelRaf()
+      cancelCompletionTimeout()
+      beeper.close()
+    },
+  }
+}

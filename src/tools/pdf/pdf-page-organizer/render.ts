@@ -10,8 +10,8 @@ export const renderPdfPageOrganizer = (messages: Messages): string => {
       <div class="tool-panel pdf-page-organizer-panel pdf-page-organizer-panel-upload">
         <div class="pdf-page-organizer-panel-header">
           <div>
-            <h2>${pdfMessages.uploadLabel}</h2>
-            <p class="tool-hint">${pdfMessages.dropHint}</p>
+            <h2 data-pdf-page-organizer-upload-label>${pdfMessages.uploadLabel}</h2>
+            <p class="tool-hint" data-pdf-page-organizer-drop-hint>${pdfMessages.dropHint}</p>
           </div>
           <div class="tool-actions">
             <button type="button" class="tool-action pdf-page-organizer-browse" data-tool-file-picker-browse>${pdfMessages.browseAction}</button>
@@ -28,7 +28,7 @@ export const renderPdfPageOrganizer = (messages: Messages): string => {
       <div class="tool-panel pdf-page-organizer-panel pdf-page-organizer-panel-workspace">
         <div class="pdf-page-organizer-workspace-header">
           <div>
-            <h2>${pdfMessages.pageListTitle}</h2>
+            <h2 data-pdf-page-organizer-page-list-title>${pdfMessages.pageListTitle}</h2>
             <p class="tool-hint" data-pdf-page-organizer-summary>${pdfMessages.emptyState}</p>
           </div>
           <div class="pdf-page-organizer-selection-summary pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-selection-summary>${pdfMessages.selectedSummary.replace('{count}', '0')}</div>
@@ -36,12 +36,12 @@ export const renderPdfPageOrganizer = (messages: Messages): string => {
 
         <p class="tool-hint pdf-page-organizer-guidance pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-guidance>${pdfMessages.selectionHint}</p>
 
-        <div class="pdf-page-organizer-list-shell">
+        <div class="pdf-page-organizer-list-shell" data-pdf-page-organizer-list-shell>
           <div class="pdf-page-organizer-page-list" data-pdf-page-organizer-page-list role="listbox" aria-label="${pdfMessages.pageListTitle}"></div>
           <div class="pdf-page-organizer-drop-end pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-drop-end>${pdfMessages.moveToEndHint}</div>
         </div>
 
-        <p class="tool-hint pdf-page-organizer-reorder-hint pdf-page-organizer-visible-on-pages">${pdfMessages.reorderHint}</p>
+        <p class="tool-hint pdf-page-organizer-reorder-hint pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-reorder-hint>${pdfMessages.reorderHint}</p>
       </div>
 
       <div class="tool-panel pdf-page-organizer-panel pdf-page-organizer-panel-actions">

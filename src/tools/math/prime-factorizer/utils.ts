@@ -1,3 +1,4 @@
+import { isIntegerText } from '../../foundations/numbers.ts'
 import type { PrimeFactorizerState } from './types.ts'
 
 type FactorizationFormat = {
@@ -7,8 +8,6 @@ type FactorizationFormat = {
 
 const DEFAULT_DECIMAL_VALUE = '120'
 const MAX_EXPONENT = 1000
-
-const isIntegerText = (value: string): boolean => /^[-+]?\d+$/.test(value)
 
 export const parseDecimalInput = (value: string): bigint | null => {
   const trimmedValue = value.trim()

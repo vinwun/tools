@@ -1,6 +1,6 @@
 import type { FileConverterConfig, ConverterResult } from '../foundations/file-converter/types'
-import {conversionFailed, createFileConverterTool} from '../foundations/file-converter/utils'
-import {stripExtension} from '../foundations/files.ts'
+import { conversionFailed, createFileConverterTool } from '../foundations/file-converter/utils'
+import { getFileExtension, stripExtension } from '../foundations/files.ts'
 
 const loadImage = (file: File): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -35,11 +35,6 @@ const canvasToBlob = (canvas: HTMLCanvasElement, mimeType: string, quality?: num
       quality,
     )
   })
-
-const getFileExtension = (fileName: string): string | null => {
-  const match = fileName.match(/\.([^.]+)$/)
-  return match ? match[1].toLowerCase() : null
-}
 
 const getImageFormatId = (file: File): string | null => {
   const extension = getFileExtension(file.name)
@@ -121,10 +116,4 @@ const imageConverterConfig: FileConverterConfig = {
   convert: convertImageFile,
 }
 
-const imageConverterTool = createFileConverterTool(imageConverterConfig)
-
-export const renderImageConverter = imageConverterTool.render
-export const mountImageConverter = imageConverterTool.mount
-export function updateImageConverterLocale(container: HTMLElement, messages: import('../../i18n/schema.ts').Messages): void {
-  imageConverterTool.updateLocale(container, messages)
-}
+export const imageConverterTool = createFileConverterTool(imageConverterConfig)

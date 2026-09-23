@@ -1,33 +1,8 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { StopwatchElements, StopwatchState } from './types.ts'
 import { createInitialStopwatchState, formatStopwatchTime } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
-
-const stopwatchLocale = createLocaleSyncRegistry<[Messages]>('[data-stopwatch-root]')
-
-const queryStopwatchElements = (container: HTMLElement): StopwatchElements | null => {
-  const display = container.querySelector<HTMLOutputElement>('[data-stopwatch-display]')
-  const primaryButton = container.querySelector<HTMLButtonElement>('[data-stopwatch-primary]')
-  const secondaryButton = container.querySelector<HTMLButtonElement>('[data-stopwatch-secondary]')
-  const lapsTitle = container.querySelector<HTMLElement>('[data-stopwatch-laps-title]')
-  const lapsCount = container.querySelector<HTMLElement>('[data-stopwatch-laps-count]')
-  const lapsList = container.querySelector<HTMLOListElement>('[data-stopwatch-laps-list]')
-  const lapsEmpty = container.querySelector<HTMLElement>('[data-stopwatch-laps-empty]')
-
-  if (!display || !primaryButton || !secondaryButton || !lapsTitle || !lapsCount || !lapsList || !lapsEmpty) {
-    return null
-  }
-
-  return {
-    display,
-    primaryButton,
-    secondaryButton,
-    lapsTitle,
-    lapsCount,
-    lapsList,
-    lapsEmpty,
-  }
-}
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
 const resolvePrimaryLabel = (messages: Messages, state: StopwatchState): string => {
   const stopwatchMessages = messages.stopwatch
@@ -48,15 +23,18 @@ const resolveSecondaryLabel = (messages: Messages, state: StopwatchState): strin
   return state.status === 'running' ? stopwatchMessages.lapAction : stopwatchMessages.resetAction
 }
 
-export const mountStopwatch = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-stopwatch-root]') ?? container
-  const elements = queryStopwatchElements(container)
+export const mountStopwatch: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<StopwatchElements>(container, {
+    display: '[data-stopwatch-display]',
+    primaryButton: '[data-stopwatch-primary]',
+    secondaryButton: '[data-stopwatch-secondary]',
+    lapsTitle: '[data-stopwatch-laps-title]',
+    lapsCount: '[data-stopwatch-laps-count]',
+    lapsList: '[data-stopwatch-laps-list]',
+    lapsEmpty: '[data-stopwatch-laps-empty]',
+  })
   if (!elements) {
-    return
-  }
-
-  if (stopwatchLocale.resync(root, initialMessages)) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -192,8 +170,6 @@ export const mountStopwatch = (container: HTMLElement, initialMessages: Messages
     syncLocalizedText()
   }
 
-  stopwatchLocale.register(root, syncLocale)
-
   elements.primaryButton.addEventListener('click', () => {
     if (state.status === 'running') {
       pause()
@@ -212,6 +188,13 @@ export const mountStopwatch = (container: HTMLElement, initialMessages: Messages
 
   syncLocalizedText()
   updateDisplay(state.elapsedMs)
-}
 
-export const updateStopwatchLocale = stopwatchLocale.update
+  return {
+    updateLocale: syncLocale,
+    destroy: () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
+    },
+  }
+}

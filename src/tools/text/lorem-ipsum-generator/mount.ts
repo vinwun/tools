@@ -5,102 +5,8 @@ import {
   generateLoremText,
 } from './utils.ts'
 import { copyText } from '../../foundations/clipboard.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
-
-const loremIpsumGeneratorLocale = createLocaleSyncRegistry<[Messages]>('[data-lorem-ipsum-generator-root]')
-
-const queryLoremIpsumGeneratorElements = (
-  container: HTMLElement,
-): LoremIpsumGeneratorElements | null => {
-  const form = container.querySelector<HTMLFormElement>('[data-lorem-ipsum-generator-form]')
-  const amountInput = container.querySelector<HTMLInputElement>(
-    '[data-lorem-ipsum-generator-amount-input]',
-  )
-  const unitSelect = container.querySelector<HTMLSelectElement>(
-    '[data-lorem-ipsum-generator-unit-select]',
-  )
-  const classicCheckbox = container.querySelector<HTMLInputElement>(
-    '[data-lorem-ipsum-generator-classic-checkbox]',
-  )
-  const generateButton = container.querySelector<HTMLButtonElement>(
-    '[data-lorem-ipsum-generator-generate]',
-  )
-  const copyButton = container.querySelector<HTMLButtonElement>('[data-lorem-ipsum-generator-copy]')
-  const clearButton = container.querySelector<HTMLButtonElement>(
-    '[data-lorem-ipsum-generator-clear]',
-  )
-  const output = container.querySelector<HTMLTextAreaElement>('[data-lorem-ipsum-generator-output]')
-  const status = container.querySelector<HTMLElement>('[data-lorem-ipsum-generator-status]')
-  const settingsLegend = container.querySelector<HTMLElement>(
-    '[data-lorem-ipsum-generator-settings-legend]',
-  )
-  const amountLabel = container.querySelector<HTMLElement>(
-    '[data-lorem-ipsum-generator-amount-label]',
-  )
-  const unitLabel = container.querySelector<HTMLElement>('[data-lorem-ipsum-generator-unit-label]')
-  const classicLabel = container.querySelector<HTMLElement>(
-    '[data-lorem-ipsum-generator-classic-label]',
-  )
-  const outputLabel = container.querySelector<HTMLElement>(
-    '[data-lorem-ipsum-generator-output-label]',
-  )
-  const unitOptionCharacters = container.querySelector<HTMLOptionElement>(
-    '[data-lorem-ipsum-generator-unit-option-characters]',
-  )
-  const unitOptionWords = container.querySelector<HTMLOptionElement>(
-    '[data-lorem-ipsum-generator-unit-option-words]',
-  )
-  const unitOptionSentences = container.querySelector<HTMLOptionElement>(
-    '[data-lorem-ipsum-generator-unit-option-sentences]',
-  )
-  const unitOptionParagraphs = container.querySelector<HTMLOptionElement>(
-    '[data-lorem-ipsum-generator-unit-option-paragraphs]',
-  )
-
-  if (
-    !form ||
-    !amountInput ||
-    !unitSelect ||
-    !classicCheckbox ||
-    !generateButton ||
-    !copyButton ||
-    !clearButton ||
-    !output ||
-    !status ||
-    !settingsLegend ||
-    !amountLabel ||
-    !unitLabel ||
-    !classicLabel ||
-    !outputLabel ||
-    !unitOptionCharacters ||
-    !unitOptionWords ||
-    !unitOptionSentences ||
-    !unitOptionParagraphs
-  ) {
-    return null
-  }
-
-  return {
-    form,
-    amountInput,
-    unitSelect,
-    classicCheckbox,
-    generateButton,
-    copyButton,
-    clearButton,
-    output,
-    status,
-    settingsLegend,
-    amountLabel,
-    unitLabel,
-    classicLabel,
-    outputLabel,
-    unitOptionCharacters,
-    unitOptionWords,
-    unitOptionSentences,
-    unitOptionParagraphs,
-  }
-}
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
 const parseAmount = (value: string): number => {
   const parsed = Math.floor(Number(value))
@@ -129,14 +35,29 @@ const syncLocalizedText = (
   elements.outputLabel.textContent = loremMessages.outputLabel
 }
 
-export const mountLoremIpsumGenerator = (
-  container: HTMLElement,
-  initialMessages: Messages,
-): void => {
-  const root = container.querySelector<HTMLElement>('[data-lorem-ipsum-generator-root]') ?? container
-  const elements = queryLoremIpsumGeneratorElements(container)
+export const mountLoremIpsumGenerator: MountTool = (container, initialMessages) => {
+  const elements = queryRequired<LoremIpsumGeneratorElements>(container, {
+    form: '[data-lorem-ipsum-generator-form]',
+    amountInput: '[data-lorem-ipsum-generator-amount-input]',
+    unitSelect: '[data-lorem-ipsum-generator-unit-select]',
+    classicCheckbox: '[data-lorem-ipsum-generator-classic-checkbox]',
+    generateButton: '[data-lorem-ipsum-generator-generate]',
+    copyButton: '[data-lorem-ipsum-generator-copy]',
+    clearButton: '[data-lorem-ipsum-generator-clear]',
+    output: '[data-lorem-ipsum-generator-output]',
+    status: '[data-lorem-ipsum-generator-status]',
+    settingsLegend: '[data-lorem-ipsum-generator-settings-legend]',
+    amountLabel: '[data-lorem-ipsum-generator-amount-label]',
+    unitLabel: '[data-lorem-ipsum-generator-unit-label]',
+    classicLabel: '[data-lorem-ipsum-generator-classic-label]',
+    outputLabel: '[data-lorem-ipsum-generator-output-label]',
+    unitOptionCharacters: '[data-lorem-ipsum-generator-unit-option-characters]',
+    unitOptionWords: '[data-lorem-ipsum-generator-unit-option-words]',
+    unitOptionSentences: '[data-lorem-ipsum-generator-unit-option-sentences]',
+    unitOptionParagraphs: '[data-lorem-ipsum-generator-unit-option-paragraphs]',
+  })
   if (!elements) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -156,8 +77,6 @@ export const mountLoremIpsumGenerator = (
     messages = nextMessages
     syncUi()
   }
-
-  loremIpsumGeneratorLocale.register(root, syncLocale)
 
   const generate = (): void => {
     state.amount = parseAmount(elements.amountInput.value)
@@ -195,6 +114,5 @@ export const mountLoremIpsumGenerator = (
 
   syncUi()
   generate()
+  return { updateLocale: syncLocale }
 }
-
-export const updateLoremIpsumGeneratorLocale = loremIpsumGeneratorLocale.update

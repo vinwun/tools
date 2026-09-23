@@ -53,7 +53,6 @@ export const getWaveformBarCount = (canvas: HTMLCanvasElement): number => {
   return clamp(Math.round(width / 4), 96, 720)
 }
 
-
 export const normalizeSelection = (
   start: number,
   end: number,

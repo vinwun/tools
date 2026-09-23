@@ -1,5 +1,3 @@
-import type { Locale } from '../../../i18n'
-
 export type VideoAudioSplitterState = {
   fileName: string
   file: File | null
@@ -11,7 +9,6 @@ export type VideoAudioSplitterState = {
   audioTrackCount: number
   isProcessing: boolean
   errorReason: string | null
-  locale: Locale
 }
 
 export type VideoAudioSplitterElements = {
@@ -22,4 +19,11 @@ export type VideoAudioSplitterElements = {
   tracksValue: HTMLElement
   audioDownload: HTMLButtonElement
   silentDownload: HTMLButtonElement
+  uploadLabel: HTMLElement
+  uploadHint: HTMLElement
+  previewHeading: HTMLElement
+  infoHeading: HTMLElement
+  durationLabel: HTMLElement
+  formatLabel: HTMLElement
+  tracksLabel: HTMLElement
 }

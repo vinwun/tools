@@ -6,56 +6,24 @@ import {
   parseStringGeneratorEntries,
   pickWeightedEntryIndex,
 } from './utils.ts'
-import { createLocaleSyncRegistry } from '../../foundations/locale-sync.ts'
+import { queryRequired } from '../../foundations/dom.ts'
+import type { MountTool } from '../../types.ts'
 
-const stringGeneratorLocale = createLocaleSyncRegistry<[Messages]>('[data-rng-string-generator-root]')
-
-const queryStringGeneratorElements = (container: HTMLElement): StringGeneratorElements | null => {
-  const form = container.querySelector<HTMLFormElement>('[data-rng-string-generator-form]')
-  const entriesTextarea = container.querySelector<HTMLTextAreaElement>('[data-rng-string-generator-entries]')
-  const uniqueModeInput = container.querySelector<HTMLInputElement>('[data-rng-string-generator-unique-mode]')
-  const generateButton = container.querySelector<HTMLButtonElement>('[data-rng-string-generator-generate]')
-  const resetButton = container.querySelector<HTMLButtonElement>('[data-rng-string-generator-reset]')
-  const resultOutput = container.querySelector<HTMLOutputElement>('[data-rng-string-generator-result]')
-  const statusMessage = container.querySelector<HTMLElement>('[data-rng-string-generator-status]')
-  const listLegend = container.querySelector<HTMLElement>('[data-rng-string-generator-list-legend]')
-  const listHint = container.querySelector<HTMLElement>('[data-rng-string-generator-list-hint]')
-  const optionsLegend = container.querySelector<HTMLElement>('[data-rng-string-generator-options-legend]')
-  const uniqueModeLabel = container.querySelector<HTMLElement>('[data-rng-string-generator-unique-label]')
-  const uniqueModeHint = container.querySelector<HTMLElement>('[data-rng-string-generator-unique-hint]')
-
-  if (
-    !form ||
-    !entriesTextarea ||
-    !uniqueModeInput ||
-    !generateButton ||
-    !resetButton ||
-    !resultOutput ||
-    !statusMessage ||
-    !listLegend ||
-    !listHint ||
-    !optionsLegend ||
-    !uniqueModeLabel ||
-    !uniqueModeHint
-  ) {
-    return null
-  }
-
-  return {
-    form,
-    entriesTextarea,
-    uniqueModeInput,
-    generateButton,
-    resetButton,
-    resultOutput,
-    statusMessage,
-    listLegend,
-    listHint,
-    optionsLegend,
-    uniqueModeLabel,
-    uniqueModeHint,
-  }
-}
+const queryStringGeneratorElements = (container: HTMLElement): StringGeneratorElements | null =>
+  queryRequired<StringGeneratorElements>(container, {
+    form: '[data-rng-string-generator-form]',
+    entriesTextarea: '[data-rng-string-generator-entries]',
+    uniqueModeInput: '[data-rng-string-generator-unique-mode]',
+    generateButton: '[data-rng-string-generator-generate]',
+    resetButton: '[data-rng-string-generator-reset]',
+    resultOutput: '[data-rng-string-generator-result]',
+    statusMessage: '[data-rng-string-generator-status]',
+    listLegend: '[data-rng-string-generator-list-legend]',
+    listHint: '[data-rng-string-generator-list-hint]',
+    optionsLegend: '[data-rng-string-generator-options-legend]',
+    uniqueModeLabel: '[data-rng-string-generator-unique-label]',
+    uniqueModeHint: '[data-rng-string-generator-unique-hint]',
+  })
 
 const syncLocalizedText = (elements: StringGeneratorElements, messages: Messages): void => {
   const stringMessages = messages.rngStringGenerator
@@ -118,15 +86,10 @@ const generateString = (elements: StringGeneratorElements, state: StringGenerato
   syncStatus(elements, messages, state)
 }
 
-export const mountStringGenerator = (container: HTMLElement, initialMessages: Messages): void => {
-  const root = container.querySelector<HTMLElement>('[data-rng-string-generator-root]') ?? container
+export const mountStringGenerator: MountTool = (container, initialMessages) => {
   const elements = queryStringGeneratorElements(container)
   if (!elements) {
-    return
-  }
-
-  if (stringGeneratorLocale.resync(root, initialMessages)) {
-    return
+    return {}
   }
 
   let messages = initialMessages
@@ -149,8 +112,6 @@ export const mountStringGenerator = (container: HTMLElement, initialMessages: Me
     messages = nextMessages
     syncUi()
   }
-
-  stringGeneratorLocale.register(root, syncLocale)
 
   elements.entriesTextarea.addEventListener('input', () => {
     state.entriesText = elements.entriesTextarea.value
@@ -184,6 +145,6 @@ export const mountStringGenerator = (container: HTMLElement, initialMessages: Me
   const entries = parseStringGeneratorEntries(state.entriesText)
   state.availableEntryIndices = state.uniqueMode ? createUniqueEntryPool(entries) : []
   syncStatus(elements, messages, state)
-}
 
-export const updateStringGeneratorLocale = stringGeneratorLocale.update
+  return { updateLocale: syncLocale }
+}
