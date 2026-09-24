@@ -89,7 +89,7 @@
   text-align: center;
 }
 
-.file-converter-download-link {
+.file-converter-download-button {
   justify-self: center;
   display: inline-flex;
   align-items: center;
@@ -100,18 +100,17 @@
   border-radius: 0.55rem;
   background: #1f6feb;
   color: #ffffff;
+  font: inherit;
   font-size: 1rem;
   font-weight: 700;
-  text-decoration: none;
   cursor: pointer;
 }
 
-.file-converter-download-link:hover {
+.file-converter-download-button:hover:enabled {
   opacity: 0.92;
 }
 
-.file-converter-download-link.is-disabled,
-.file-converter-download-link[aria-disabled='true'] {
+.file-converter-download-button:disabled {
   background: #b7bcc5;
   border-color: #b7bcc5;
   color: #ffffff;

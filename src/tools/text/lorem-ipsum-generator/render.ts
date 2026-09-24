@@ -52,7 +52,7 @@ export const renderLoremIpsumGenerator = (
         </div>
       </form>
 
-      <section class="tool-panel lorem-ipsum-generator-panel" aria-live="polite">
+      <section class="tool-panel lorem-ipsum-generator-panel">
         <div class="lorem-ipsum-generator-output-header">
           <h2 data-lorem-ipsum-generator-output-label>${loremMessages.outputLabel}</h2>
           <div class="tool-actions lorem-ipsum-generator-output-actions">
@@ -60,7 +60,7 @@ export const renderLoremIpsumGenerator = (
             <button type="button" class="tool-action" data-lorem-ipsum-generator-clear>${loremMessages.clearAction}</button>
           </div>
         </div>
-        <p class="tool-status" data-lorem-ipsum-generator-status></p>
+        <p class="tool-status" role="status" data-lorem-ipsum-generator-status></p>
         <textarea
           class="tool-textarea lorem-ipsum-generator-output"
           data-lorem-ipsum-generator-output

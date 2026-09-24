@@ -39,7 +39,8 @@ const syncLocalizedText = (elements: NumberGeneratorElements, messages: Messages
   elements.generateButton.textContent = numberMessages.generateAction
 }
 
-const formatStoredResult = (state: NumberGeneratorState, locale: string, precision = 0): string => {
+// Formats with the precision stored at generation, so a later mode or locale change keeps the digits.
+const formatStoredResult = (state: NumberGeneratorState, locale: string): string => {
   if (state.resultValue === null || state.resultMode === null) {
     return state.resultText
   }
@@ -48,7 +49,7 @@ const formatStoredResult = (state: NumberGeneratorState, locale: string, precisi
     return formatIntegerResult(state.resultValue)
   }
 
-  return formatDecimalResult(state.resultValue, locale, precision)
+  return formatDecimalResult(state.resultValue, locale, state.resultPrecision)
 }
 
 const readCurrentState = (elements: NumberGeneratorElements, state: NumberGeneratorState): void => {
@@ -85,42 +86,26 @@ const generateNumber = (
     state.resultText = formatStoredResult(state, locale)
   } else {
     state.resultMode = 'decimal'
-    const precision = resolveDecimalPrecision(state.minValue, state.maxValue)
-    state.resultValue = randomDecimalInclusive(lowerBound, upperBound, precision)
-    state.resultText = formatStoredResult(state, locale, precision)
+    state.resultPrecision = resolveDecimalPrecision(state.minValue, state.maxValue)
+    state.resultValue = randomDecimalInclusive(lowerBound, upperBound, state.resultPrecision)
+    state.resultText = formatStoredResult(state, locale)
   }
 
   elements.resultOutput.textContent = state.resultText
 }
 
-export const mountNumberGenerator: MountTool = (container, initialMessages) => {
+export const mountNumberGenerator: MountTool = (container) => {
   const elements = queryNumberGeneratorElements(container)
   if (!elements) {
     return {}
   }
 
-  let messages = initialMessages
   const state = createInitialNumberGeneratorState()
 
-  const syncUi = (): void => {
-    syncLocalizedText(elements, messages)
-    const locale = resolveNumberLocale()
-    elements.minInput.value = state.minValue
-    elements.maxInput.value = state.maxValue
-    elements.integerModeInput.checked = state.mode === 'integer'
-    elements.decimalModeInput.checked = state.mode === 'decimal'
-    if (state.mode === 'integer') {
-      state.resultText = formatStoredResult(state, locale)
-    } else {
-      const precision = resolveDecimalPrecision(state.minValue, state.maxValue)
-      state.resultText = formatStoredResult(state, locale, precision)
-    }
-    elements.resultOutput.textContent = state.resultText
-  }
-
   const syncLocale = (nextMessages: Messages): void => {
-    messages = nextMessages
-    syncUi()
+    syncLocalizedText(elements, nextMessages)
+    state.resultText = formatStoredResult(state, resolveNumberLocale())
+    elements.resultOutput.textContent = state.resultText
   }
 
   elements.minInput.addEventListener('input', () => {
@@ -148,7 +133,6 @@ export const mountNumberGenerator: MountTool = (container, initialMessages) => {
     generateNumber(elements, state)
   })
 
-  syncUi()
   generateNumber(elements, state)
 
   return { updateLocale: syncLocale }

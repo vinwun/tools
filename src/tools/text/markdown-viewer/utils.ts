@@ -29,7 +29,6 @@ type MarkdownBlock =
 export const createInitialMarkdownViewerState = (): MarkdownViewerState => ({
   inputValue: '',
   renderedHtml: '',
-  renderedDocument: '',
   status: 'empty',
   selectedFileName: null,
 })
@@ -419,12 +418,12 @@ export const renderMarkdownToHtml = (markdown: string): string => {
   return htmlBlocks.join('\n')
 }
 
-export const wrapHtmlDocument = (bodyHtml: string): string => `<!doctype html>
-<html lang="en">
+export const wrapHtmlDocument = (bodyHtml: string, title: string, lang: string): string => `<!doctype html>
+<html lang="${lang}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Markdown Output</title>
+    <title>${escapeHtml(title)}</title>
     <style>
       body { font-family: Inter, Segoe UI, Arial, sans-serif; margin: 2rem; line-height: 1.6; color: #111; }
       pre { background: #f6f8fa; padding: 0.75rem; border-radius: 0.5rem; overflow: auto; line-height: 1.5; min-height: 3rem; }

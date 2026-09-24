@@ -63,14 +63,12 @@ const renderMarkdownInput = (
   if (!trimmed) {
     state.status = 'empty'
     state.renderedHtml = ''
-    state.renderedDocument = ''
     resetOutput(elements)
     elements.downloadButton.disabled = true
     return
   }
 
   state.renderedHtml = renderMarkdownToHtml(state.inputValue)
-  state.renderedDocument = wrapHtmlDocument(state.renderedHtml)
   state.status = 'ready'
   applyRenderedOutput(elements, state)
   elements.downloadButton.disabled = false
@@ -99,22 +97,13 @@ export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
   const state = createInitialMarkdownViewerState()
   let renderDelayId: number | null = null
 
-  const syncUi = (): void => {
-    syncLocalizedText(elements, messages)
-    elements.input.value = state.inputValue
-    updateStatus(elements, messages, state)
-    if (state.status === 'ready') {
-      applyRenderedOutput(elements, state)
-      elements.downloadButton.disabled = false
-    } else {
-      resetOutput(elements)
-      elements.downloadButton.disabled = true
-    }
-  }
-
+  // Relabels only: the rendered output holds no translated text, and re-rendering is slow for large files.
   const syncLocale = (nextMessages: Messages): void => {
     messages = nextMessages
-    syncUi()
+    syncLocalizedText(elements, messages)
+    updateStatus(elements, messages, state)
+    filePicker.browseButton.textContent = messages.markdownViewer.uploadAction
+    filePicker.setName(state.selectedFileName ?? messages.markdownViewer.noFileSelected)
   }
 
   const updateFileName = (fileName: string | null): void => {
@@ -159,7 +148,6 @@ export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
   elements.clearButton.addEventListener('click', () => {
     state.inputValue = ''
     state.renderedHtml = ''
-    state.renderedDocument = ''
     state.status = 'empty'
     state.selectedFileName = null
     elements.input.value = ''
@@ -171,15 +159,17 @@ export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
   })
 
   elements.downloadButton.addEventListener('click', () => {
-    if (!state.renderedDocument) {
+    if (!state.renderedHtml) {
       return
     }
 
-    const blob = new Blob([state.renderedDocument], { type: 'text/html' })
+    // The UI language is the best available guess for the language the user writes in.
+    const title = elements.outputContainer.querySelector('h1, h2, h3')?.textContent?.trim() || 'Markdown'
+    const html = wrapHtmlDocument(state.renderedHtml, title, document.documentElement.lang)
+    const blob = new Blob([html], { type: 'text/html' })
     downloadBlob(blob, 'markdown.html')
   })
 
-  syncUi()
   return {
     updateLocale: syncLocale,
     destroy: () => {

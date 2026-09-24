@@ -33,7 +33,7 @@ export const renderTextCounter = (
         >${state.inputValue}</textarea>
       </form>
 
-      <section class="tool-panel text-counter-panel" aria-live="polite">
+      <section class="tool-panel text-counter-panel">
         <h2 data-text-counter-results-label>${textMessages.resultsTitle}</h2>
         <div class="text-counter-grid" data-text-counter-results>
           ${statRows}

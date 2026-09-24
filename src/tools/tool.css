@@ -173,7 +173,6 @@
 /* The tool markup is painted before its code arrives, so the controls stay inert until then. */
 [data-tool-content-root][aria-busy='true'] .tool-layout {
   opacity: 0.55;
-  pointer-events: none;
 }
 
 /* The sidebar column has an 18rem floor, so the split must collapse before the viewport hits it. */

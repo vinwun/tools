@@ -1,5 +1,6 @@
 import { getDocument } from 'pdfjs-dist'
 import type { PdfTextExtractorFormat } from './types.ts'
+import { formatMessage } from '../../foundations/dom.ts'
 
 export type ExtractedPdfText = {
   pageCount: number
@@ -335,23 +336,23 @@ const buildTextFromLines = (
   return normalized.join('\n')
 }
 
-const joinPageText = (pageTexts: string[], format: PdfTextExtractorFormat): string => {
+const joinPageText = (pageTexts: string[], format: PdfTextExtractorFormat, pageLabel: string): string => {
   if (pageTexts.length <= 1) {
     return pageTexts[0] ?? ''
   }
 
   if (format === 'md') {
     return pageTexts
-      .map((text, index) => `<!-- Page ${index + 1} -->\n\n${text}`)
+      .map((text, index) => `<!-- ${formatMessage(pageLabel, { page: index + 1 })} -->\n\n${text}`)
       .join('\n\n---\n\n')
   }
 
   return pageTexts
-    .map((text, index) => `=== Page ${index + 1} ===\n\n${text}`)
+    .map((text, index) => `=== ${formatMessage(pageLabel, { page: index + 1 })} ===\n\n${text}`)
     .join('\n\n')
 }
 
-export const extractPdfText = async (file: File): Promise<ExtractedPdfText> => {
+export const extractPdfText = async (file: File, pageLabel: string): Promise<ExtractedPdfText> => {
   const bytes = new Uint8Array(await file.arrayBuffer())
   const loadingTask = getDocument({ data: bytes })
   const pdfDocument = await loadingTask.promise
@@ -372,8 +373,8 @@ export const extractPdfText = async (file: File): Promise<ExtractedPdfText> => {
 
   return {
     pageCount,
-    plainText: joinPageText(plainPages, 'txt'),
-    markdownText: joinPageText(markdownPages, 'md'),
+    plainText: joinPageText(plainPages, 'txt', pageLabel),
+    markdownText: joinPageText(markdownPages, 'md', pageLabel),
   }
 }
 

@@ -41,7 +41,7 @@ export const renderVideoAudioSplitter = (messages: Messages): string => `
         </dl>
       </div>
 
-      <p class="tool-status" data-video-audio-splitter-status>${messages.videoAudioSplitter.statusNoFile}</p>
+      <p class="tool-status" role="status" data-video-audio-splitter-status>${messages.videoAudioSplitter.statusNoFile}</p>
 
       <button type="button" class="tool-action tool-download video-audio-splitter-download video-audio-splitter-download-audio" data-video-audio-splitter-audio-download disabled>${messages.videoAudioSplitter.audioDownloadAction}</button>
       <button type="button" class="tool-action tool-download video-audio-splitter-download video-audio-splitter-download-silent" data-video-audio-splitter-silent-download disabled>${messages.videoAudioSplitter.silentDownloadAction}</button>

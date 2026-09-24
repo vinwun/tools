@@ -39,7 +39,7 @@ export const renderFileConverter = (
       <div class="file-converter-preview" data-file-converter-preview>
         <p class="file-converter-preview-message" data-file-converter-preview-message>${messages.statusNoFile}</p>
       </div>
-      <a class="file-converter-download-link is-disabled" data-file-converter-download aria-disabled="true">${messages.downloadAllAction}</a>
+      <button type="button" class="file-converter-download-button" data-file-converter-download disabled>${messages.downloadAllAction}</button>
     </div>
   </section>
 `

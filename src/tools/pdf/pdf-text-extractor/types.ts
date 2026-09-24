@@ -5,5 +5,4 @@ export type PdfTextExtractorResult = {
   status: 'extracting' | 'ready' | 'error'
   plainText: string
   markdownText: string
-  error: string | null
 }

@@ -39,6 +39,8 @@ const FIELD_LABEL_KEYS = [
   ['octal', 'octalLabel'],
   ['utf8', 'utf8Label'],
   ['utf16', 'utf16Label'],
+  ['category', 'categoryLabel'],
+  ['ascii', 'asciiLabel'],
 ] as const satisfies readonly (readonly [string, keyof UnicodeMessages])[]
 
 const syncLocalizedText = (container: HTMLElement, messages: Messages): void => {
@@ -103,6 +105,7 @@ export const mountUnicodeConverter: MountTool = (container, initialMessages) => 
   const syncLocale = (nextMessages: Messages): void => {
     messages = nextMessages
     syncLocalizedText(container, messages)
+    elements.characterInput.setAttribute('aria-label', messages.unicodeConverter.characterLabel)
     syncAll()
   }
 

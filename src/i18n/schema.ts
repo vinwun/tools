@@ -129,6 +129,7 @@ export type Messages = {
     entryStatusExtracting: string
     entryStatusFailed: string
     previewUnavailable: string
+    pageLabel: string
   }
   audioCutter: {
     uploadLabel: string
@@ -195,6 +196,8 @@ export type Messages = {
     statusUnsupported: string
     statusError: string
     statusInvalidRange: string
+    stepDownAction: string
+    stepUpAction: string
   }
   stopwatch: {
     elapsedLabel: string
@@ -215,6 +218,9 @@ export type Messages = {
     pauseAction: string
     resumeAction: string
     resetAction: string
+    soundToggleLabel: string
+    notifyToggleLabel: string
+    completedNotification: string
   }
   timezoneConverter: {
     localTimeLabel: string
@@ -346,6 +352,7 @@ export type Messages = {
     outputLabel: string
   }
   unicodeConverter: {
+    characterLabel: string
     codePointLabel: string
     decimalLabel: string
     binaryLabel: string

@@ -310,7 +310,7 @@ export const localizeDecimalNumber = (value: number, locale: string, precision?:
 
 export const formatDelta = (decimalValue: number, formatValue: number, locale: string): string => {
   if (!Number.isFinite(decimalValue) || !Number.isFinite(formatValue)) {
-    return 'n/a'
+    return '—'
   }
 
   const delta = formatValue - decimalValue

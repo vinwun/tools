@@ -14,8 +14,8 @@ export const createFileConverterTool = (config: FileConverterConfig): ToolDefini
   },
 })
 
-export const conversionFailed = (error: unknown): ConverterResult => ({
-  ok: false,
-  reason: 'conversionFailed',
-  details: error instanceof Error ? error.message : 'Unknown conversion error',
-})
+// The technical detail is English and only useful for debugging, so it goes to the console.
+export const conversionFailed = (error: unknown): ConverterResult => {
+  console.error(error)
+  return { ok: false, reason: 'conversionFailed' }
+}

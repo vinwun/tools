@@ -1,5 +1,6 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import { parseDecimalNumber } from '../../foundations/numbers.ts'
+import { formatMessage } from '../../foundations/dom.ts'
 import type { StringGeneratorEntry, StringGeneratorState } from './types.ts'
 
 const DEFAULT_STRING_ENTRIES = ['Alpha', 'Beta', 'Gamma'] as const
@@ -94,8 +95,8 @@ export const formatStringGeneratorStatus = (
   if (uniqueMode) {
     return remainingCount === 0
       ? stringMessages.exhaustedMessage
-      : stringMessages.uniqueStatusMessage.replace('{count}', String(remainingCount))
+      : formatMessage(stringMessages.uniqueStatusMessage, { count: remainingCount })
   }
 
-  return stringMessages.readyMessage.replace('{count}', String(entriesCount))
+  return formatMessage(stringMessages.readyMessage, { count: entriesCount })
 }

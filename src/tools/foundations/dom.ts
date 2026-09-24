@@ -7,10 +7,13 @@ export const escapeHtml = (value: string): string =>
     .replaceAll("'", '&#39;')
 
 // Unknown placeholders are left intact so a missing translation value stays visible.
+// `{count:one|other}` picks a plural form; English and German use the singular only for 1.
 export const formatMessage = (template: string, values: Record<string, string | number> = {}): string =>
-  template.replace(/\{(\w+)}/g, (_, key: string) => {
+  template.replace(/\{(\w+)(?::([^|}]*)\|([^}]*))?}/g, (placeholder, key: string, one?: string, other?: string) => {
     const value = values[key]
-    return value === undefined ? `{${key}}` : String(value)
+    if (value === undefined) return placeholder
+    if (other === undefined) return String(value)
+    return Number(value) === 1 ? (one ?? '') : other
   })
 
 export const createUniqueId = (): string => {

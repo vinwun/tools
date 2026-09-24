@@ -27,7 +27,7 @@ export const renderUnicodeConverter = (
   return `
     <section class="tool-layout unicode-converter-layout" data-unicode-converter-root>
       <section class="tool-panel unicode-converter-panel">
-        <input class="unicode-converter-character" data-unicode-converter-character type="text" value="${character}" spellcheck="false" autocomplete="off" />
+        <input class="unicode-converter-character" data-unicode-converter-character type="text" aria-label="${m.characterLabel}" value="${character}" spellcheck="false" autocomplete="off" />
         <div class="unicode-converter-grid">
           ${fields
             .map(
@@ -40,8 +40,8 @@ export const renderUnicodeConverter = (
             .join('')}
         </div>
         <div class="unicode-converter-info">
-          <span class="unicode-converter-info-item">${m.categoryLabel}: <b data-unicode-converter-category></b></span>
-          <span class="unicode-converter-info-item">${m.asciiLabel}: <b data-unicode-converter-ascii></b></span>
+          <span class="unicode-converter-info-item"><span data-unicode-converter-category-label>${m.categoryLabel}</span>: <b data-unicode-converter-category></b></span>
+          <span class="unicode-converter-info-item"><span data-unicode-converter-ascii-label>${m.asciiLabel}</span>: <b data-unicode-converter-ascii></b></span>
         </div>
       </section>
     </section>`

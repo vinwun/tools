@@ -1,5 +1,6 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import { formatStopwatchTime } from './utils.ts'
+import { formatMessage } from '../../foundations/dom.ts'
 
 export const renderStopwatch = (messages: Messages): string => {
   const stopwatchMessages = messages.stopwatch
@@ -10,7 +11,7 @@ export const renderStopwatch = (messages: Messages): string => {
         <output
           class="tool-readout stopwatch-display"
           data-stopwatch-display
-          aria-live="polite"
+          aria-live="off"
           aria-label="${stopwatchMessages.elapsedLabel}"
         >${formatStopwatchTime(0)}</output>
         <div class="tool-actions stopwatch-actions">
@@ -22,7 +23,7 @@ export const renderStopwatch = (messages: Messages): string => {
       <div class="tool-panel stopwatch-laps-panel">
         <div class="tool-panel-header stopwatch-laps-header">
           <h2 class="stopwatch-laps-title" data-stopwatch-laps-title>${stopwatchMessages.lapsTitle}</h2>
-          <span class="stopwatch-laps-count" data-stopwatch-laps-count>${stopwatchMessages.lapsCountLabel.replace('{count}', '0')}</span>
+          <span class="stopwatch-laps-count" data-stopwatch-laps-count>${formatMessage(stopwatchMessages.lapsCountLabel, { count: 0 })}</span>
         </div>
         <ol class="stopwatch-laps-list" data-stopwatch-laps-list hidden></ol>
         <p class="tool-hint stopwatch-laps-empty" data-stopwatch-laps-empty>${stopwatchMessages.lapsEmpty}</p>

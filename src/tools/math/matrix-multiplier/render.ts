@@ -46,7 +46,7 @@ export const renderMatrixMultiplier = (
           <span data-matrix-multiplier-result-label>${matrixMessages.resultLabel}</span>
           <pre class="matrix-multiplier-output" data-matrix-multiplier-output>${state.outputText}</pre>
         </label>
-        <p class="tool-status" data-matrix-multiplier-status>${state.statusText}</p>
+        <p class="tool-status" role="status" data-matrix-multiplier-status>${state.statusText}</p>
       </div>
     </section>
   `

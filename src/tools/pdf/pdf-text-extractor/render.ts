@@ -37,7 +37,7 @@ export const renderPdfTextExtractor = (messages: Messages): string => {
             </div>
           </div>
         </div>
-        <p class="tool-status" data-pdf-text-extractor-status>${pdfMessages.statusEmpty}</p>
+        <p class="tool-status" role="status" data-pdf-text-extractor-status>${pdfMessages.statusEmpty}</p>
       </div>
 
       <div class="tool-panel pdf-text-extractor-panel pdf-text-extractor-panel-results">

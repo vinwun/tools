@@ -27,7 +27,7 @@ export const renderHiddenCharactersInspector = (
         >${state.inputValue}</textarea>
       </form>
 
-      <section class="tool-panel hidden-characters-inspector-panel" aria-live="polite">
+      <section class="tool-panel hidden-characters-inspector-panel">
         <div class="hidden-characters-inspector-count">
           <span class="hidden-characters-inspector-count-value" data-hidden-characters-inspector-count>0</span>
           <span data-hidden-characters-inspector-count-label>${m.countLabel}</span>

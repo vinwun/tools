@@ -1,6 +1,6 @@
 .pdf-text-extractor-layout {
-  grid-template-columns: minmax(0, 40%) minmax(0, 60%);
-  align-items: start;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  align-items: stretch;
   gap: 1rem;
 }
 
@@ -24,10 +24,8 @@
 
 .pdf-text-extractor-output-controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.65rem;
-  align-items: center;
-  width: 100%;
 }
 
 .pdf-text-extractor-format-select {
@@ -35,27 +33,29 @@
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  flex: 0 0 45%;
-  min-width: 0;
-  box-sizing: border-box;
 }
 
 .pdf-text-extractor-output-actions .tool-action {
-  flex: 0 0 40%;
-  min-width: 9rem;
-  box-sizing: border-box;
+  flex: 1 1 100%;
 }
 
-.pdf-text-extractor-results {
-  display: grid;
-  gap: 0.9rem;
+/* The results column stretches to the left column's height and the preview fills it. */
+.pdf-text-extractor-panel-results,
+.pdf-text-extractor-results,
+.pdf-text-extractor-entry {
+  display: flex;
+  flex-direction: column;
+}
+
+.pdf-text-extractor-results,
+.pdf-text-extractor-entry {
+  flex: 1;
 }
 
 .pdf-text-extractor-entry {
   border: 1px solid var(--border);
   border-radius: 0.85rem;
   padding: 0.85rem;
-  display: grid;
   gap: 0.75rem;
   background: #fff;
 }
@@ -86,8 +86,9 @@
 }
 
 .pdf-text-extractor-entry-preview {
-  display: grid;
-  gap: 0.4rem;
+  flex: 1;
+  position: relative;
+  min-height: 16rem;
 }
 
 .pdf-text-extractor-preview {
@@ -97,7 +98,9 @@
   border: 1px dashed var(--border);
   background: #f8fafc;
   white-space: pre-wrap;
-  max-height: 260px;
+  /* Out of the flow, so long text scrolls instead of growing the row. */
+  position: absolute;
+  inset: 0;
   overflow: auto;
   font-family: var(--font-mono);
   font-size: 0.9rem;
@@ -123,15 +126,5 @@
   .pdf-text-extractor-panel-output {
     grid-column: auto;
     grid-row: auto;
-  }
-
-  .pdf-text-extractor-output-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .pdf-text-extractor-output-actions .tool-action {
-    flex: 1 1 100%;
-    width: 100%;
   }
 }

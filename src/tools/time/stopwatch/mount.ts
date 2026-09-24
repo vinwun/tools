@@ -1,7 +1,7 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import type { StopwatchElements, StopwatchState } from './types.ts'
 import { createInitialStopwatchState, formatStopwatchTime } from './utils.ts'
-import { queryRequired } from '../../foundations/dom.ts'
+import { formatMessage, queryRequired } from '../../foundations/dom.ts'
 import type { MountTool } from '../../types.ts'
 
 const resolvePrimaryLabel = (messages: Messages, state: StopwatchState): string => {
@@ -48,7 +48,7 @@ export const mountStopwatch: MountTool = (container, initialMessages) => {
 
   const updateLapsView = (): void => {
     const stopwatchMessages = messages.stopwatch
-    elements.lapsCount.textContent = stopwatchMessages.lapsCountLabel.replace('{count}', String(state.laps.length))
+    elements.lapsCount.textContent = formatMessage(stopwatchMessages.lapsCountLabel, { count: state.laps.length })
 
     while (elements.lapsList.firstChild) {
       elements.lapsList.removeChild(elements.lapsList.firstChild)

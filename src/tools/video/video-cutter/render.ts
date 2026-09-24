@@ -27,17 +27,17 @@ export const renderVideoCutter = (messages: Messages): string => `
         <label class="tool-field" for="video-cutter-start-input">
           <span data-video-cutter-start-label>${messages.videoCutter.startLabel}</span>
           <div class="video-cutter-range-field">
-            <button type="button" class="video-cutter-step-btn" data-video-cutter-start-down tabindex="-1" disabled>−</button>
-            <input type="text" id="video-cutter-start-input" inputmode="decimal" placeholder="0" value="0,00" data-video-cutter-start disabled />
-            <button type="button" class="video-cutter-step-btn" data-video-cutter-start-up tabindex="-1" disabled>+</button>
+            <button type="button" class="video-cutter-step-btn" data-video-cutter-start-down tabindex="-1" aria-label="${messages.videoCutter.stepDownAction}" disabled>−</button>
+            <input type="text" id="video-cutter-start-input" inputmode="decimal" placeholder="0" data-video-cutter-start disabled />
+            <button type="button" class="video-cutter-step-btn" data-video-cutter-start-up tabindex="-1" aria-label="${messages.videoCutter.stepUpAction}" disabled>+</button>
           </div>
         </label>
         <label class="tool-field" for="video-cutter-end-input">
           <span data-video-cutter-end-label>${messages.videoCutter.endLabel}</span>
           <div class="video-cutter-range-field">
-            <button type="button" class="video-cutter-step-btn" data-video-cutter-end-down tabindex="-1" disabled>−</button>
-            <input type="text" id="video-cutter-end-input" inputmode="decimal" placeholder="0" value="0,00" data-video-cutter-end disabled />
-            <button type="button" class="video-cutter-step-btn" data-video-cutter-end-up tabindex="-1" disabled>+</button>
+            <button type="button" class="video-cutter-step-btn" data-video-cutter-end-down tabindex="-1" aria-label="${messages.videoCutter.stepDownAction}" disabled>−</button>
+            <input type="text" id="video-cutter-end-input" inputmode="decimal" placeholder="0" data-video-cutter-end disabled />
+            <button type="button" class="video-cutter-step-btn" data-video-cutter-end-up tabindex="-1" aria-label="${messages.videoCutter.stepUpAction}" disabled>+</button>
           </div>
         </label>
       </div>
@@ -56,7 +56,7 @@ export const renderVideoCutter = (messages: Messages): string => `
         </label>
       </div>
 
-      <p class="tool-status" data-video-cutter-status>${messages.videoCutter.statusNoFile}</p>
+      <p class="tool-status" role="status" data-video-cutter-status>${messages.videoCutter.statusNoFile}</p>
 
       <button type="button" class="tool-action tool-download video-cutter-download" data-video-cutter-download disabled>${messages.videoCutter.downloadAction}</button>
     </div>

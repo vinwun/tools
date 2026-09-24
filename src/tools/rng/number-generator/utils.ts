@@ -13,6 +13,7 @@ export const createInitialNumberGeneratorState = (): NumberGeneratorState => ({
   mode: 'integer',
   resultMode: null,
   resultValue: null,
+  resultPrecision: 0,
   resultText: DEFAULT_RESULT_TEXT,
 })
 

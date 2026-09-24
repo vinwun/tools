@@ -20,8 +20,11 @@ import {
   renderCutterSelectionLabel,
 } from './utils.ts'
 
-const isEditableTarget = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable)
+// Space keeps its own meaning on controls. The waveform handles are excluded: they take focus while
+// being dragged, and previewing right after a drag is the main use of the shortcut.
+const isInteractiveTarget = (target: EventTarget | null): boolean =>
+  target instanceof HTMLElement &&
+  (target.matches('input, textarea, select, a, audio, button:not(.audio-cutter-waveform-handle)') || target.isContentEditable)
 
 export const mountAudioCutter: MountTool = (container, initialMessages) => {
   let messages = initialMessages
@@ -173,16 +176,6 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
   const syncTimeFields = (): void => {
     elements.startInput.value = formatTime(state.start)
     elements.endInput.value = formatTime(state.end)
-    elements.startInput.removeAttribute('data-invalid')
-    elements.endInput.removeAttribute('data-invalid')
-    elements.startInput.removeAttribute('aria-invalid')
-    elements.endInput.removeAttribute('aria-invalid')
-  }
-
-  const markTimeFieldValidity = (input: HTMLInputElement): void => {
-    const isInvalid = parseTimeInput(input.value) === null && input.value.trim() !== ''
-    input.toggleAttribute('data-invalid', isInvalid)
-    input.toggleAttribute('aria-invalid', isInvalid)
   }
 
   const updateTimeReadouts = (): void => {
@@ -382,6 +375,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     elements.startHandle.setAttribute('aria-label', messages.audioCutter.startLabel)
     elements.endHandle.setAttribute('aria-label', messages.audioCutter.endLabel)
     elements.downloadLink.textContent = messages.audioCutter.downloadAction
+    filePicker.browseButton.textContent = messages.audioCutter.browseAction
   }
 
   const showEmptyState = (): void => {
@@ -407,7 +401,6 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
       updateTimeReadouts()
       drawCurrentWaveform()
       syncStatusText()
-      syncSelectionPreview()
       return
     }
 
@@ -476,14 +469,6 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
       showEmptyState()
     }
   }
-
-  elements.startInput.addEventListener('input', () => {
-    markTimeFieldValidity(elements.startInput)
-  })
-
-  elements.endInput.addEventListener('input', () => {
-    markTimeFieldValidity(elements.endInput)
-  })
 
   elements.startInput.addEventListener('blur', () => {
     const parsed = parseTimeInput(elements.startInput.value)
@@ -589,15 +574,11 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
   })
 
   document.addEventListener('keydown', (event) => {
-    if (isEditableTarget(event.target) || (event.key !== ' ' && event.code !== 'Space')) {
+    if (!state.audioBuffer || isInteractiveTarget(event.target) || (event.key !== ' ' && event.code !== 'Space')) {
       return
     }
 
     event.preventDefault()
-
-    if (!state.audioBuffer) {
-      return
-    }
 
     if (elements.preview.paused) {
       elements.preview.currentTime = sourceTimeToPreviewTime(state.playhead)

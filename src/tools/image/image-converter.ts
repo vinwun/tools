@@ -79,7 +79,7 @@ const convertImageFile = async (file: File, outputFormatId: string): Promise<Con
 
     const context = canvas.getContext('2d')
     if (!context) {
-      return { ok: false, reason: 'conversionFailed', details: 'Canvas context unavailable' }
+      return { ok: false, reason: 'conversionFailed' }
     }
 
     context.drawImage(image, 0, 0)

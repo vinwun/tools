@@ -4,6 +4,7 @@ import { renderPageHeader } from '../navigation/render.ts'
 import { buildCategoryPath, buildDashboardPath } from '../navigation/router.ts'
 import type { ToolId } from './catalog'
 import { renderToolContent } from './registry'
+import { formatMessage } from './foundations/dom.ts'
 
 export const renderToolPage = (
   locale: Locale,
@@ -29,7 +30,7 @@ export const renderToolPage = (
             <h1>${tool.name}</h1>
             <p class="tool-description">${tool.description}</p>`)}
 
-      <button type="button" class="back-button" data-category-link="${categoryId}">${messages.navigation.backToCategory} \"${category.name}\"</button>
+      <button type="button" class="back-button" data-category-link="${categoryId}">${formatMessage(messages.navigation.backToCategory, { category: category.name })}</button>
 
       <div data-tool-content-root>
         ${toolContent}

@@ -59,11 +59,11 @@ const updateEntry = (entries: PdfPageEntry[], entryId: string, patch: Partial<Pd
 
 const renderThumbnailMarkup = (entry: PdfPageEntry, messages: Messages): string => {
   if (entry.thumbnailState === 'ready' && entry.thumbnailUrl) {
-    return `<img src="${entry.thumbnailUrl}" alt="${escapeHtml(entry.fileName)}" class="pdf-page-organizer-page-thumbnail-image" />`
+    return `<img src="${entry.thumbnailUrl}" alt="" class="pdf-page-organizer-page-thumbnail-image" />`
   }
 
   if (entry.thumbnailState === 'failed') {
-    return `<div class="pdf-page-organizer-page-thumbnail-fallback pdf-page-organizer-page-thumbnail-fallback-failed">${escapeHtml(entry.thumbnailError ?? messages.pdfPageOrganizer.thumbnailFailed)}</div>`
+    return `<div class="pdf-page-organizer-page-thumbnail-fallback pdf-page-organizer-page-thumbnail-fallback-failed">${escapeHtml(messages.pdfPageOrganizer.thumbnailFailed)}</div>`
   }
 
   return `<div class="pdf-page-organizer-page-thumbnail-fallback">${escapeHtml(messages.pdfPageOrganizer.thumbnailLoading)}</div>`
@@ -252,7 +252,6 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
         state.entries = updateEntry(state.entries, entryId, {
           thumbnailState: 'failed',
           thumbnailUrl: null,
-          thumbnailError: messages.pdfPageOrganizer.thumbnailFailed,
         })
         sync()
         return
@@ -269,7 +268,6 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
       state.entries = updateEntry(state.entries, entryId, {
         thumbnailState: 'ready',
         thumbnailUrl: canvas.toDataURL('image/png'),
-        thumbnailError: null,
       })
       sync()
     } catch (error) {
@@ -280,8 +278,8 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
       state.entries = updateEntry(state.entries, entryId, {
         thumbnailState: 'failed',
         thumbnailUrl: null,
-        thumbnailError: error instanceof Error ? error.message : messages.pdfPageOrganizer.thumbnailFailed,
       })
+      console.error(error)
       sync()
     }
   }
@@ -448,7 +446,6 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
             pageCount,
             thumbnailState: 'loading',
             thumbnailUrl: null,
-            thumbnailError: null,
           }
 
           state.entries.push(entry)

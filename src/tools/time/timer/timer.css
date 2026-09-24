@@ -90,11 +90,24 @@
 }
 
 .timer-toggle {
+  position: relative;
   flex: 0 0 auto;
   min-width: 4.5rem;
   padding: 0.5rem 0.75rem;
   font-size: 1.1rem;
   border-radius: 0.5rem;
+}
+
+.timer-toggle[aria-pressed='false'] {
+  opacity: 0.45;
+}
+
+.timer-toggle[aria-pressed='false']::after {
+  content: '';
+  position: absolute;
+  inset: 50% 30% auto;
+  border-top: 2px solid currentColor;
+  transform: rotate(-45deg);
 }
 
 /* Three two-digit columns at the desktop 5rem floor overflow a phone. */

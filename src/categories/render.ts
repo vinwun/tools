@@ -17,7 +17,6 @@ const renderToolLinks = (locale: Locale, categoryId: CategoryId): string => {
             href="${buildToolPath(categoryId, toolId)}"
             data-tool-link="${toolId}"
             data-tool-category="${categoryId}"
-            aria-label="${tool.name}"
           >
             <span class="tool-link-title">${tool.name}</span>
             <span class="tool-link-description">${tool.description}</span>
@@ -47,8 +46,8 @@ export const renderCategoryPage = (locale: Locale, categoryId: CategoryId) => {
 
       <button type="button" class="back-button" data-dashboard-link>${messages.navigation.backToDashboard}</button>
 
-      <section class="category-tools" aria-label="${messages.dashboard.categoriesAriaLabel}">
-        <h2>${messages.navigation.availableTools}</h2>
+      <section class="category-tools" aria-labelledby="category-tools-title">
+        <h2 id="category-tools-title">${messages.navigation.availableTools}</h2>
         <ul class="category-tools-grid">
           ${renderToolLinks(locale, categoryId)}
         </ul>

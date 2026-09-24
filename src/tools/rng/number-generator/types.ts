@@ -6,6 +6,7 @@ export type NumberGeneratorState = {
   mode: NumberGeneratorMode
   resultMode: NumberGeneratorMode | null
   resultValue: number | null
+  resultPrecision: number
   resultText: string
 }
 

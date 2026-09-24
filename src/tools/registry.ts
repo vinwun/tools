@@ -102,6 +102,7 @@ const findToolContainer = (): HTMLElement | null =>
 
 const clearLoadStatus = (container: HTMLElement): void => {
   container.removeAttribute('aria-busy')
+  container.querySelector('.tool-layout')?.removeAttribute('inert')
   container.querySelector('[data-tool-load-status]')?.remove()
 }
 
@@ -119,6 +120,7 @@ const renderLoadStatus = (container: HTMLElement, tool: ActiveTool, kind: LoadSt
 
   if (kind === 'loading') {
     container.setAttribute('aria-busy', 'true')
+    container.querySelector('.tool-layout')?.setAttribute('inert', '')
   } else {
     const retryButton = document.createElement('button')
     retryButton.type = 'button'

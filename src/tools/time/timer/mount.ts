@@ -153,14 +153,10 @@ export const mountTimer: MountTool = (container, initialMessages) => {
     }
   }
 
+  // The icons stay fixed; timer.css shows the off state through `aria-pressed`.
   const updateToggleUI = (): void => {
-    const soundOn = readPref(SOUND_PREF_KEY, true)
-    elements.soundToggle.setAttribute('aria-pressed', soundOn ? 'true' : 'false')
-    elements.soundToggle.textContent = soundOn ? '🔔' : '🔕'
-
-    const notifyOn = readPref(NOTIFY_PREF_KEY, true)
-    elements.notifyToggle.setAttribute('aria-pressed', notifyOn ? 'true' : 'false')
-    elements.notifyToggle.textContent = notifyOn ? '🖥️' : '✖️'
+    elements.soundToggle.setAttribute('aria-pressed', String(readPref(SOUND_PREF_KEY, true)))
+    elements.notifyToggle.setAttribute('aria-pressed', String(readPref(NOTIFY_PREF_KEY, true)))
   }
 
   const updateDisplay = (remainingMs: number): void => {
@@ -280,8 +276,8 @@ export const mountTimer: MountTool = (container, initialMessages) => {
     }
 
     if (readPref(NOTIFY_PREF_KEY, true)) {
-      const base = location.origin + location.pathname.replace(/\/$/, '')
-      showCompletionNotification('Timer', 'Die Zeit ist abgelaufen.', `${base}/images/tool.png`)
+      const iconUrl = new URL(`${import.meta.env.BASE_URL}images/tool.png`, location.origin).href
+      showCompletionNotification(messages.tools.timer.name, messages.timer.completedNotification, iconUrl)
     }
 
     // Show 0 for a moment, then return to the adjustable idle display.
@@ -366,6 +362,10 @@ export const mountTimer: MountTool = (container, initialMessages) => {
     messages = nextMessages
     elements.display.setAttribute('aria-label', messages.timer.remainingLabel)
     elements.hint.textContent = messages.timer.adjustHint
+    elements.soundToggle.title = messages.timer.soundToggleLabel
+    elements.soundToggle.setAttribute('aria-label', messages.timer.soundToggleLabel)
+    elements.notifyToggle.title = messages.timer.notifyToggleLabel
+    elements.notifyToggle.setAttribute('aria-label', messages.timer.notifyToggleLabel)
     updateButtons()
   }
 

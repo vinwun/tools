@@ -5,7 +5,7 @@ import type { ConverterMessages, FileConverterConfig, ConverterResultData } from
 
 type PreviewItem =
   | { kind: 'success'; data: ConverterResultData }
-  | { kind: 'error'; fileName: string; message: string }
+  | { kind: 'error'; fileName: string; reason: 'unsupportedOutput' | 'conversionFailed' }
 
 const createPreviewContentMarkup = (data: ConverterResultData, messages: ConverterMessages): string => {
   const previewUrl = URL.createObjectURL(data.blob)
@@ -40,7 +40,7 @@ const createPreviewListMarkup = (items: readonly PreviewItem[], messages: Conver
                 aria-label="${escapeHtml(removeAriaLabel)}"
               >×</button>
             </header>
-            <p class="file-converter-preview-item-message">${escapeHtml(item.message)}</p>
+            <p class="file-converter-preview-item-message">${item.reason === 'unsupportedOutput' ? messages.statusUnsupported : messages.statusFailed}</p>
           </article>
         `
       }
@@ -91,7 +91,7 @@ export const mountFileConverter = (
   const elements = queryRequired<{
     outputSelect: HTMLSelectElement
     previewElement: HTMLElement
-    downloadLink: HTMLAnchorElement
+    downloadButton: HTMLButtonElement
     uploadLabel: HTMLElement
     uploadHint: HTMLElement
     outputLabel: HTMLElement
@@ -99,7 +99,7 @@ export const mountFileConverter = (
   }>(root, {
     outputSelect: '[data-file-converter-output]',
     previewElement: '[data-file-converter-preview]',
-    downloadLink: '[data-file-converter-download]',
+    downloadButton: '[data-file-converter-download]',
     uploadLabel: '[data-file-converter-upload-label]',
     uploadHint: '[data-file-converter-upload-hint]',
     outputLabel: '[data-file-converter-output-label]',
@@ -110,7 +110,7 @@ export const mountFileConverter = (
     return {}
   }
 
-  const { outputSelect, previewElement, downloadLink } = elements
+  const { outputSelect, previewElement, downloadButton } = elements
 
   let messages = initialMessages
   let downloadableResults: ConverterResultData[] = []
@@ -125,14 +125,12 @@ export const mountFileConverter = (
 
   const setDownloadDisabled = (): void => {
     downloadableResults = []
-    downloadLink.ariaDisabled = 'true'
-    downloadLink.classList.add('is-disabled')
+    downloadButton.disabled = true
   }
 
   const setDownloadEnabled = (results: readonly ConverterResultData[]): void => {
     downloadableResults = [...results]
-    downloadLink.ariaDisabled = 'false'
-    downloadLink.classList.remove('is-disabled')
+    downloadButton.disabled = false
   }
 
   const setPreviewMessage = (message: string): void => {
@@ -177,10 +175,6 @@ export const mountFileConverter = (
     filePicker.setName(formatMessage(messages.selectedFilesLabel, { count: files.length }))
   }
 
-  const getFailureMessage = (details?: string): string =>
-    details ? `${messages.statusFailed}: ${details}` : messages.statusFailed
-
-  downloadLink.textContent = messages.downloadAllAction
   setDownloadDisabled()
   setSelectedFileLabel([])
 
@@ -190,7 +184,7 @@ export const mountFileConverter = (
     filePicker.browseButton.textContent = messages.browseAction
     elements.outputLabel.textContent = messages.outputLabel
     elements.previewTitle.textContent = messages.previewTitle
-    downloadLink.textContent = messages.downloadAllAction
+    downloadButton.textContent = messages.downloadAllAction
   }
 
   const syncLocale = (nextMessages: ConverterMessages): void => {
@@ -207,13 +201,6 @@ export const mountFileConverter = (
           setPreviewMessage(messages.statusNoFile)
         } else if (currentMessage === previousMessages.converting) {
           setPreviewMessage(messages.converting)
-        } else if (currentMessage === previousMessages.previewUnavailable) {
-          setPreviewMessage(messages.previewUnavailable)
-        } else if (currentMessage === previousMessages.statusUnsupported) {
-          setPreviewMessage(messages.statusUnsupported)
-        } else if (currentMessage.startsWith(previousMessages.statusFailed)) {
-          const details = currentMessage.slice(previousMessages.statusFailed.length).trimStart().replace(/^:\s*/, '')
-          setPreviewMessage(details ? `${messages.statusFailed}: ${details}` : messages.statusFailed)
         }
       }
       return
@@ -223,13 +210,7 @@ export const mountFileConverter = (
     syncDownloadFromPreviewItems()
   }
 
-  downloadLink.addEventListener('click', (event) => {
-    event.preventDefault()
-
-    if (downloadLink.classList.contains('is-disabled')) {
-      return
-    }
-
+  downloadButton.addEventListener('click', () => {
     downloadableResults.forEach((result) => {
       downloadBlob(result.blob, result.fileName)
     })
@@ -303,16 +284,7 @@ export const mountFileConverter = (
         return
       }
 
-      const failureMessage =
-        result.reason === 'unsupportedOutput'
-          ? messages.statusUnsupported
-          : getFailureMessage(result.details)
-
-      previewItems.push({
-        kind: 'error',
-        fileName: file.name,
-        message: failureMessage,
-      })
+      previewItems.push({ kind: 'error', fileName: file.name, reason: result.reason })
     })
 
     setPreviewItems(previewItems)

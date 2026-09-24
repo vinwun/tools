@@ -9,7 +9,7 @@ export type ConverterResultData = {
 
 export type ConverterResult =
   | { ok: true; data: ConverterResultData }
-  | { ok: false; reason: 'unsupportedOutput' | 'conversionFailed'; details?: string }
+  | { ok: false; reason: 'unsupportedOutput' | 'conversionFailed' }
 
 export type ConverterOutputFormat = {
   id: string

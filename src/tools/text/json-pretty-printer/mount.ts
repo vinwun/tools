@@ -140,11 +140,6 @@ const renderJsonValue = (
 
   node.append(line, children, closeLine)
 
-  toggleButton.addEventListener('click', () => {
-    const collapsed = node.classList.toggle('is-collapsed')
-    updateToggleLabel(toggleButton, collapsed, messages)
-  })
-
   return node
 }
 
@@ -230,23 +225,16 @@ export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) =>
   const state = createInitialJsonPrettyPrinterState()
   let validateDelayId: number | null = null
 
-  const syncUi = (): void => {
-    syncLocalizedText(elements, messages)
-    elements.input.value = state.inputValue
-    elements.indentSelect.value = String(state.indentSize)
-    updateStatus(elements, messages, state)
-    if (state.status === 'ready') {
-      applyFormattedOutput(elements, state, messages)
-      elements.downloadButton.disabled = false
-    } else {
-      resetOutput(elements)
-      elements.downloadButton.disabled = true
-    }
-  }
-
+  // Relabels in place: re-rendering the output would lose which sections are collapsed.
   const syncLocale = (nextMessages: Messages): void => {
     messages = nextMessages
-    syncUi()
+    syncLocalizedText(elements, messages)
+    updateStatus(elements, messages, state)
+    filePicker.browseButton.textContent = messages.jsonPrettyPrinter.uploadAction
+    filePicker.setName(state.selectedFileName ?? messages.jsonPrettyPrinter.noFileSelected)
+    elements.outputContainer.querySelectorAll<HTMLButtonElement>('.json-pretty-printer-toggle').forEach((button) => {
+      updateToggleLabel(button, button.closest('.json-pretty-printer-node')?.classList.contains('is-collapsed') ?? false, messages)
+    })
   }
 
   const updateFileName = (fileName: string | null): void => {
@@ -310,6 +298,14 @@ export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) =>
     elements.downloadButton.disabled = true
   })
 
+  elements.outputContainer.addEventListener('click', (event) => {
+    const toggleButton = (event.target as Element).closest<HTMLButtonElement>('.json-pretty-printer-toggle')
+    const node = toggleButton?.closest('.json-pretty-printer-node')
+    if (toggleButton && node) {
+      updateToggleLabel(toggleButton, node.classList.toggle('is-collapsed'), messages)
+    }
+  })
+
   elements.downloadButton.addEventListener('click', () => {
     if (!state.formattedJson) {
       return
@@ -319,7 +315,6 @@ export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) =>
     downloadBlob(blob, 'pretty.json')
   })
 
-  syncUi()
   return {
     updateLocale: syncLocale,
     destroy: () => {

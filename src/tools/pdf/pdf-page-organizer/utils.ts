@@ -10,7 +10,6 @@ export type PdfPageEntry = {
   pageCount: number
   thumbnailState: PdfThumbnailState
   thumbnailUrl: string | null
-  thumbnailError: string | null
 }
 
 export const buildSelectionRange = (anchorIndex: number, currentIndex: number): number[] => {

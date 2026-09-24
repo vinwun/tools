@@ -59,7 +59,7 @@ export const renderAudioCutter = (messages: Messages): string => `
       </div>
 
       <audio class="audio-cutter-preview" data-audio-cutter-preview controls preload="metadata"></audio>
-      <p class="tool-status" data-audio-cutter-status>${messages.audioCutter.statusNoFile}</p>
+      <p class="tool-status" role="status" data-audio-cutter-status>${messages.audioCutter.statusNoFile}</p>
       <a class="tool-action tool-download audio-cutter-download is-disabled" data-audio-cutter-download aria-disabled="true">${messages.audioCutter.downloadAction}</a>
     </div>
   </section>

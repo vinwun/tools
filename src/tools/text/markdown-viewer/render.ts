@@ -45,12 +45,12 @@ export const renderMarkdownViewer = (
         </div>
       </form>
 
-      <section class="tool-panel markdown-viewer-panel" aria-live="polite">
+      <section class="tool-panel markdown-viewer-panel">
         <div class="tool-panel-header markdown-viewer-output-header">
           <h2 data-markdown-viewer-output-label>${markdownMessages.outputLabel}</h2>
           <button type="button" class="tool-action" data-markdown-viewer-download disabled>${markdownMessages.downloadAction}</button>
         </div>
-        <p class="tool-status" data-markdown-viewer-status>${markdownMessages.statusEmpty}</p>
+        <p class="tool-status" role="status" data-markdown-viewer-status>${markdownMessages.statusEmpty}</p>
         <div class="markdown-viewer-output" data-markdown-viewer-output></div>
       </section>
     </section>

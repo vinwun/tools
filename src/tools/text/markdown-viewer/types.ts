@@ -3,7 +3,6 @@ export type MarkdownViewerStatus = 'empty' | 'ready'
 export type MarkdownViewerState = {
   inputValue: string
   renderedHtml: string
-  renderedDocument: string
   status: MarkdownViewerStatus
   selectedFileName: string | null
 }

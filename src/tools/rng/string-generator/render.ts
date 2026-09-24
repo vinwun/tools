@@ -24,7 +24,7 @@ export const renderStringGenerator = (
     <section class="tool-layout rng-string-generator-layout" data-rng-string-generator-root>
       <div class="rng-string-generator-result-shell">
         <output class="tool-readout rng-string-generator-result" data-rng-string-generator-result aria-live="polite">${escapeHtml(state.resultText)}</output>
-        <p class="tool-status rng-string-generator-status" data-rng-string-generator-status>${escapeHtml(statusText)}</p>
+        <p class="tool-status rng-string-generator-status" role="status" data-rng-string-generator-status>${escapeHtml(statusText)}</p>
       </div>
 
       <form class="tool-panel rng-string-generator-panel" data-rng-string-generator-form novalidate>

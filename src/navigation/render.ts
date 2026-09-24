@@ -18,7 +18,7 @@ export const renderPageHeader = (locale: Locale, titleBlock: string): string => 
           </div>
           <label class="locale-switcher" for="${LOCALE_SELECT_ID}">
             <span>${messages.dashboard.languageLabel}</span>
-            <select id="${LOCALE_SELECT_ID}" aria-label="${messages.dashboard.languageLabel}">
+            <select id="${LOCALE_SELECT_ID}">
               ${renderLanguageOptions(locale)}
             </select>
           </label>

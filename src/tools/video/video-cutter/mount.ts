@@ -138,6 +138,11 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
     elements.playEnding.textContent = messages.videoCutter.playEndingAction
     elements.cutDownload.textContent = messages.videoCutter.downloadAction
     elements.actualStartLabel.textContent = ''
+    filePicker.browseButton.textContent = messages.videoCutter.browseAction
+    elements.startStepDown.setAttribute('aria-label', messages.videoCutter.stepDownAction)
+    elements.endStepDown.setAttribute('aria-label', messages.videoCutter.stepDownAction)
+    elements.startStepUp.setAttribute('aria-label', messages.videoCutter.stepUpAction)
+    elements.endStepUp.setAttribute('aria-label', messages.videoCutter.stepUpAction)
   }
 
   const syncLocale = (nextMessages: Messages): void => {
@@ -468,9 +473,7 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
     playEndingPreview()
   })
 
-  syncLocalizedText()
-  filePicker.setName(messages.videoCutter.noFileSelected)
-  setStatus(messages.videoCutter.statusNoFile)
+  syncLocale(messages)
   setControlsEnabled(false)
 
   return {

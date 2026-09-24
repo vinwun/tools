@@ -40,7 +40,6 @@ const renderResult = (state: PdfTextExtractorState, messages: Messages['pdfTextE
       : result.status === 'error'
         ? messages.entryStatusFailed
         : messages.entryStatusExtracting
-  const statusDetail = result.status === 'error' && result.error ? ` ${escapeHtml(result.error)}` : ''
   const previewText = state.outputFormat === 'md' ? result.markdownText : result.plainText
   const previewMarkup = result.status === 'ready'
     ? `<pre class="pdf-text-extractor-preview">${escapeHtml(previewText)}</pre>`
@@ -52,7 +51,7 @@ const renderResult = (state: PdfTextExtractorState, messages: Messages['pdfTextE
         <div class="pdf-text-extractor-entry-meta">
           <h3 class="pdf-text-extractor-entry-title">${escapeHtml(result.fileName)}</h3>
         </div>
-        <span class="pdf-text-extractor-entry-status${result.status === 'error' ? ' is-error' : ''}">${statusLabel}${statusDetail}</span>
+        <span class="pdf-text-extractor-entry-status${result.status === 'error' ? ' is-error' : ''}">${statusLabel}</span>
       </header>
       <div class="pdf-text-extractor-entry-preview">
         ${previewMarkup}
@@ -146,11 +145,11 @@ export const mountPdfTextExtractor: MountTool = (container, initialMessages) => 
 
     const currentGeneration = ++generation
     const fileName = pdfFile.name
-    state.result = { fileName, status: 'extracting', plainText: '', markdownText: '', error: null }
+    state.result = { fileName, status: 'extracting', plainText: '', markdownText: '' }
     setBusy(true)
 
     try {
-      const extracted = await extractPdfText(pdfFile)
+      const extracted = await extractPdfText(pdfFile, messages.pdfTextExtractor.pageLabel)
       if (currentGeneration !== generation) {
         return
       }
@@ -160,7 +159,6 @@ export const mountPdfTextExtractor: MountTool = (container, initialMessages) => 
         status: 'ready',
         plainText: extracted.plainText,
         markdownText: extracted.markdownText,
-        error: null,
       }
     } catch (error) {
       if (currentGeneration !== generation) {
@@ -172,8 +170,8 @@ export const mountPdfTextExtractor: MountTool = (container, initialMessages) => 
         status: 'error',
         plainText: '',
         markdownText: '',
-        error: error instanceof Error ? error.message : messages.pdfTextExtractor.entryStatusFailed,
       }
+      console.error(error)
     }
 
     setBusy(false)

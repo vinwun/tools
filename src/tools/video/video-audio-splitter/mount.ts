@@ -159,6 +159,7 @@ export const mountVideoAudioSplitter: MountTool = (container, initialMessages) =
     elements.tracksLabel.textContent = messages.videoAudioSplitter.tracksLabel
     elements.audioDownload.textContent = messages.videoAudioSplitter.audioDownloadAction
     elements.silentDownload.textContent = messages.videoAudioSplitter.silentDownloadAction
+    filePicker.browseButton.textContent = messages.videoAudioSplitter.browseAction
   }
 
   const syncLocale = (nextMessages: Messages): void => {

@@ -2,31 +2,30 @@ import { renderCategoryPage } from '../categories/render.ts'
 import { isCategoryId } from '../dashboard/category-data.ts'
 import { renderDashboard } from '../dashboard/render.ts'
 import { LOCALE_SELECT_ID } from './render.ts'
-import { hasLocale, type Locale } from '../i18n'
-import { initLocale, persistLocale, resolveInitialLocale } from '../i18n/manager.ts'
+import { hasLocale, messagesByLocale, type Locale } from '../i18n'
+import { persistLocale, resolveInitialLocale } from '../i18n/manager.ts'
 import { isToolIdForCategory } from '../tools/catalog.ts'
 import { mountToolContent, unmountToolContent, updateMountedToolLocale } from '../tools/registry.ts'
 import { renderToolPage } from '../tools/render.ts'
 import { navigateToRoute, resolveCurrentRoute, type Route } from './router.ts'
 
-// Re-inserting the preserved tool resets every scroll position inside it (text fields, previews,
-// lists), so they are read before the swap and written back afterwards.
-const captureScrollPositions = (root: HTMLElement): (() => void) => {
-  const positions = Array.from(root.querySelectorAll<HTMLElement>('*'))
-    .filter((element) => element.scrollTop !== 0 || element.scrollLeft !== 0)
-    .map((element) => ({ element, top: element.scrollTop, left: element.scrollLeft }))
+const SITE_TITLE = 'Tools'
 
-  return () => {
-    for (const { element, top, left } of positions) {
-      element.scrollTop = top
-      element.scrollLeft = left
-    }
-  }
+// Swaps the page chrome around the tool but never detaches the tool itself: re-inserting it would
+// reset every scroll position inside and force a full re-layout, which stalls on large content.
+const replacePageAroundTool = (toolContentRoot: HTMLElement, pageHtml: string): void => {
+  const template = document.createElement('template')
+  template.innerHTML = pageHtml
+  const currentChildren = Array.from(toolContentRoot.parentElement?.children ?? [])
+  Array.from(template.content.firstElementChild?.children ?? []).forEach((child, index) => {
+    if (currentChildren[index] !== toolContentRoot) currentChildren[index]?.replaceWith(child)
+  })
 }
 
 export const bootstrapApp = (): void => {
   const app = document.querySelector<HTMLDivElement>('#app')
   let currentLocale: Locale = resolveInitialLocale()
+  document.documentElement.lang = currentLocale
   let currentRoute: Route = resolveCurrentRoute()
 
   const mount = (preserveToolContent = false): void => {
@@ -37,31 +36,34 @@ export const bootstrapApp = (): void => {
       preserveToolContent && currentRoute.type === 'tool'
         ? app.querySelector<HTMLElement>('[data-tool-content-root]')
         : null
-    const restoreScrollPositions = preservedToolContentRoot && captureScrollPositions(preservedToolContentRoot)
     if (!preservedToolContentRoot) {
       unmountToolContent()
     }
 
     currentRoute = resolveCurrentRoute()
-    initLocale(currentLocale)
     const route = currentRoute
-    app.innerHTML =
+    const messages = messagesByLocale[currentLocale]
+    // Lets several open tools be told apart by their browser tab.
+    document.title =
+      route.type === 'dashboard'
+        ? SITE_TITLE
+        : `${route.type === 'tool' ? messages.tools[route.toolId].name : messages.categories[route.categoryId].name} – ${SITE_TITLE}`
+    const pageHtml =
       route.type === 'dashboard'
         ? renderDashboard(currentLocale)
         : route.type === 'category'
           ? renderCategoryPage(currentLocale, route.categoryId)
           : renderToolPage(currentLocale, route.categoryId, route.toolId)
 
-    if (preservedToolContentRoot && restoreScrollPositions) {
-      app.querySelector<HTMLElement>('[data-tool-content-root]')?.replaceWith(preservedToolContentRoot)
-      // Restored before relabelling too, so a tool that rebuilds a scrolled element can carry its
-      // position over; again a frame later, once re-rendered content has settled its size.
-      restoreScrollPositions()
+    if (preservedToolContentRoot) {
+      replacePageAroundTool(preservedToolContentRoot, pageHtml)
       updateMountedToolLocale(currentLocale)
-      window.requestAnimationFrame(restoreScrollPositions)
-    } else if (route.type === 'tool') {
-      // Tools with lazily loaded dependencies mount once their chunk arrives.
-      void mountToolContent(route.toolId, currentLocale)
+    } else {
+      app.innerHTML = pageHtml
+      if (route.type === 'tool') {
+        // Tools with lazily loaded dependencies mount once their chunk arrives.
+        void mountToolContent(route.toolId, currentLocale)
+      }
     }
 
     bindLocaleSelector()

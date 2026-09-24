@@ -1,6 +1,7 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import { formatAcceptList } from '../../foundations/files.ts'
 import { ACCEPTED_PDF_TYPES } from '../pdf-utils.ts'
+import { formatMessage } from '../../foundations/dom.ts'
 
 export const renderPdfPageOrganizer = (messages: Messages): string => {
   const pdfMessages = messages.pdfPageOrganizer
@@ -31,13 +32,13 @@ export const renderPdfPageOrganizer = (messages: Messages): string => {
             <h2 data-pdf-page-organizer-page-list-title>${pdfMessages.pageListTitle}</h2>
             <p class="tool-hint" data-pdf-page-organizer-summary>${pdfMessages.emptyState}</p>
           </div>
-          <div class="pdf-page-organizer-selection-summary pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-selection-summary>${pdfMessages.selectedSummary.replace('{count}', '0')}</div>
+          <div class="pdf-page-organizer-selection-summary pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-selection-summary>${formatMessage(pdfMessages.selectedSummary, { count: 0 })}</div>
         </div>
 
         <p class="tool-hint pdf-page-organizer-guidance pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-guidance>${pdfMessages.selectionHint}</p>
 
         <div class="pdf-page-organizer-list-shell" data-pdf-page-organizer-list-shell>
-          <div class="pdf-page-organizer-page-list" data-pdf-page-organizer-page-list role="listbox" aria-label="${pdfMessages.pageListTitle}"></div>
+          <div class="pdf-page-organizer-page-list" data-pdf-page-organizer-page-list role="listbox" aria-multiselectable="true" aria-label="${pdfMessages.pageListTitle}"></div>
           <div class="pdf-page-organizer-drop-end pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-drop-end>${pdfMessages.moveToEndHint}</div>
         </div>
 

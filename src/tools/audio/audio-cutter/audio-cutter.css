@@ -184,11 +184,6 @@
   width: 100%;
 }
 
-.audio-cutter-time-grid input[data-invalid='true'] {
-  border-color: #c2410c;
-  box-shadow: 0 0 0 1px color-mix(in srgb, #c2410c 30%, transparent);
-}
-
 .audio-cutter-time-grid input {
   font-variant-numeric: tabular-nums;
 }

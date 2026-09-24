@@ -3,7 +3,7 @@ import { defaultLocale, hasLocale, type Locale } from './index'
 const LOCALE_STORAGE_KEY = 'tools.locale'
 
 /**
- * Resolves the initial locale from localStorage or returns the default locale.
+ * Resolves the initial locale from localStorage, then the browser languages, then the default.
  */
 export const resolveInitialLocale = (): Locale => {
   try {
@@ -17,7 +17,7 @@ export const resolveInitialLocale = (): Locale => {
     // iframes), so reading must never break the initial render.
   }
 
-  return defaultLocale
+  return navigator.languages.map((language) => language.split('-')[0]).find(hasLocale) ?? defaultLocale
 }
 
 /**
@@ -31,12 +31,5 @@ export const persistLocale = (locale: Locale): void => {
     // locale switch itself.
   }
 
-  document.documentElement.lang = locale
-}
-
-/**
- * Initializes the locale by setting the document language.
- */
-export const initLocale = (locale: Locale): void => {
   document.documentElement.lang = locale
 }

@@ -1,5 +1,6 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import { renderFilePicker } from '../../foundations/file-picker/render.ts'
+import { escapeHtml } from '../../foundations/dom.ts'
 import type { JsonPrettyPrinterState } from './types.ts'
 import { createInitialJsonPrettyPrinterState } from './utils.ts'
 
@@ -34,7 +35,7 @@ export const renderJsonPrettyPrinter = (
             data-json-pretty-printer-input
             rows="10"
             spellcheck="false"
-            placeholder="${jsonMessages.inputPlaceholder}"
+            placeholder="${escapeHtml(jsonMessages.inputPlaceholder)}"
           >${state.inputValue}</textarea>
         </label>
 
@@ -54,12 +55,12 @@ export const renderJsonPrettyPrinter = (
         </div>
       </form>
 
-      <section class="tool-panel json-pretty-printer-panel" aria-live="polite">
+      <section class="tool-panel json-pretty-printer-panel">
         <div class="tool-panel-header json-pretty-printer-output-header">
           <h2 data-json-pretty-printer-output-label>${jsonMessages.outputLabel}</h2>
           <button type="button" class="tool-action" data-json-pretty-printer-download disabled>${jsonMessages.downloadAction}</button>
         </div>
-        <p class="tool-status" data-json-pretty-printer-status>${jsonMessages.statusEmpty}</p>
+        <p class="tool-status" role="status" data-json-pretty-printer-status>${jsonMessages.statusEmpty}</p>
         <div class="json-pretty-printer-output" data-json-pretty-printer-output></div>
       </section>
     </section>
