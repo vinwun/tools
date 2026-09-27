@@ -1,4 +1,5 @@
 import type { UnicodeCategoryKey, UnicodeConverterState } from './types.ts'
+import { splitGraphemes } from '../../foundations/text.ts'
 
 export const DEFAULT_CODE_POINT = 0x41
 
@@ -127,7 +128,7 @@ export const categorizeCodePoint = (cp: number): UnicodeCategoryKey => {
 
 export const isAsciiCodePoint = (cp: number): boolean => cp <= 0x7f
 
-const formatHexValue = (value: number): string => value.toString(16).toUpperCase().padStart(2, '0')
+const formatHexValue = (value: number, digits = 2): string => value.toString(16).toUpperCase().padStart(digits, '0')
 
 export const formatCodePointHex = (cp: number): string =>
   `U+${cp.toString(16).toUpperCase().padStart(4, '0')}`
@@ -139,14 +140,11 @@ export const formatOctal = (cp: number): string => cp.toString(8)
 export const formatUtf8 = (cp: number): string => toUtf8Bytes(cp).map(formatHexValue).join(' ')
 
 export const formatUtf16 = (cp: number): string =>
-  toPointDetails(cp).utf16Units.map(formatHexValue).join(' ')
+  toPointDetails(cp).utf16Units.map((unit) => formatHexValue(unit, 4)).join(' ')
 
 export const parseCharacter = (value: string): number | null => {
-  const chars = Array.from(value.trim())
-  if (chars.length === 0) {
-    return null
-  }
-  const cp = chars[chars.length - 1].codePointAt(0) ?? -1
+  // The last typed character wins; its first code point is the base ("❤️" is U+2764, not U+FE0F).
+  const cp = splitGraphemes(value).at(-1)?.codePointAt(0) ?? -1
   return isValidCodePoint(cp) ? cp : null
 }
 

@@ -57,70 +57,50 @@ const groupIntoParagraphs = (sentences: string[]): string[] => {
   return paragraphs
 }
 
-const applyClassic = (paragraphs: string[]): string[] => {
-  if (paragraphs.length === 0) {
-    return [CLASSIC_OPENING]
-  }
-  paragraphs[0] = `${CLASSIC_OPENING} ${paragraphs[0]}`
-  return paragraphs
+const CLASSIC_WORDS = CLASSIC_OPENING.split(' ')
+
+const randomSentence = (): string =>
+  `${capitalize(generateRandomWords(randomInt(SENTENCE_MIN_WORDS, SENTENCE_MAX_WORDS)).join(' '))}.`
+
+// The opening counts toward the requested amount, so 100 words stay 100 words.
+const generateFromWords = (amount: number, classic: boolean): string[] => {
+  const classicCount = classic ? Math.min(amount, CLASSIC_WORDS.length) : 0
+  const opening = classicCount > 0 ? [`${CLASSIC_WORDS.slice(0, classicCount).join(' ').replace(/[,.]$/, '')}.`] : []
+  return groupIntoParagraphs([...opening, ...groupIntoSentences(generateRandomWords(amount - classicCount))])
 }
 
-const generateCharacters = (amount: number): string => {
-  const words: string[] = []
-  let currentLength = 0
-  while (currentLength < amount) {
-    const word = randomWord()
-    words.push(word)
-    currentLength += word.length + 1
+const generateFromSentences = (amount: number, classic: boolean): string[] => {
+  const sentences = Array.from({ length: amount }, randomSentence)
+  if (classic && amount > 0) {
+    sentences[0] = CLASSIC_OPENING
   }
-  return words.join(' ').slice(0, amount).trim()
+  return groupIntoParagraphs(sentences)
 }
 
-const generateFromParagraphs = (amount: number): string[] => {
-  const paragraphs: string[] = []
-  for (let index = 0; index < amount; index += 1) {
-    const wordCount = randomInt(
-      SENTENCE_MIN_WORDS * PARAGRAPH_MIN_SENTENCES,
-      SENTENCE_MAX_WORDS * PARAGRAPH_MAX_SENTENCES,
-    )
-    const words = generateRandomWords(wordCount)
-    paragraphs.push(groupIntoSentences(words).join(' '))
+const generateFromParagraphs = (amount: number, classic: boolean): string[] => {
+  const paragraphs = Array.from({ length: amount }, () =>
+    Array.from({ length: randomInt(PARAGRAPH_MIN_SENTENCES, PARAGRAPH_MAX_SENTENCES) }, randomSentence).join(' '),
+  )
+  if (classic && amount > 0) {
+    paragraphs[0] = `${CLASSIC_OPENING} ${paragraphs[0]}`
   }
   return paragraphs
 }
-
-const generateFromSentences = (amount: number): string[] => {
-  const words: string[] = []
-  for (let index = 0; index < amount; index += 1) {
-    const count = randomInt(SENTENCE_MIN_WORDS, SENTENCE_MAX_WORDS)
-    words.push(...generateRandomWords(count))
-  }
-  return groupIntoParagraphs(groupIntoSentences(words))
-}
-
-const generateFromWords = (amount: number): string[] =>
-  groupIntoParagraphs(groupIntoSentences(generateRandomWords(amount)))
-
-const generateFromCharacters = (amount: number): string[] =>
-  groupIntoParagraphs(groupIntoSentences(generateCharacters(amount).split(/\s+/)))
 
 export const generateLoremText = (
   amount: number,
   unit: LoremIpsumUnit,
   classic: boolean,
 ): string => {
-  const generators: Record<LoremIpsumUnit, () => string[]> = {
-    paragraphs: () => generateFromParagraphs(amount),
-    sentences: () => generateFromSentences(amount),
-    words: () => generateFromWords(amount),
-    characters: () => generateFromCharacters(amount),
+  if (unit === 'characters') {
+    // Built as words first and cut afterwards, so the added periods and breaks are counted too.
+    return generateFromWords(Math.ceil(amount / 3) + 1, classic).join('\n\n').slice(0, amount).trimEnd()
   }
 
-  let paragraphs = generators[unit]()
-
-  if (classic) {
-    paragraphs = applyClassic(paragraphs)
+  const generators: Record<Exclude<LoremIpsumUnit, 'characters'>, () => string[]> = {
+    paragraphs: () => generateFromParagraphs(amount, classic),
+    sentences: () => generateFromSentences(amount, classic),
+    words: () => generateFromWords(amount, classic),
   }
-
-  return paragraphs.join('\n\n')
+  return generators[unit]().join('\n\n')
 }

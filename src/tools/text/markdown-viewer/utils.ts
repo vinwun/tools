@@ -33,65 +33,41 @@ export const createInitialMarkdownViewerState = (): MarkdownViewerState => ({
   selectedFileName: null,
 })
 
+// Relative URLs have no scheme; of the schemes, only these cannot run script.
 const sanitizeUrl = (rawUrl: string): string => {
   const trimmed = rawUrl.trim()
-  if (!trimmed) {
-    return '#'
-  }
-
-  const lower = trimmed.toLowerCase()
-  if (
-    lower.startsWith('http://') ||
-    lower.startsWith('https://') ||
-    lower.startsWith('mailto:') ||
-    lower.startsWith('/') ||
-    lower.startsWith('#')
-  ) {
-    return trimmed
-  }
-
-  return '#'
+  return trimmed && (/^(https?|mailto):/i.test(trimmed) || !/^[^/?#]*:/.test(trimmed)) ? trimmed : '#'
 }
 
-const renderInlineText = (value: string): string => {
-  const escaped = escapeHtml(value)
-  const withStrike = escaped.replace(/~~([^~]+)~~/g, '<del>$1</del>')
-  const withBold = withStrike.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  const withItalic = withBold.replace(/\*([^*]+)\*/g, '<em>$1</em>')
-  return withItalic.replace(/\[([^\]]+)]\(([^)]+)\)/g, (_, label: string, url: string) => {
-    const safeUrl = escapeHtml(sanitizeUrl(url))
-    return `<a href="${safeUrl}" target="_blank" rel="noopener">${label}</a>`
-  })
-}
+// Emphasis needs a non-space right inside its markers, so "2 * 3 * 4" stays plain text.
+const renderEmphasis = (escaped: string): string =>
+  escaped
+    .replace(/~~(?=\S)([^~]*[^~\s])~~/g, '<del>$1</del>')
+    .replace(/\*\*(?=\S)([^*]*[^*\s])\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(?=\S)([^*]*[^*\s])\*/g, '<em>$1</em>')
 
-const renderInline = (value: string): string => {
-  const parts: string[] = []
-  let cursor = 0
+// Code spans and links are cut out before escaping, so their content and URLs are escaped once
+// and emphasis never runs inside them.
+const renderInline = (value: string): string =>
+  value
+    .split(/(`[^`]+`|\[[^\]]+]\([^)]+\))/)
+    .map((part, index) => {
+      if (index % 2 === 0) {
+        return renderEmphasis(escapeHtml(part))
+      }
+      if (part.startsWith('`')) {
+        return `<code>${escapeHtml(part.slice(1, -1))}</code>`
+      }
+      const [, label, url] = part.match(/^\[([^\]]+)]\(([^)]+)\)$/) ?? []
+      // Links to a heading in the same document stay in place; everything else opens a new tab.
+      const target = url.trim().startsWith('#') ? '' : ' target="_blank" rel="noopener"'
+      return `<a href="${escapeHtml(sanitizeUrl(url))}"${target}>${renderEmphasis(escapeHtml(label))}</a>`
+    })
+    .join('')
 
-  while (cursor < value.length) {
-    const start = value.indexOf('`', cursor)
-    if (start < 0) {
-      parts.push(renderInlineText(value.slice(cursor)))
-      break
-    }
-
-    const end = value.indexOf('`', start + 1)
-    if (end < 0) {
-      parts.push(renderInlineText(value.slice(cursor)))
-      break
-    }
-
-    if (start > cursor) {
-      parts.push(renderInlineText(value.slice(cursor, start)))
-    }
-
-    const codeText = value.slice(start + 1, end)
-    parts.push(`<code>${escapeHtml(codeText)}</code>`)
-    cursor = end + 1
-  }
-
-  return parts.join('')
-}
+// Same ids as GitHub, so a table of contents written for GitHub ("#my-chapter") works here too.
+const toHeadingId = (text: string): string =>
+  text.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, '').trim().replace(/\s/g, '-')
 
 const renderInlineWithBreaks = (value: string): string => renderInline(value).replace(/\n/g, '<br />')
 
@@ -151,6 +127,38 @@ const parseBlocks = (markdown: string): MarkdownBlock[] => {
   const isBlockquote = (line: string): boolean => /^\s*>\s?/.test(line)
 
   const isBlank = (line: string): boolean => line.trim().length === 0
+
+  // Deeper-indented items become the child list of the item above, at any depth.
+  const parseList = (): MarkdownListBlock => {
+    const first = matchListItem(lines[index])
+    const items: MarkdownListItem[] = []
+    while (first && index < lines.length) {
+      if (isBlank(lines[index])) {
+        index += 1
+        continue
+      }
+
+      const match = matchListItem(lines[index])
+      if (!match || match.indent < first.indent) {
+        break
+      }
+
+      const lastItem = items[items.length - 1]
+      if (match.indent > first.indent && lastItem) {
+        lastItem.childList = parseList()
+        continue
+      }
+
+      if (match.ordered !== first.ordered) {
+        break
+      }
+
+      items.push({ text: match.text, childList: null })
+      index += 1
+    }
+
+    return { type: first?.ordered ? 'orderedList' : 'unorderedList', items }
+  }
 
   while (index < lines.length) {
     const line = lines[index]
@@ -212,145 +220,8 @@ const parseBlocks = (markdown: string): MarkdownBlock[] => {
       continue
     }
 
-    const listMatch = matchListItem(line)
-    if (listMatch) {
-      const baseIndent = listMatch.indent
-      const ordered = listMatch.ordered
-      const items: MarkdownListItem[] = []
-
-      const parseListBlock = (): MarkdownListBlock => {
-        while (index < lines.length) {
-          const currentLine = lines[index]
-
-          if (isBlank(currentLine)) {
-            index += 1
-            continue
-          }
-
-          const match = matchListItem(currentLine)
-          if (!match) {
-            break
-          }
-
-          if (match.indent < baseIndent) {
-            break
-          }
-
-          if (match.indent > baseIndent) {
-            const lastItem = items[items.length - 1]
-            if (!lastItem) {
-              break
-            }
-            const nestedMatch = matchListItem(currentLine)
-            if (!nestedMatch) {
-              break
-            }
-            const nestedBaseIndent = nestedMatch.indent
-            const nestedOrdered = nestedMatch.ordered
-            const nestedItems: MarkdownListItem[] = []
-
-            const parseNestedBlock = (): MarkdownListBlock => {
-              while (index < lines.length) {
-                const nestedLine = lines[index]
-                if (isBlank(nestedLine)) {
-                  index += 1
-                  continue
-                }
-
-                const nested = matchListItem(nestedLine)
-                if (!nested) {
-                  break
-                }
-
-                if (nested.indent < nestedBaseIndent) {
-                  break
-                }
-
-                if (nested.indent > nestedBaseIndent) {
-                  const lastNestedItem = nestedItems[nestedItems.length - 1]
-                  if (!lastNestedItem) {
-                    break
-                  }
-                  const deeperMatch = matchListItem(nestedLine)
-                  if (!deeperMatch) {
-                    break
-                  }
-                  const deeperBaseIndent = deeperMatch.indent
-                  const deeperOrdered = deeperMatch.ordered
-                  const deeperItems: MarkdownListItem[] = []
-
-                  const parseDeeperBlock = (): MarkdownListBlock => {
-                    while (index < lines.length) {
-                      const deeperLine = lines[index]
-                      if (isBlank(deeperLine)) {
-                        index += 1
-                        continue
-                      }
-
-                      const deeper = matchListItem(deeperLine)
-                      if (!deeper) {
-                        break
-                      }
-
-                      if (deeper.indent < deeperBaseIndent) {
-                        break
-                      }
-
-                      if (deeper.indent > deeperBaseIndent) {
-                        break
-                      }
-
-                      if (deeper.ordered !== deeperOrdered) {
-                        break
-                      }
-
-                      deeperItems.push({ text: deeper.text, childList: null })
-                      index += 1
-                    }
-
-                    return {
-                      type: deeperOrdered ? 'orderedList' : 'unorderedList',
-                      items: deeperItems,
-                    }
-                  }
-
-                  lastNestedItem.childList = parseDeeperBlock()
-                  continue
-                }
-
-                if (nested.ordered !== nestedOrdered) {
-                  break
-                }
-
-                nestedItems.push({ text: nested.text, childList: null })
-                index += 1
-              }
-
-              return {
-                type: nestedOrdered ? 'orderedList' : 'unorderedList',
-                items: nestedItems,
-              }
-            }
-
-            lastItem.childList = parseNestedBlock()
-            continue
-          }
-
-          if (match.ordered !== ordered) {
-            break
-          }
-
-          items.push({ text: match.text, childList: null })
-          index += 1
-        }
-
-        return {
-          type: ordered ? 'orderedList' : 'unorderedList',
-          items,
-        }
-      }
-
-      blocks.push(parseListBlock())
+    if (matchListItem(line)) {
+      blocks.push(parseList())
       continue
     }
 
@@ -362,6 +233,7 @@ const parseBlocks = (markdown: string): MarkdownBlock[] => {
       !isFence(lines[index]) &&
       !isHeading(lines[index]) &&
       !isBlockquote(lines[index]) &&
+      !isTableHeader(lines[index], lines[index + 1]) &&
       !matchListItem(lines[index])
     ) {
       paragraphLines.push(lines[index])
@@ -388,7 +260,7 @@ export const renderMarkdownToHtml = (markdown: string): string => {
   const htmlBlocks = blocks.map((block) => {
     switch (block.type) {
       case 'heading':
-        return `<h${block.level}>${renderInline(block.text)}</h${block.level}>`
+        return `<h${block.level} id="${escapeHtml(toHeadingId(block.text))}">${renderInline(block.text)}</h${block.level}>`
       case 'paragraph':
         return `<p>${renderInlineWithBreaks(block.text)}</p>`
       case 'unorderedList':

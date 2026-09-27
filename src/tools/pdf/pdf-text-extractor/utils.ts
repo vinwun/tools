@@ -148,7 +148,7 @@ const insertParagraphBreaks = (lines: TextLine[], baseFontSize: number): TextLin
   return stitched
 }
 
-const mergeHyphenatedLines = (lines: string[]): string[] => {
+export const mergeHyphenatedLines = (lines: string[]): string[] => {
   const merged: string[] = []
 
   lines.forEach((line) => {
@@ -164,13 +164,12 @@ const mergeHyphenatedLines = (lines: string[]): string[] => {
       return
     }
 
-    if (previous.endsWith('-') && /^[A-Za-zÄÖÜäöüß]/.test(line.trimStart())) {
-      merged[merged.length - 1] = previous.slice(0, -1) + line.trimStart()
-      return
-    }
-
-    if (/-\s*$/.test(previous) && /^[A-Za-zÄÖÜäöüß]/.test(line.trimStart())) {
-      merged[merged.length - 1] = previous.replace(/-\s*$/, '') + line.trimStart()
+    // Before a capital the hyphen is part of the word ("Software-Entwicklung"), so only a
+    // lowercase continuation drops it.
+    const next = line.trimStart()
+    if (/-\s*$/.test(previous) && /^\p{L}/u.test(next)) {
+      const joined = previous.replace(/\s*$/, '')
+      merged[merged.length - 1] = (/^\p{Ll}/u.test(next) ? joined.slice(0, -1) : joined) + next
       return
     }
 
@@ -180,10 +179,11 @@ const mergeHyphenatedLines = (lines: string[]): string[] => {
   return merged
 }
 
-const splitInlineBullets = (lines: string[]): string[] => {
+export const splitInlineBullets = (lines: string[]): string[] => {
   const out: string[] = []
-  const bulletChars = '•·‣⁃◦✶–—'
-  const containsBullet = new RegExp(`[${bulletChars}]|\s[-–—]\s`)
+  // Dashes only split as spaced separators, so ranges like "1990–2000" stay intact.
+  const bulletChars = '•·‣⁃◦✶'
+  const containsBullet = new RegExp(`[${bulletChars}]|\\s[-–—]\\s`)
   const splitRegex = new RegExp(`(?:\\s*[${bulletChars}]\\s*|\\s+[-–—]\\s+)`)
 
   lines.forEach((line) => {
@@ -210,7 +210,7 @@ const splitInlineBullets = (lines: string[]): string[] => {
 
     if (startsWithBullet) {
       parts.forEach((p) => {
-        const token = p.replace(/^[-*\s]+/, '')
+        const token = p.replace(/^[-–—*\s]+/, '')
         out.push(`- ${token}`)
       })
       return
@@ -219,14 +219,14 @@ const splitInlineBullets = (lines: string[]): string[] => {
     if (firstIsShort) {
       out.push(parts[0])
       for (let i = 1; i < parts.length; i += 1) {
-        const token = parts[i].replace(/^[-*\\s]+/, '')
+        const token = parts[i].replace(/^[-–—*\s]+/, '')
         out.push(`- ${token}`)
       }
       return
     }
 
     parts.forEach((p) => {
-      const token = p.replace(/^[-*\s]+/, '')
+      const token = p.replace(/^[-–—*\s]+/, '')
       out.push(`- ${token}`)
     })
   })
@@ -361,14 +361,27 @@ export const extractPdfText = async (file: File, pageLabel: string): Promise<Ext
   const plainPages: string[] = []
   const markdownPages: string[] = []
 
-  for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
-    const page = await pdfDocument.getPage(pageNumber)
-    const textContent = await page.getTextContent()
-    const lines = buildLinesFromItems(textContent.items as PdfJsTextItem[])
-    const baseFontSize = median(lines.map((line) => line.fontSize).filter((value) => value > 0)) || 12
+  try {
+    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+      const page = await pdfDocument.getPage(pageNumber)
+      try {
+        const textContent = await page.getTextContent()
+        const lines = buildLinesFromItems(textContent.items as PdfJsTextItem[])
+        const baseFontSize = median(lines.map((line) => line.fontSize).filter((value) => value > 0)) || 12
 
-    plainPages.push(buildTextFromLines(lines, 'txt', baseFontSize))
-    markdownPages.push(buildTextFromLines(lines, 'md', baseFontSize))
+        plainPages.push(buildTextFromLines(lines, 'txt', baseFontSize))
+        markdownPages.push(buildTextFromLines(lines, 'md', baseFontSize))
+      } finally {
+        page.cleanup()
+      }
+    }
+  } finally {
+    void pdfDocument.destroy()
+  }
+
+  // Scanned PDFs have no text layer; empty output lets the tool say so instead of listing bare page labels.
+  if (plainPages.every((text) => text.length === 0)) {
+    return { pageCount, plainText: '', markdownText: '' }
   }
 
   return {

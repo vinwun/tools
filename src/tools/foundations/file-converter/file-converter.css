@@ -22,6 +22,11 @@
   overflow: auto;
 }
 
+[data-file-converter-preview][aria-busy='true'] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .file-converter-preview-list {
   width: 100%;
   display: grid;

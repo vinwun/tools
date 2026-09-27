@@ -14,6 +14,7 @@ export type PrimeFactorizerElements = {
   expandedHint: HTMLElement
   exponentLabel: HTMLElement
   exponentHint: HTMLElement
+  status: HTMLElement
 }
 
 export type PrimeFactorizerField = 'decimal' | 'expanded' | 'exponent'

@@ -77,21 +77,20 @@ export const readWavMetadata = async (file: File): Promise<WavMetadata | null> =
 const readSynchsafeInteger = (bytes: Uint8Array): number =>
   ((bytes[0] & 0x7f) << 21) | ((bytes[1] & 0x7f) << 14) | ((bytes[2] & 0x7f) << 7) | (bytes[3] & 0x7f)
 
+const readId3TagSize = (bytes: Uint8Array): number =>
+  bytes.length >= 10 && String.fromCharCode(bytes[0], bytes[1], bytes[2]) === 'ID3'
+    ? 10 + readSynchsafeInteger(bytes.subarray(6, 10))
+    : 0
+
 const readMp3Metadata = (headerBuffer: ArrayBuffer): WavMetadata | null => {
   const bytes = new Uint8Array(headerBuffer)
-  let offset = 0
-
-  if (bytes.length >= 10 && String.fromCharCode(bytes[0], bytes[1], bytes[2]) === 'ID3') {
-    offset = 10 + readSynchsafeInteger(bytes.subarray(6, 10))
-  }
-
   const sampleRateByVersion: Record<number, readonly number[]> = {
     0b11: [44100, 48000, 32000],
     0b10: [22050, 24000, 16000],
     0b00: [11025, 12000, 8000],
   }
 
-  for (; offset + 4 <= bytes.length; offset += 1) {
+  for (let offset = 0; offset + 4 <= bytes.length; offset += 1) {
     if (bytes[offset] !== 0xff || (bytes[offset + 1] & 0xe0) !== 0xe0) {
       continue
     }
@@ -119,7 +118,9 @@ export const readAudioSampleRate = async (file: File): Promise<number | null> =>
   }
 
   if (file.type === 'audio/mpeg' || file.name.toLowerCase().endsWith('.mp3')) {
-    const headerBuffer = await file.slice(0, 131072).arrayBuffer()
+    // The scan starts behind the ID3 tag, which cover art can make larger than the scan window.
+    const tagSize = readId3TagSize(new Uint8Array(await file.slice(0, 10).arrayBuffer()))
+    const headerBuffer = await file.slice(tagSize, tagSize + 131072).arrayBuffer()
     return readMp3Metadata(headerBuffer)?.sampleRate ?? null
   }
 
@@ -188,14 +189,12 @@ export const encodeWav = (channelData: readonly Float32Array[], sampleRate: numb
   writeString(view, 36, 'data')
   view.setUint32(40, dataSize, true)
 
-  let offset = 44
+  // A typed array writes in platform byte order, which is little-endian (as WAV needs) in every browser.
+  const pcm = new Int16Array(wavBuffer, 44, samples * channelCount)
   for (let sampleIndex = 0; sampleIndex < samples; sampleIndex += 1) {
     for (let channelIndex = 0; channelIndex < channelCount; channelIndex += 1) {
-      const sampleValue = channelData[channelIndex][sampleIndex] ?? 0
-      const clampedSample = Math.max(-1, Math.min(1, sampleValue))
-      const pcm = clampedSample < 0 ? clampedSample * 0x8000 : clampedSample * 0x7fff
-      view.setInt16(offset, pcm, true)
-      offset += 2
+      const sample = Math.max(-1, Math.min(1, channelData[channelIndex][sampleIndex] ?? 0))
+      pcm[sampleIndex * channelCount + channelIndex] = Math.round(sample < 0 ? sample * 0x8000 : sample * 0x7fff)
     }
   }
 

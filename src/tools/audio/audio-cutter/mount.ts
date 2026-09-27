@@ -75,6 +75,8 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     pointerId: null,
   }
   let hasLoadError = false
+  // Guards against a slow decode finishing after a newer file was picked.
+  let loadToken = 0
 
   const setDownloadState = (enabled: boolean): void => {
     elements.downloadLink.classList.toggle('is-disabled', !enabled)
@@ -86,8 +88,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     }
   }
 
-  const previewUrl = createObjectUrlSlot()
-  const downloadUrl = createObjectUrlSlot()
+  const outputUrl = createObjectUrlSlot()
 
   const buildSelectionBlob = (mode: AudioCutterMode): Blob | null => {
     const audioBuffer = state.audioBuffer
@@ -148,29 +149,29 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     return safeTime < state.start ? clamp(safeTime, 0, state.start) : clamp(safeTime + removedSpan, state.end, state.duration)
   }
 
-  const syncSelectionPreview = (): void => {
-    if (!state.audioBuffer) {
-      previewUrl.clear()
-      elements.preview.removeAttribute('src')
-      elements.preview.load()
-      return
-    }
-
-    const wasPlaying = !elements.preview.paused && !elements.preview.ended
+  // Preview and download share one WAV, which is expensive to build for long files.
+  const syncOutput = (): void => {
     const nextBlob = buildSelectionBlob(state.mode)
     if (!nextBlob) {
       return
     }
 
+    const wasPlaying = !elements.preview.paused && !elements.preview.ended
+    const url = outputUrl.set(nextBlob)
     state.playhead = clampToPlayableSourceTime(state.playhead)
-    elements.preview.src = previewUrl.set(nextBlob)
+    elements.preview.src = url
     elements.preview.load()
-
     elements.preview.currentTime = sourceTimeToPreviewTime(state.playhead)
 
     if (wasPlaying) {
       void elements.preview.play()
     }
+
+    const downloadSuffix = state.mode === 'keep' ? 'trimmed' : 'removed'
+    elements.downloadLink.href = url
+    elements.downloadLink.download = `${stripExtension(state.fileName || 'audio')}_${downloadSuffix}.wav`
+    setDownloadState(true)
+    syncStatusText()
   }
 
   const syncTimeFields = (): void => {
@@ -235,36 +236,13 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
   }
 
   const syncPlayheadFromPlayer = (): void => {
-    if (!state.audioBuffer) {
+    if (!state.audioBuffer || dragState.handle === 'start' || dragState.handle === 'end') {
       return
     }
 
     state.playhead = previewTimeToSourceTime(elements.preview.currentTime)
     updateWaveformMarkers()
     syncPlaybackEnd()
-  }
-
-  const syncDownloadPreview = (): void => {
-    const audioBuffer = state.audioBuffer
-
-    if (!audioBuffer) {
-      downloadUrl.clear()
-      setDownloadState(false)
-      return
-    }
-
-    downloadUrl.clear()
-
-    const downloadBlob = buildSelectionBlob(state.mode)
-    if (!downloadBlob) {
-      return
-    }
-
-    const downloadSuffix = state.mode === 'keep' ? 'trimmed' : 'removed'
-    elements.downloadLink.href = downloadUrl.set(downloadBlob)
-    elements.downloadLink.download = `${stripExtension(state.fileName || 'audio')}_${downloadSuffix}.wav`
-    setDownloadState(true)
-    syncStatusText()
   }
 
   const syncStatusText = (): void => {
@@ -277,16 +255,20 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     elements.status.textContent = isSilent ? messages.audioCutter.emptySelectionWarning : messages.audioCutter.statusReady
   }
 
-  const setSelection = (start: number, end: number): void => {
+  // While a handle is dragged only the visuals follow; the WAV is rebuilt once on release.
+  const setSelection = (start: number, end: number, rebuildOutput = true): void => {
     const normalized = normalizeSelection(start, end, state.duration)
     state.start = normalized.start
     state.end = normalized.end
     state.playhead = clampToPlayableSourceTime(state.playhead)
     syncTimeFields()
     updateTimeReadouts()
-    syncSelectionPreview()
     drawCurrentWaveform()
-    syncDownloadPreview()
+    if (rebuildOutput) {
+      syncOutput()
+    } else {
+      syncStatusText()
+    }
     syncPlaybackEnd()
   }
 
@@ -309,13 +291,13 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     if (handle === 'start') {
       const maxStart = Math.max(0, state.end - MIN_SELECTION_SECONDS)
       const nextStart = clamp(nextTime, 0, maxStart)
-      setSelection(nextStart, state.end)
+      setSelection(nextStart, state.end, false)
       return
     }
 
     const minEnd = Math.min(state.duration, state.start + MIN_SELECTION_SECONDS)
     const nextEnd = clamp(nextTime, minEnd, state.duration)
-    setSelection(state.start, nextEnd)
+    setSelection(state.start, nextEnd, false)
   }
 
   const getTimeFromPointerX = (clientX: number): number => {
@@ -328,7 +310,14 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     return ratio * state.duration
   }
 
+  // The old WAV keeps playing until release, so playback pauses while the selection moves.
+  let resumeAfterDrag = false
+
   const beginDrag = (handle: AudioCutterHandle, pointerId: number): void => {
+    if (handle !== 'playhead') {
+      resumeAfterDrag = !elements.preview.paused
+      elements.preview.pause()
+    }
     dragState.handle = handle
     dragState.pointerId = pointerId
     document.body.style.userSelect = 'none'
@@ -340,6 +329,17 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     dragState.pointerId = null
     document.body.style.userSelect = ''
     root.classList.remove('audio-cutter-is-dragging')
+  }
+
+  const finishDrag = (): void => {
+    const draggedSelection = dragState.handle === 'start' || dragState.handle === 'end'
+    endDrag()
+    if (draggedSelection) {
+      syncOutput()
+      if (resumeAfterDrag) {
+        void elements.preview.play()
+      }
+    }
   }
 
   const updateDragSelection = (clientX: number): void => {
@@ -359,8 +359,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     state.mode = mode
     updateTimeReadouts()
     drawCurrentWaveform()
-    syncSelectionPreview()
-    syncDownloadPreview()
+    syncOutput()
     syncPlaybackEnd()
   }
 
@@ -379,8 +378,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
   }
 
   const showEmptyState = (): void => {
-    previewUrl.clear()
-    downloadUrl.clear()
+    outputUrl.clear()
     elements.preview.removeAttribute('src')
     elements.preview.load()
     setDownloadState(false)
@@ -418,6 +416,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
 
   const loadFile = async (file: File): Promise<void> => {
     filePicker.setName(file.name)
+    const token = ++loadToken
     elements.status.textContent = messages.audioCutter.statusLoading
     setDownloadState(false)
     setControlsEnabled(false)
@@ -427,7 +426,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
     try {
       const targetSampleRate = await readAudioSampleRate(file)
       const audioBuffer = await decodeAudioFile(file, targetSampleRate ?? undefined)
-      if (signal.aborted) {
+      if (signal.aborted || token !== loadToken) {
         return
       }
 
@@ -453,10 +452,13 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
       setControlsEnabled(true)
       updateTimeReadouts()
       drawCurrentWaveform()
-      syncSelectionPreview()
-      syncDownloadPreview()
+      syncOutput()
       syncPlaybackEnd()
     } catch {
+      if (signal.aborted || token !== loadToken) {
+        return
+      }
+
       hasLoadError = true
       state.fileName = ''
       state.audioBuffer = null
@@ -603,7 +605,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
       return
     }
 
-    endDrag()
+    finishDrag()
   }, { signal })
 
   window.addEventListener('pointercancel', (event) => {
@@ -611,7 +613,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
       return
     }
 
-    endDrag()
+    finishDrag()
   }, { signal })
 
   window.addEventListener('resize', drawCurrentWaveform, { signal })
@@ -625,8 +627,7 @@ export const mountAudioCutter: MountTool = (container, initialMessages) => {
       listeners.abort()
       endDrag()
       elements.preview.pause()
-      previewUrl.clear()
-      downloadUrl.clear()
+      outputUrl.clear()
     },
   }
 }

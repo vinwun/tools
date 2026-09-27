@@ -9,7 +9,7 @@ const DEFAULT_RESULT_TEXT = '—'
 
 const parseWeight = (value: string): number | null => {
   const parsedValue = parseDecimalNumber(value)
-  return parsedValue !== null && parsedValue > 0 ? parsedValue : null
+  return parsedValue !== null && parsedValue >= 0 ? parsedValue : null
 }
 
 const randomUnitValue = (): number => {
@@ -45,10 +45,11 @@ export const parseStringGeneratorEntries = (value: string): StringGeneratorEntry
       }
 
       const parsedWeight = parseWeight(trimmedLine.slice(separatorIndex + 1))
-      return {
-        value: entryValue,
-        weight: parsedWeight ?? 1,
+      // A non-numeric suffix belongs to the value ("Rock|Paper"); weight 0 excludes the entry.
+      if (parsedWeight === null) {
+        return { value: trimmedLine, weight: 1 }
       }
+      return parsedWeight === 0 ? null : { value: entryValue, weight: parsedWeight }
     })
     .filter((entry): entry is StringGeneratorEntry => entry !== null)
 

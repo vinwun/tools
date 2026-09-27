@@ -1,4 +1,4 @@
-export type HiddenCharCategory = 'bidi' | 'zeroWidth' | 'control' | 'separator' | 'confusable'
+export type HiddenCharCategory = 'bidi' | 'zeroWidth' | 'control' | 'separator' | 'confusable' | 'emojiJoiner'
 
 export type HiddenCharMatch = {
   character: string

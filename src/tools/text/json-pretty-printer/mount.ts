@@ -1,18 +1,17 @@
 import type { Messages } from '../../../i18n/schema.ts'
-import { downloadBlob, formatAcceptList, readFileAsText } from '../../foundations/files.ts'
-import { queryRequired } from '../../foundations/dom.ts'
+import { downloadBlob, formatAcceptList, readFileAsText, stripExtension } from '../../foundations/files.ts'
+import { formatMessage, queryRequired } from '../../foundations/dom.ts'
 import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import type { JsonPrettyPrinterElements, JsonPrettyPrinterState } from './types.ts'
 import {
   createInitialJsonPrettyPrinterState,
   formatJsonValue,
+  JSON_INPUT_ACCEPT,
   parseJsonOrJsonLines,
   parseIndentValue,
 } from './utils.ts'
 import type { MountTool } from '../../types.ts'
 
-const INPUT_ACCEPT = '.json,.txt'
-const INPUT_ACCEPT_LABEL = formatAcceptList(INPUT_ACCEPT)
 
 const syncLocalizedText = (
   elements: JsonPrettyPrinterElements,
@@ -20,13 +19,13 @@ const syncLocalizedText = (
 ): void => {
   const jsonMessages = messages.jsonPrettyPrinter
   elements.uploadLabel.textContent = jsonMessages.uploadLabel
-  elements.uploadHint.textContent = `${jsonMessages.uploadHint}: ${INPUT_ACCEPT_LABEL}`
+  elements.uploadHint.textContent = `${jsonMessages.uploadHint}: ${formatAcceptList(JSON_INPUT_ACCEPT)}`
   elements.inputLabel.textContent = jsonMessages.inputLabel
   elements.input.placeholder = jsonMessages.inputPlaceholder
+  elements.largeFileHint.textContent = jsonMessages.largeFileHint
   elements.indentLabel.textContent = jsonMessages.indentLabel
   elements.indentOptionTwo.textContent = jsonMessages.indentTwoLabel
   elements.indentOptionFour.textContent = jsonMessages.indentFourLabel
-  elements.formatButton.textContent = jsonMessages.formatAction
   elements.clearButton.textContent = jsonMessages.clearAction
   elements.downloadButton.textContent = jsonMessages.downloadAction
   elements.outputLabel.textContent = jsonMessages.outputLabel
@@ -44,10 +43,24 @@ const formatPrimitive = (value: unknown): string => {
   return String(value)
 }
 
-const createLine = (indentLevel: number, indentSize: number): HTMLDivElement => {
+// The indent width lives in one CSS variable on the output, so changing it re-renders nothing.
+const createLine = (indentLevel: number): HTMLDivElement => {
   const line = document.createElement('div')
   line.className = 'json-pretty-printer-line'
-  line.style.paddingLeft = `${indentLevel * indentSize}ch`
+  line.style.setProperty('--json-indent-level', String(indentLevel))
+  return line
+}
+
+// Every rendered line is several elements, so huge lists would freeze or crash the tab; the
+// preview stops after this many entries per list, the download still contains everything.
+const MAX_RENDERED_ENTRIES = 100
+const LARGE_INPUT_LENGTH = 1_000_000
+
+const createTruncationLine = (indentLevel: number, hiddenCount: number, messages: Messages): HTMLDivElement => {
+  const line = createLine(indentLevel)
+  line.classList.add('json-pretty-printer-truncated')
+  line.dataset.jsonTruncatedCount = String(hiddenCount)
+  line.textContent = formatMessage(messages.jsonPrettyPrinter.truncatedEntries, { count: hiddenCount })
   return line
 }
 
@@ -70,13 +83,12 @@ const updateToggleLabel = (button: HTMLButtonElement, collapsed: boolean, messag
 const renderJsonValue = (
   value: unknown,
   indentLevel: number,
-  indentSize: number,
   isLast: boolean,
   leadingText: string,
   messages: Messages,
 ): HTMLElement => {
   if (value === null || typeof value !== 'object') {
-    const line = createLine(indentLevel, indentSize)
+    const line = createLine(indentLevel)
     line.textContent = `${leadingText}${formatPrimitive(value)}${isLast ? '' : ','}`
     return line
   }
@@ -88,7 +100,7 @@ const renderJsonValue = (
   const node = document.createElement('div')
   node.className = 'json-pretty-printer-node'
 
-  const line = createLine(indentLevel, indentSize)
+  const line = createLine(indentLevel)
   if (leadingText) {
     line.append(document.createTextNode(leadingText))
   }
@@ -107,11 +119,10 @@ const renderJsonValue = (
 
   if (isArray) {
     const entries = value as unknown[]
-    entries.forEach((entry, index) => {
+    entries.slice(0, MAX_RENDERED_ENTRIES).forEach((entry, index) => {
       const child = renderJsonValue(
         entry,
         indentLevel + 1,
-        indentSize,
         index === entries.length - 1,
         '',
         messages,
@@ -121,11 +132,10 @@ const renderJsonValue = (
   } else {
     const record = value as Record<string, unknown>
     const keys = Object.keys(record)
-    keys.forEach((keyName, index) => {
+    keys.slice(0, MAX_RENDERED_ENTRIES).forEach((keyName, index) => {
       const child = renderJsonValue(
         record[keyName],
         indentLevel + 1,
-        indentSize,
         index === keys.length - 1,
         `${JSON.stringify(keyName)}: `,
         messages,
@@ -134,7 +144,12 @@ const renderJsonValue = (
     })
   }
 
-  const closeLine = createLine(indentLevel, indentSize)
+  const entryCount = isArray ? (value as unknown[]).length : Object.keys(value).length
+  if (entryCount > MAX_RENDERED_ENTRIES) {
+    children.append(createTruncationLine(indentLevel + 1, entryCount - MAX_RENDERED_ENTRIES, messages))
+  }
+
+  const closeLine = createLine(indentLevel)
   closeLine.className = 'json-pretty-printer-close-line'
   closeLine.textContent = `${closeToken}${isLast ? '' : ','}`
 
@@ -164,7 +179,7 @@ const applyFormattedOutput = (
   messages: Messages,
 ): void => {
   elements.outputContainer.replaceChildren(
-    renderJsonValue(state.parsedValue, 0, state.indentSize, true, '', messages),
+    renderJsonValue(state.parsedValue, 0, true, '', messages),
   )
 }
 
@@ -200,12 +215,11 @@ const formatJsonInput = (
 
 export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) => {
   const elements = queryRequired<JsonPrettyPrinterElements>(container, {
-    form: '[data-json-pretty-printer-form]',
     uploadLabel: '[data-json-pretty-printer-upload-label]',
     uploadHint: '[data-json-pretty-printer-upload-hint]',
     input: '[data-json-pretty-printer-input]',
+    largeFileHint: '[data-json-pretty-printer-large-file-hint]',
     indentSelect: '[data-json-pretty-printer-indent]',
-    formatButton: '[data-json-pretty-printer-format]',
     clearButton: '[data-json-pretty-printer-clear]',
     downloadButton: '[data-json-pretty-printer-download]',
     inputLabel: '[data-json-pretty-printer-input-label]',
@@ -232,6 +246,9 @@ export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) =>
     updateStatus(elements, messages, state)
     filePicker.browseButton.textContent = messages.jsonPrettyPrinter.uploadAction
     filePicker.setName(state.selectedFileName ?? messages.jsonPrettyPrinter.noFileSelected)
+    elements.outputContainer.querySelectorAll<HTMLElement>('[data-json-truncated-count]').forEach((line) => {
+      line.textContent = formatMessage(messages.jsonPrettyPrinter.truncatedEntries, { count: Number(line.dataset.jsonTruncatedCount) })
+    })
     elements.outputContainer.querySelectorAll<HTMLButtonElement>('.json-pretty-printer-toggle').forEach((button) => {
       updateToggleLabel(button, button.closest('.json-pretty-printer-node')?.classList.contains('is-collapsed') ?? false, messages)
     })
@@ -242,14 +259,39 @@ export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) =>
     filePicker.setName(fileName ?? messages.jsonPrettyPrinter.noFileSelected)
   }
 
+  // A textarea holding many megabytes makes the whole tab sluggish, so large files skip it.
+  const showInputField = (visible: boolean): void => {
+    elements.input.hidden = !visible
+    elements.largeFileHint.hidden = visible
+  }
+
+  const clear = (): void => {
+    showInputField(true)
+    state.inputValue = ''
+    state.parsedValue = null
+    state.formattedJson = ''
+    state.status = 'empty'
+    state.selectedFileName = null
+    elements.input.value = ''
+    filePicker.input.value = ''
+    filePicker.setName(messages.jsonPrettyPrinter.noFileSelected)
+    updateStatus(elements, messages, state)
+    resetOutput(elements)
+    elements.downloadButton.disabled = true
+  }
+
   const loadFile = async (file: File): Promise<void> => {
     try {
       updateFileName(file.name)
       state.inputValue = await readFileAsText(file)
-      elements.input.value = state.inputValue
+      const isLarge = state.inputValue.length > LARGE_INPUT_LENGTH
+      elements.input.value = isLarge ? '' : state.inputValue
+      showInputField(!isLarge)
       formatJsonInput(elements, state, messages)
       updateStatus(elements, messages, state)
     } catch {
+      // Keeping the previous output would pair it with the new file name.
+      clear()
       state.status = 'invalid'
       updateStatus(elements, messages, state)
     }
@@ -272,31 +314,13 @@ export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) =>
 
   elements.indentSelect.addEventListener('change', () => {
     state.indentSize = parseIndentValue(elements.indentSelect.value)
+    elements.outputContainer.style.setProperty('--json-indent-size', `${state.indentSize}ch`)
     if (state.parsedValue !== null) {
       state.formattedJson = formatJsonValue(state.parsedValue, state.indentSize)
-      applyFormattedOutput(elements, state, messages)
     }
   })
 
-  elements.form.addEventListener('submit', (event) => {
-    event.preventDefault()
-    formatJsonInput(elements, state, messages)
-    updateStatus(elements, messages, state)
-  })
-
-  elements.clearButton.addEventListener('click', () => {
-    state.inputValue = ''
-    state.parsedValue = null
-    state.formattedJson = ''
-    state.status = 'empty'
-    state.selectedFileName = null
-    elements.input.value = ''
-    filePicker.input.value = ''
-    filePicker.setName(messages.jsonPrettyPrinter.noFileSelected)
-    updateStatus(elements, messages, state)
-    resetOutput(elements)
-    elements.downloadButton.disabled = true
-  })
+  elements.clearButton.addEventListener('click', clear)
 
   elements.outputContainer.addEventListener('click', (event) => {
     const toggleButton = (event.target as Element).closest<HTMLButtonElement>('.json-pretty-printer-toggle')
@@ -312,7 +336,7 @@ export const mountJsonPrettyPrinter: MountTool = (container, initialMessages) =>
     }
 
     const blob = new Blob([state.formattedJson], { type: 'application/json' })
-    downloadBlob(blob, 'pretty.json')
+    downloadBlob(blob, state.selectedFileName ? `${stripExtension(state.selectedFileName)}-formatted.json` : 'pretty.json')
   })
 
   return {

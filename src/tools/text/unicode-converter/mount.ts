@@ -71,35 +71,25 @@ export const mountUnicodeConverter: MountTool = (container, initialMessages) => 
   let messages = initialMessages
   const state = createInitialUnicodeConverterState()
 
-  const syncAll = (): void => {
-    elements.characterInput.value = String.fromCodePoint(state.cp)
-    elements.codePointInput.value = formatCodePointHex(state.cp)
-    elements.decimalInput.value = String(state.cp)
-    elements.binaryInput.value = formatBinary(state.cp)
-    elements.octalInput.value = formatOctal(state.cp)
-    elements.utf8Input.value = formatUtf8(state.cp)
-    elements.utf16Input.value = formatUtf16(state.cp)
+  // The field being typed in is skipped, so partial input like "U+" is not overwritten.
+  const syncAll = (skip?: HTMLInputElement): void => {
+    const values: Array<[HTMLInputElement, string]> = [
+      [elements.characterInput, String.fromCodePoint(state.cp)],
+      [elements.codePointInput, formatCodePointHex(state.cp)],
+      [elements.decimalInput, String(state.cp)],
+      [elements.binaryInput, formatBinary(state.cp)],
+      [elements.octalInput, formatOctal(state.cp)],
+      [elements.utf8Input, formatUtf8(state.cp)],
+      [elements.utf16Input, formatUtf16(state.cp)],
+    ]
+    values.forEach(([input, value]) => {
+      if (input !== skip) input.value = value
+    })
     const unicodeMessages = messages.unicodeConverter
     elements.category.textContent = unicodeMessages[CATEGORY_LABEL_KEYS[categorizeCodePoint(state.cp)]]
     elements.ascii.textContent = isAsciiCodePoint(state.cp)
       ? unicodeMessages.asciiYes
       : unicodeMessages.asciiNo
-  }
-
-  const updateFromParsed = (cp: number | null): void => {
-    if (cp === null) {
-      return
-    }
-    state.cp = cp
-    syncAll()
-  }
-
-  const resetOnInvalid = (cp: number | null): void => {
-    if (cp === null) {
-      syncAll()
-      return
-    }
-    updateFromParsed(cp)
   }
 
   const syncLocale = (nextMessages: Messages): void => {
@@ -109,37 +99,27 @@ export const mountUnicodeConverter: MountTool = (container, initialMessages) => 
     syncAll()
   }
 
-  elements.characterInput.addEventListener('input', () => {
-    resetOnInvalid(parseCharacter(elements.characterInput.value))
-  })
-  elements.codePointInput.addEventListener('input', () => {
-    resetOnInvalid(parseCodePoint(elements.codePointInput.value))
-  })
-  elements.decimalInput.addEventListener('input', () => {
-    resetOnInvalid(parseDecimal(elements.decimalInput.value))
-  })
-  elements.binaryInput.addEventListener('input', () => {
-    resetOnInvalid(parseBinary(elements.binaryInput.value))
-  })
-  elements.octalInput.addEventListener('input', () => {
-    resetOnInvalid(parseOctal(elements.octalInput.value))
-  })
-  elements.utf8Input.addEventListener('input', () => {
-    updateFromParsed(parseUtf8(elements.utf8Input.value))
-  })
-  elements.utf8Input.addEventListener('blur', () => {
-    if (parseUtf8(elements.utf8Input.value) === null) {
-      syncAll()
-    }
-  })
-  elements.utf16Input.addEventListener('input', () => {
-    updateFromParsed(parseUtf16(elements.utf16Input.value))
-  })
-  elements.utf16Input.addEventListener('blur', () => {
-    if (parseUtf16(elements.utf16Input.value) === null) {
-      syncAll()
-    }
-  })
+  const fields: Array<[HTMLInputElement, (value: string) => number | null]> = [
+    [elements.characterInput, parseCharacter],
+    [elements.codePointInput, parseCodePoint],
+    [elements.decimalInput, parseDecimal],
+    [elements.binaryInput, parseBinary],
+    [elements.octalInput, parseOctal],
+    [elements.utf8Input, parseUtf8],
+    [elements.utf16Input, parseUtf16],
+  ]
+  for (const [input, parse] of fields) {
+    input.addEventListener('input', () => {
+      const cp = parse(input.value)
+      if (cp !== null) {
+        state.cp = cp
+        // The character field is cut to one character right away, as it shows a single character.
+        syncAll(input === elements.characterInput ? undefined : input)
+      }
+    })
+    // Leaving the field normalizes it, or restores it when the input was invalid.
+    input.addEventListener('blur', () => syncAll())
+  }
 
   syncAll()
   return { updateLocale: syncLocale }

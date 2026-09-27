@@ -25,6 +25,7 @@ const queryPrimeFactorizerElements = (container: HTMLElement): PrimeFactorizerEl
     expandedHint: '[data-prime-factorizer-expanded-hint]',
     exponentLabel: '[data-prime-factorizer-exponent-label]',
     exponentHint: '[data-prime-factorizer-exponent-hint]',
+    status: '[data-prime-factorizer-status]',
   })
 
 const syncLocalizedText = (elements: PrimeFactorizerElements, messages: Messages): void => {
@@ -35,8 +36,16 @@ const syncLocalizedText = (elements: PrimeFactorizerElements, messages: Messages
   elements.expandedHint.textContent = primeMessages.expandedHint
   elements.exponentLabel.textContent = primeMessages.exponentLabel
   elements.exponentHint.textContent = primeMessages.exponentHint
+  elements.status.textContent = primeMessages.tooLargeHint
 }
 
+const PARSERS: Record<PrimeFactorizerField, (value: string) => bigint | null> = {
+  decimal: parseDecimalInput,
+  expanded: parseExpandedInput,
+  exponent: parseExponentInput,
+}
+
+// When the number is too large to factorize, the other fields are emptied.
 const updateOutputs = (
   elements: PrimeFactorizerElements,
   state: PrimeFactorizerState,
@@ -51,14 +60,16 @@ const updateOutputs = (
   }
 
   if (source !== 'expanded') {
-    state.expandedValue = formatted.expanded
+    state.expandedValue = formatted?.expanded ?? ''
     elements.expandedInput.value = state.expandedValue
   }
 
   if (source !== 'exponent') {
-    state.exponentValue = formatted.exponent
+    state.exponentValue = formatted?.exponent ?? ''
     elements.exponentInput.value = state.exponentValue
   }
+
+  elements.status.hidden = formatted !== null
 }
 
 export const mountPrimeFactorizer: MountTool = (container, initialMessages) => {
@@ -69,9 +80,13 @@ export const mountPrimeFactorizer: MountTool = (container, initialMessages) => {
 
   let messages = initialMessages
   const state = createInitialPrimeFactorizerState()
-  let lastValidDecimal = state.decimalValue
-  let lastValidExpanded = state.expandedValue
-  let lastValidExponent = state.exponentValue
+  let lastValid = { ...state }
+  let pendingInputId: number | undefined
+  const inputs: Record<PrimeFactorizerField, HTMLInputElement> = {
+    decimal: elements.decimalInput,
+    expanded: elements.expandedInput,
+    exponent: elements.exponentInput,
+  }
 
   const syncUi = (): void => {
     syncLocalizedText(elements, messages)
@@ -85,83 +100,35 @@ export const mountPrimeFactorizer: MountTool = (container, initialMessages) => {
     syncUi()
   }
 
-  const handleDecimalInput = (): void => {
-    state.decimalValue = elements.decimalInput.value
-    const parsedValue = parseDecimalInput(state.decimalValue)
+  const handleInput = (field: PrimeFactorizerField): void => {
+    state[`${field}Value`] = inputs[field].value
+    const parsedValue = PARSERS[field](state[`${field}Value`])
+    if (parsedValue !== null) {
+      // Also stored when too large, so leaving an emptied field cannot restore stale factors.
+      updateOutputs(elements, state, parsedValue, field)
+      lastValid = { ...state }
+    }
+  }
 
-    if (parsedValue === null) {
+  const revertIfInvalid = (field: PrimeFactorizerField): void => {
+    if (PARSERS[field](inputs[field].value) !== null) {
       return
     }
 
-    updateOutputs(elements, state, parsedValue, 'decimal')
-    lastValidDecimal = state.decimalValue
-    lastValidExpanded = state.expandedValue
-    lastValidExponent = state.exponentValue
+    state[`${field}Value`] = lastValid[`${field}Value`]
+    inputs[field].value = lastValid[`${field}Value`]
   }
 
-  const handleExpandedInput = (): void => {
-    state.expandedValue = elements.expandedInput.value
-    const parsedValue = parseExpandedInput(state.expandedValue)
-
-    if (parsedValue === null) {
-      return
-    }
-
-    updateOutputs(elements, state, parsedValue, 'expanded')
-    lastValidDecimal = state.decimalValue
-    lastValidExpanded = state.expandedValue
-    lastValidExponent = state.exponentValue
+  for (const field of Object.keys(inputs) as PrimeFactorizerField[]) {
+    // Factorizing can take a moment for large numbers, so it waits until typing pauses.
+    inputs[field].addEventListener('input', () => {
+      clearTimeout(pendingInputId)
+      pendingInputId = window.setTimeout(() => handleInput(field), 150)
+    })
+    inputs[field].addEventListener('blur', () => revertIfInvalid(field))
   }
-
-  const handleExponentInput = (): void => {
-    state.exponentValue = elements.exponentInput.value
-    const parsedValue = parseExponentInput(state.exponentValue)
-
-    if (parsedValue === null) {
-      return
-    }
-
-    updateOutputs(elements, state, parsedValue, 'exponent')
-    lastValidDecimal = state.decimalValue
-    lastValidExpanded = state.expandedValue
-    lastValidExponent = state.exponentValue
-  }
-
-  const revertDecimalIfInvalid = (): void => {
-    if (parseDecimalInput(elements.decimalInput.value) !== null) {
-      return
-    }
-
-    state.decimalValue = lastValidDecimal
-    elements.decimalInput.value = lastValidDecimal
-  }
-
-  const revertExpandedIfInvalid = (): void => {
-    if (parseExpandedInput(elements.expandedInput.value) !== null) {
-      return
-    }
-
-    state.expandedValue = lastValidExpanded
-    elements.expandedInput.value = lastValidExpanded
-  }
-
-  const revertExponentIfInvalid = (): void => {
-    if (parseExponentInput(elements.exponentInput.value) !== null) {
-      return
-    }
-
-    state.exponentValue = lastValidExponent
-    elements.exponentInput.value = lastValidExponent
-  }
-
-  elements.decimalInput.addEventListener('input', handleDecimalInput)
-  elements.expandedInput.addEventListener('input', handleExpandedInput)
-  elements.exponentInput.addEventListener('input', handleExponentInput)
-  elements.decimalInput.addEventListener('blur', revertDecimalIfInvalid)
-  elements.expandedInput.addEventListener('blur', revertExpandedIfInvalid)
-  elements.exponentInput.addEventListener('blur', revertExponentIfInvalid)
 
   syncUi()
 
-  return { updateLocale: syncLocale }
+  return { updateLocale: syncLocale, destroy: () => clearTimeout(pendingInputId) }
 }

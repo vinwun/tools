@@ -89,18 +89,25 @@ export const hslToRgb = (hsl: HSLColor): RGBColor => {
   }
 }
 
+const linearize = (channel: number): number => {
+  const normalized = channel / 255
+  return normalized <= 0.03928
+    ? normalized / 12.92
+    : ((normalized + 0.055) / 1.055) ** 2.4
+}
+
+const getRelativeLuminance = (rgb: RGBColor): number =>
+  0.2126 * linearize(rgb.r) + 0.7152 * linearize(rgb.g) + 0.0722 * linearize(rgb.b)
+
+const DARK_TEXT_COLOR = '#111827'
+const DARK_TEXT_LUMINANCE = getRelativeLuminance({ r: 0x11, g: 0x18, b: 0x27 })
+
+// Picks whichever text color has the higher WCAG contrast ratio against the background.
 export const getReadableTextColor = (rgb: RGBColor): string => {
-  const linearize = (channel: number): number => {
-    const normalized = channel / 255
-    return normalized <= 0.03928
-      ? normalized / 12.92
-      : ((normalized + 0.055) / 1.055) ** 2.4
-  }
-
-  const luminance =
-    0.2126 * linearize(rgb.r) + 0.7152 * linearize(rgb.g) + 0.0722 * linearize(rgb.b)
-
-  return luminance > 0.54 ? '#111827' : '#FFFFFF'
+  const luminance = getRelativeLuminance(rgb)
+  const darkContrast = (luminance + 0.05) / (DARK_TEXT_LUMINANCE + 0.05)
+  const lightContrast = 1.05 / (luminance + 0.05)
+  return darkContrast >= lightContrast ? DARK_TEXT_COLOR : '#FFFFFF'
 }
 
 const parseNumberInput = (value: string): number | null => {
@@ -144,14 +151,16 @@ export const readHslFromInputs = (elements: ColorPickerElements): HSLColor | nul
   }
 }
 
-const isHexColor = (value: string): boolean => /^#?[0-9a-fA-F]{6}$/.test(value.trim())
-
+// Accepts the CSS short form too (`#F80` = `#FF8800`).
 export const hexToRgb = (value: string): RGBColor | null => {
-  if (!isHexColor(value)) {
+  // Pasted values often carry spaces ("#FF 80 00"), so all whitespace is ignored.
+  const match = value.replace(/\s/g, '').match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+  if (!match) {
     return null
   }
 
-  const normalized = value.trim().replace('#', '')
+  const digits = match[1]
+  const normalized = digits.length === 3 ? digits.replace(/./g, '$&$&') : digits
   return {
     r: Number.parseInt(normalized.slice(0, 2), 16),
     g: Number.parseInt(normalized.slice(2, 4), 16),

@@ -41,9 +41,11 @@ const renderResult = (state: PdfTextExtractorState, messages: Messages['pdfTextE
         ? messages.entryStatusFailed
         : messages.entryStatusExtracting
   const previewText = state.outputFormat === 'md' ? result.markdownText : result.plainText
-  const previewMarkup = result.status === 'ready'
-    ? `<pre class="pdf-text-extractor-preview">${escapeHtml(previewText)}</pre>`
-    : `<p class="tool-hint">${messages.previewUnavailable}</p>`
+  const previewMarkup = result.status !== 'ready'
+    ? `<p class="tool-hint">${messages.previewUnavailable}</p>`
+    : previewText
+      ? `<pre class="pdf-text-extractor-preview">${escapeHtml(previewText)}</pre>`
+      : `<p class="tool-hint">${messages.statusNoText}</p>`
 
   return `
     <article class="tool-card pdf-text-extractor-entry is-selected">
@@ -69,7 +71,11 @@ const resolveStatusText = (state: PdfTextExtractorState, messages: Messages['pdf
     return messages.statusEmpty
   }
 
-  return state.result.status === 'error' ? messages.statusFailed : messages.statusReady
+  if (state.result.status === 'error') {
+    return messages.statusFailed
+  }
+
+  return state.result.plainText ? messages.statusReady : messages.statusNoText
 }
 
 export const mountPdfTextExtractor: MountTool = (container, initialMessages) => {
@@ -113,7 +119,7 @@ export const mountPdfTextExtractor: MountTool = (container, initialMessages) => 
     elements.results.querySelector('.pdf-text-extractor-preview')?.scrollTo({ top: previewScrollTop })
     filePicker.setName(state.result?.fileName || pdfMessages.noFileSelected)
     filePicker.input.disabled = state.isBusy
-    elements.downloadButton.disabled = state.isBusy || state.result?.status !== 'ready'
+    elements.downloadButton.disabled = state.isBusy || state.result?.status !== 'ready' || !state.result.plainText
   }
 
   const syncLocale = (nextMessages: Messages): void => {
@@ -184,7 +190,7 @@ export const mountPdfTextExtractor: MountTool = (container, initialMessages) => 
 
   elements.downloadButton.addEventListener('click', () => {
     const { result, outputFormat } = state
-    if (state.isBusy || result?.status !== 'ready') {
+    if (state.isBusy || result?.status !== 'ready' || !result.plainText) {
       return
     }
 

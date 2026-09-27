@@ -30,7 +30,7 @@ export const renderPdfPageOrganizer = (messages: Messages): string => {
         <div class="pdf-page-organizer-workspace-header">
           <div>
             <h2 data-pdf-page-organizer-page-list-title>${pdfMessages.pageListTitle}</h2>
-            <p class="tool-hint" data-pdf-page-organizer-summary>${pdfMessages.emptyState}</p>
+            <p class="tool-hint pdf-page-organizer-summary" data-pdf-page-organizer-summary role="status">${pdfMessages.emptyState}</p>
           </div>
           <div class="pdf-page-organizer-selection-summary pdf-page-organizer-visible-on-pages" data-pdf-page-organizer-selection-summary>${formatMessage(pdfMessages.selectedSummary, { count: 0 })}</div>
         </div>

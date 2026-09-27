@@ -7,6 +7,14 @@
   font: 0.95rem/1.5 var(--font-mono);
 }
 
+.json-pretty-printer-large-file-hint {
+  min-height: 16.5rem;
+  white-space: pre-line;
+  padding: 0.65rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
+}
+
 .json-pretty-printer-controls,
 .json-pretty-printer-actions {
   display: grid;
@@ -34,6 +42,11 @@
 
 .json-pretty-printer-line {
   white-space: pre;
+}
+
+.json-pretty-printer-line,
+.json-pretty-printer-close-line {
+  padding-left: calc(var(--json-indent-level, 0) * var(--json-indent-size, 2ch));
 }
 
 .json-pretty-printer-children {
@@ -71,4 +84,9 @@
 .json-pretty-printer-toggle:focus-visible {
   outline: 2px solid #1d4ed8;
   outline-offset: 2px;
+}
+
+.json-pretty-printer-truncated {
+  color: var(--muted);
+  font-style: italic;
 }

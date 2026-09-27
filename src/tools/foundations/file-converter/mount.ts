@@ -3,30 +3,44 @@ import { downloadBlob, formatAcceptList } from '../files.ts'
 import { wireFilePicker } from '../file-picker/mount.ts'
 import type { ConverterMessages, FileConverterConfig, ConverterResultData } from './types.ts'
 
+// The preview URL lives as long as its item, so relabeling never reloads a playing preview.
 type PreviewItem =
-  | { kind: 'success'; data: ConverterResultData }
+  | { kind: 'success'; data: ConverterResultData; previewUrl: string | null }
   | { kind: 'error'; fileName: string; reason: 'unsupportedOutput' | 'conversionFailed' }
 
-const createPreviewContentMarkup = (data: ConverterResultData, messages: ConverterMessages): string => {
-  const previewUrl = URL.createObjectURL(data.blob)
-  const escapedFileName = escapeHtml(data.fileName)
+const getItemFileName = (item: PreviewItem): string => (item.kind === 'success' ? item.data.fileName : item.fileName)
 
-  if (data.previewKind === 'image') {
-    return `<img src="${previewUrl}" alt="${escapedFileName}" class="file-converter-preview-image" data-preview-url="${previewUrl}" />`
+const getItemMessage = (item: PreviewItem, messages: ConverterMessages): string =>
+  item.kind === 'success'
+    ? messages.previewUnavailable
+    : item.reason === 'unsupportedOutput'
+      ? messages.statusUnsupported
+      : messages.statusFailed
+
+const revokeItemUrls = (items: readonly PreviewItem[]): void => {
+  items.forEach((item) => {
+    if (item.kind === 'success' && item.previewUrl) {
+      URL.revokeObjectURL(item.previewUrl)
+    }
+  })
+}
+
+const createPreviewContentMarkup = (item: Extract<PreviewItem, { kind: 'success' }>, messages: ConverterMessages): string => {
+  if (item.previewUrl && item.data.previewKind === 'image') {
+    return `<img src="${item.previewUrl}" alt="${escapeHtml(item.data.fileName)}" class="file-converter-preview-image" />`
   }
 
-  if (data.previewKind === 'audio') {
-    return `<audio src="${previewUrl}" controls class="file-converter-preview-audio" data-preview-url="${previewUrl}"></audio>`
+  if (item.previewUrl && item.data.previewKind === 'audio') {
+    return `<audio src="${item.previewUrl}" controls class="file-converter-preview-audio"></audio>`
   }
 
-  return `<p>${messages.previewUnavailable}</p>`
+  return `<p data-file-converter-item-message>${getItemMessage(item, messages)}</p>`
 }
 
 const createPreviewListMarkup = (items: readonly PreviewItem[], messages: ConverterMessages): string =>
   `<div class="file-converter-preview-list">${items
-    .map((item, index) => {
-      const itemFileName = item.kind === 'success' ? item.data.fileName : item.fileName
-      const removeAriaLabel = `${messages.removePreviewItemAction}: ${itemFileName}`
+    .map((item) => {
+      const removeAriaLabel = `${messages.removePreviewItemAction}: ${getItemFileName(item)}`
 
       if (item.kind === 'error') {
         return `
@@ -36,11 +50,11 @@ const createPreviewListMarkup = (items: readonly PreviewItem[], messages: Conver
               <button
                 type="button"
                 class="file-converter-preview-item-remove"
-                data-preview-remove-index="${index}"
+                data-preview-remove
                 aria-label="${escapeHtml(removeAriaLabel)}"
               >×</button>
             </header>
-            <p class="file-converter-preview-item-message">${item.reason === 'unsupportedOutput' ? messages.statusUnsupported : messages.statusFailed}</p>
+            <p class="file-converter-preview-item-message" data-file-converter-item-message>${getItemMessage(item, messages)}</p>
           </article>
         `
       }
@@ -52,12 +66,12 @@ const createPreviewListMarkup = (items: readonly PreviewItem[], messages: Conver
             <button
               type="button"
               class="file-converter-preview-item-remove"
-              data-preview-remove-index="${index}"
+              data-preview-remove
               aria-label="${escapeHtml(removeAriaLabel)}"
             >×</button>
           </header>
           <div class="file-converter-preview-item-content">
-            ${createPreviewContentMarkup(item.data, messages)}
+            ${createPreviewContentMarkup(item, messages)}
           </div>
         </article>
       `
@@ -71,15 +85,6 @@ const createPreviewMessageMarkup = (message: string): string =>
 type FileConverterMount = {
   updateLocale?: (messages: ConverterMessages) => void
   destroy?: () => void
-}
-
-const revokePreviewUrls = (previewElement: HTMLElement): void => {
-  previewElement.querySelectorAll<HTMLElement>('[data-preview-url]').forEach((element) => {
-    const url = element.dataset.previewUrl
-    if (url) {
-      URL.revokeObjectURL(url)
-    }
-  })
 }
 
 export const mountFileConverter = (
@@ -134,15 +139,41 @@ export const mountFileConverter = (
   }
 
   const setPreviewMessage = (message: string): void => {
+    previewElement.removeAttribute('aria-busy')
+    revokeItemUrls(currentPreviewItems)
     currentPreviewItems = []
-    revokePreviewUrls(previewElement)
     previewElement.innerHTML = createPreviewMessageMarkup(message)
   }
 
-  const setPreviewItems = (items: readonly PreviewItem[]): void => {
+  // New images have no size until decoded, so swapping them in right away collapsed the preview
+  // for a few frames and made the layout jump; they are decoded off-screen first.
+  const setPreviewItems = async (items: readonly PreviewItem[], requestId: number): Promise<void> => {
+    const staging = document.createElement('div')
+    staging.innerHTML = createPreviewListMarkup(items, messages)
+    await Promise.all(Array.from(staging.querySelectorAll('img'), (image) => image.decode().catch(() => undefined)))
+    if (requestId !== conversionRequestId) {
+      revokeItemUrls(items)
+      return
+    }
+
+    previewElement.removeAttribute('aria-busy')
+    revokeItemUrls(currentPreviewItems)
     currentPreviewItems = [...items]
-    revokePreviewUrls(previewElement)
-    previewElement.innerHTML = createPreviewListMarkup(items, messages)
+    previewElement.replaceChildren(...staging.childNodes)
+  }
+
+  // Relabels the rendered items in place, so a locale switch does not restart their previews.
+  const syncPreviewItemTexts = (): void => {
+    previewElement.querySelectorAll<HTMLElement>('.file-converter-preview-item').forEach((article, index) => {
+      const item = currentPreviewItems[index]
+      article
+        .querySelector('[data-preview-remove]')
+        ?.setAttribute('aria-label', `${messages.removePreviewItemAction}: ${getItemFileName(item)}`)
+      const message = article.querySelector('[data-file-converter-item-message]')
+      if (message) {
+        message.textContent = getItemMessage(item, messages)
+      }
+    })
   }
 
   const getSuccessfulResults = (items: readonly PreviewItem[]): ConverterResultData[] =>
@@ -206,8 +237,7 @@ export const mountFileConverter = (
       return
     }
 
-    setPreviewItems(currentPreviewItems)
-    syncDownloadFromPreviewItems()
+    syncPreviewItemTexts()
   }
 
   downloadButton.addEventListener('click', () => {
@@ -222,32 +252,25 @@ export const mountFileConverter = (
       return
     }
 
-    const removeButton = target.closest<HTMLElement>('[data-preview-remove-index]')
-    if (!removeButton) {
+    const article = target.closest('[data-preview-remove]')?.closest<HTMLElement>('.file-converter-preview-item')
+    if (!article) {
       return
     }
 
-    const rawIndex = removeButton.dataset.previewRemoveIndex
-    if (!rawIndex) {
-      return
-    }
-
-    const index = Number.parseInt(rawIndex, 10)
-    if (Number.isNaN(index)) {
-      return
-    }
-
-    const nextItems = currentPreviewItems.filter((_, itemIndex) => itemIndex !== index)
+    // Only this item leaves the DOM, so the other previews keep playing.
+    const index = Array.from(previewElement.querySelectorAll('.file-converter-preview-item')).indexOf(article)
+    revokeItemUrls(currentPreviewItems.slice(index, index + 1))
+    currentPreviewItems = currentPreviewItems.filter((_, itemIndex) => itemIndex !== index)
     selectedFiles = selectedFiles.filter((_, fileIndex) => fileIndex !== index)
     setSelectedFileLabel(selectedFiles)
 
-    if (nextItems.length === 0) {
+    if (currentPreviewItems.length === 0) {
       setPreviewMessage(messages.statusNoFile)
       setDownloadDisabled()
       return
     }
 
-    setPreviewItems(nextItems)
+    article.remove()
     syncDownloadFromPreviewItems()
   })
 
@@ -263,32 +286,38 @@ export const mountFileConverter = (
 
     setSelectedFileLabel(selectedFiles)
     const requestId = ++conversionRequestId
-    setPreviewMessage(messages.converting)
-
-    const conversionResults = await Promise.all(
-      selectedFiles.map(async (file) => ({
-        file,
-        result: await config.convert(file, outputSelect.value),
-      })),
-    )
-
-    if (requestId !== conversionRequestId) {
-      return
+    // Earlier results stay (dimmed) until the new ones replace them, so the layout does not jump.
+    if (currentPreviewItems.length > 0) {
+      previewElement.setAttribute('aria-busy', 'true')
+      setDownloadDisabled()
+    } else {
+      setPreviewMessage(messages.converting)
     }
 
+    // One file at a time: decoding many large files at once can exhaust memory on phones.
     const previewItems: PreviewItem[] = []
-
-    conversionResults.forEach(({ file, result }) => {
-      if (result.ok) {
-        previewItems.push({ kind: 'success', data: result.data })
+    for (const file of selectedFiles) {
+      const result = await config.convert(file, outputSelect.value)
+      if (requestId !== conversionRequestId) {
+        revokeItemUrls(previewItems)
         return
       }
 
-      previewItems.push({ kind: 'error', fileName: file.name, reason: result.reason })
-    })
+      previewItems.push(
+        result.ok
+          ? {
+              kind: 'success',
+              data: result.data,
+              previewUrl: result.data.previewKind === 'none' ? null : URL.createObjectURL(result.data.blob),
+            }
+          : { kind: 'error', fileName: file.name, reason: result.reason },
+      )
+    }
 
-    setPreviewItems(previewItems)
-    syncDownloadFromPreviewItems()
+    await setPreviewItems(previewItems, requestId)
+    if (requestId === conversionRequestId) {
+      syncDownloadFromPreviewItems()
+    }
   }
 
   outputSelect.addEventListener('change', () => {
@@ -300,7 +329,7 @@ export const mountFileConverter = (
     destroy: () => {
       // A conversion still running must not write previews that nobody revokes.
       conversionRequestId += 1
-      revokePreviewUrls(previewElement)
+      revokeItemUrls(currentPreviewItems)
     },
   }
 }

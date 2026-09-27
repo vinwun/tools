@@ -1,4 +1,5 @@
 import type { Mp4Analysis } from '../mp4-utils.ts'
+import type { VideoFailure } from '../video-utils.ts'
 
 export type VideoCutterState = {
   fileName: string
@@ -9,6 +10,7 @@ export type VideoCutterState = {
   isProcessing: boolean
   start: number
   end: number
+  failure: VideoFailure | null
 }
 
 export type VideoCutterElements = {

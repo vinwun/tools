@@ -225,14 +225,13 @@ export const mountBaseConverter: MountTool = (container, initialMessages) => {
 
   const handleCustomBaseInput = (): void => {
     state.customBaseValue = elements.customBaseInput.value
-    const clampedBase = clampBaseInput(state.customBaseValue)
-    if (clampedBase === null) {
+    // Out-of-range values are only clamped on blur, so "1" can still become "16".
+    const base = parseBaseInput(state.customBaseValue)
+    if (base === null) {
       return
     }
 
-    state.customBase = clampedBase
-    state.customBaseValue = String(clampedBase)
-    elements.customBaseInput.value = state.customBaseValue
+    state.customBase = base
     state.customValue = formatValueInBase(state.numericValue, state.customBase)
     elements.customValueInput.value = state.customValue
     lastValidCustomBase = state.customBaseValue

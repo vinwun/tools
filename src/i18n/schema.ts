@@ -108,6 +108,8 @@ export type Messages = {
     thumbnailLoading: string
     thumbnailFailed: string
     uploadingStatus: string
+    loadFailed: string
+    exportFailed: string
   }
   pdfTextExtractor: {
     uploadLabel: string
@@ -123,6 +125,7 @@ export type Messages = {
     statusExtracting: string
     statusReady: string
     statusFailed: string
+    statusNoText: string
     resultsTitle: string
     resultsEmpty: string
     entryStatusReady: string
@@ -171,6 +174,7 @@ export type Messages = {
     statusProcessing: string
     statusError: string
     statusUnsupported: string
+    statusTooLarge: string
     alreadySilent: string
     audioDownloadAction: string
     silentDownloadAction: string
@@ -194,6 +198,7 @@ export type Messages = {
     statusProcessing: string
     statusFragmented: string
     statusUnsupported: string
+    statusTooLarge: string
     statusError: string
     statusInvalidRange: string
     stepDownAction: string
@@ -238,6 +243,7 @@ export type Messages = {
     expandedHint: string
     exponentLabel: string
     exponentHint: string
+    tooLargeHint: string
   }
   baseConverter: {
     binaryLabel: string
@@ -293,7 +299,6 @@ export type Messages = {
     indentLabel: string
     indentTwoLabel: string
     indentFourLabel: string
-    formatAction: string
     clearAction: string
     downloadAction: string
     statusEmpty: string
@@ -302,6 +307,8 @@ export type Messages = {
     outputLabel: string
     collapseAction: string
     expandAction: string
+    truncatedEntries: string
+    largeFileHint: string
   }
   markdownViewer: {
     uploadLabel: string
@@ -310,7 +317,6 @@ export type Messages = {
     noFileSelected: string
     inputLabel: string
     inputPlaceholder: string
-    renderAction: string
     clearAction: string
     downloadAction: string
     statusEmpty: string
@@ -384,6 +390,7 @@ export type Messages = {
     controlLabel: string
     separatorLabel: string
     confusableLabel: string
+    emojiJoinerLabel: string
     lookalikeMessage: string
   }
   categories: Record<CategoryId, CategoryTranslation>

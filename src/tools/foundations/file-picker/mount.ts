@@ -11,6 +11,35 @@ export type FilePickerHandlers = {
   onFiles: (files: readonly File[]) => void
 }
 
+// Drops bypass the dialog's accept filter, so they are filtered the same way here.
+const matchesAccept = (file: File, accept: string): boolean => {
+  const tokens = accept.split(',').map((token) => token.trim().toLowerCase()).filter(Boolean)
+  const fileName = file.name.toLowerCase()
+  return tokens.length === 0 || tokens.some((token) =>
+    token.startsWith('.')
+      ? fileName.endsWith(token)
+      : token.endsWith('/*')
+        ? file.type.startsWith(token.slice(0, -1))
+        : file.type === token,
+  )
+}
+
+// A file dropped just outside a dropzone would make the browser open it and leave the page.
+// Installed once for the whole app, so it needs no teardown.
+let isWindowDropGuarded = false
+const guardWindowDrops = (): void => {
+  if (isWindowDropGuarded) return
+  isWindowDropGuarded = true
+  const guard = (event: DragEvent): void => {
+    if (!event.defaultPrevented && event.dataTransfer?.types.includes('Files')) {
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'none'
+    }
+  }
+  window.addEventListener('dragover', guard)
+  window.addEventListener('drop', guard)
+}
+
 /**
  * Wires browse-click, change, and drag & drop for a picker rendered by `renderFilePicker`.
  *
@@ -37,11 +66,12 @@ export const wireFilePicker = (
     dropzone.classList.toggle('is-dragover', isActive)
   }
 
-  const emit = (files: FileList | null): void => {
-    const selected = Array.from(files ?? [])
+  const emit = (selected: File[]): void => {
     // Clearing lets the same file be picked again after a reset.
     input.value = ''
     if (selected.length > 0) {
+      // Otherwise Space, meant to play the loaded media, would press "Browse" again.
+      browseButton.blur()
       onFiles(selected)
     }
   }
@@ -58,7 +88,7 @@ export const wireFilePicker = (
   dropzone.addEventListener('click', open)
 
   input.addEventListener('change', () => {
-    emit(input.files)
+    emit(Array.from(input.files ?? []))
   })
 
   dropzone.addEventListener('dragenter', (event) => {
@@ -87,8 +117,10 @@ export const wireFilePicker = (
     event.preventDefault()
     dragDepth = 0
     setDragActive(false)
-    emit(event.dataTransfer?.files ?? null)
+    emit(Array.from(event.dataTransfer?.files ?? []).filter((file) => matchesAccept(file, input.accept)))
   })
+
+  guardWindowDrops()
 
   return {
     input,

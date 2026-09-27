@@ -75,7 +75,15 @@ export const parseRoute = (pathname: string): Route => {
   return routeFromSegments(toSegments(normalizedPathname))
 }
 
-export const resolveCurrentRoute = (): Route => parseRoute(window.location.pathname)
+export const resolveCurrentRoute = (): Route => {
+  const route = parseRoute(window.location.pathname)
+  const pathname = normalizePath(window.location.pathname)
+  // Unknown URLs render the dashboard, so the address bar should say so too.
+  if (route.type === 'dashboard' && pathname.startsWith(BASE_PATH) && pathname !== BASE_PATH) {
+    window.history.replaceState({}, '', BASE_PATH)
+  }
+  return route
+}
 
 export const navigateToRoute = (route: Route): void => {
   const targetPath = normalizePath(getRoutePath(route))

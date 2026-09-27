@@ -1,5 +1,7 @@
 import type {JsonPrettyPrinterState} from './types.ts'
 
+export const JSON_INPUT_ACCEPT = '.json,.jsonl,.txt'
+
 export const createInitialJsonPrettyPrinterState = (): JsonPrettyPrinterState => ({
   inputValue: '',
   indentSize: 2,

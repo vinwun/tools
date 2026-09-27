@@ -11,7 +11,7 @@ import {
 } from './utils.ts'
 import { queryRequired } from '../../foundations/dom.ts'
 import type { MountTool } from '../../types.ts'
-import { parseDecimalNumber, resolveNumberLocale } from '../../foundations/numbers.ts'
+import { clamp, parseDecimalNumber, resolveNumberLocale } from '../../foundations/numbers.ts'
 
 const queryNumberGeneratorElements = (container: HTMLElement): NumberGeneratorElements | null =>
   queryRequired<NumberGeneratorElements>(container, {
@@ -71,7 +71,9 @@ const generateNumber = (
     return
   }
 
-  const [lowerBound, upperBound] = normalizeRange(minValue, maxValue)
+  // Beyond the safe integer range the random math overflows to Infinity or loses whole digits.
+  const toSafeRange = (value: number): number => clamp(value, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
+  const [lowerBound, upperBound] = normalizeRange(toSafeRange(minValue), toSafeRange(maxValue))
 
   if (state.mode === 'integer') {
     const integerLowerBound = Math.ceil(lowerBound)
@@ -115,6 +117,24 @@ export const mountNumberGenerator: MountTool = (container) => {
   elements.maxInput.addEventListener('input', () => {
     state.maxValue = elements.maxInput.value
   })
+
+  // On leave, an invalid value falls back to the last valid one and a crossed range is closed:
+  // a minimum above the maximum becomes the maximum, and vice versa.
+  const lastValid = { min: state.minValue, max: state.maxValue }
+  const correctField = (key: 'min' | 'max'): void => {
+    const [edited, other] = key === 'min' ? [elements.minInput, elements.maxInput] : [elements.maxInput, elements.minInput]
+    const value = parseDecimalNumber(edited.value)
+    const otherValue = parseDecimalNumber(other.value)
+    if (value === null) {
+      edited.value = lastValid[key]
+    } else if (otherValue !== null && (key === 'min' ? value > otherValue : value < otherValue)) {
+      edited.value = other.value
+    }
+    lastValid[key] = edited.value
+    readCurrentState(elements, state)
+  }
+  elements.minInput.addEventListener('blur', () => correctField('min'))
+  elements.maxInput.addEventListener('blur', () => correctField('max'))
 
   elements.integerModeInput.addEventListener('change', () => {
     state.mode = 'integer'

@@ -53,4 +53,36 @@ export const moveSelectedEntries = (
   ]
 }
 
+// Every selected page moves one place on its own, so gaps between selected pages are kept; a page
+// stops at the edge or behind a selected page that could not move.
+export const shiftSelectedEntries = (
+  entries: readonly PdfPageEntry[],
+  selectedIndices: ReadonlySet<number>,
+  offset: -1 | 1,
+): { entries: PdfPageEntry[]; selectedIndices: number[] } => {
+  const shifted = [...entries]
+  const nextIndices = new Set<number>()
+  const order = [...selectedIndices].sort((left, right) => (left - right) * -offset)
+  for (const index of order) {
+    const target = index + offset
+    if (target < 0 || target >= shifted.length || nextIndices.has(target)) {
+      nextIndices.add(index)
+      continue
+    }
+    const moved = shifted[index]
+    shifted[index] = shifted[target]
+    shifted[target] = moved
+    nextIndices.add(target)
+  }
+  return { entries: shifted, selectedIndices: [...nextIndices].sort((left, right) => left - right) }
+}
+
+// A selected page can move left when any unselected page lies before a selected one (right: after).
+export const canShiftSelection = (entryCount: number, selectedIndices: ReadonlySet<number>, offset: -1 | 1): boolean => {
+  const unselected = Array.from({ length: entryCount }, (_, index) => index).filter((index) => !selectedIndices.has(index))
+  return selectedIndices.size > 0 && unselected.length > 0 && (offset < 0
+    ? Math.min(...unselected) < Math.max(...selectedIndices)
+    : Math.max(...unselected) > Math.min(...selectedIndices))
+}
+
 export const countSelectedEntries = (selectedIndices: ReadonlySet<number>): number => selectedIndices.size

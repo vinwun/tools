@@ -41,4 +41,4 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Text Counter`: count words, characters, and other statistics of a text
   - `Lorem Ipsum Generator`: generate placeholder text with a specific length
   - `Unicode Converter`: convert characters between code points and encodings
-  - `Hidden Characters Inspector`: find zero-width, bidi and confusable characters
+  - `Hidden Characters Inspector`: find zero-width, bidi, invisible space and confusable characters

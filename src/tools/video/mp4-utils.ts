@@ -78,13 +78,16 @@ const parseBoxes = (bytes: Uint8Array, start: number, end: number): Mp4Box[] => 
     let headerSize = 8
 
     if (size32 === 1) {
+      if (offset + 16 > end) {
+        break
+      }
       size = readU64(bytes, offset + 8)
       headerSize = 16
     } else if (size32 === 0) {
       size = end - offset
     }
 
-    if (size < headerSize) {
+    if (size < headerSize || size > end - offset) {
       break
     }
 
@@ -141,9 +144,13 @@ const exportBoxBytes = (bytes: Uint8Array, box: Mp4Box): Uint8Array => bytes.sli
 
 type StscEntry = { firstChunk: number; samplesPerChunk: number; sampleDescriptionIndex: number }
 
+// Counts come from the file; never trust them beyond what the box can actually hold.
+const readEntryCount = (bytes: Uint8Array, box: Mp4Box, countOffset: number, tableStart: number, entrySize: number): number =>
+  Math.min(readU32(bytes, countOffset), Math.floor(Math.max(0, box.end - tableStart) / entrySize))
+
 const parseRunEntries = (bytes: Uint8Array, box: Mp4Box): { count: number; value: number }[] => {
   const payload = box.start + box.headerSize
-  const entryCount = readU32(bytes, payload + 4)
+  const entryCount = readEntryCount(bytes, box, payload + 4, payload + 8, 8)
   const entries: { count: number; value: number }[] = []
 
   for (let index = 0; index < entryCount; index += 1) {
@@ -153,26 +160,26 @@ const parseRunEntries = (bytes: Uint8Array, box: Mp4Box): { count: number; value
   return entries
 }
 
-const expandRunValues = (runs: readonly { count: number; value: number }[]): number[] => {
+const expandRunValues = (runs: readonly { count: number; value: number }[], limit: number): number[] => {
   const values: number[] = []
   for (const run of runs) {
-    for (let index = 0; index < run.count; index += 1) {
+    for (let index = 0; index < run.count && values.length < limit; index += 1) {
       values.push(run.value)
     }
   }
   return values
 }
 
-const parseCompositionOffsets = (bytes: Uint8Array, ctts: Mp4Box): number[] => {
+const parseCompositionOffsets = (bytes: Uint8Array, ctts: Mp4Box, limit: number): number[] => {
   const version = boxVersion(bytes, ctts)
   const payload = ctts.start + ctts.headerSize
-  const entryCount = readU32(bytes, payload + 4)
+  const entryCount = readEntryCount(bytes, ctts, payload + 4, payload + 8, 8)
   const values: number[] = []
 
   for (let index = 0; index < entryCount; index += 1) {
     const sampleCount = readU32(bytes, payload + 8 + index * 8)
     const value = version === 1 ? readI32(bytes, payload + 12 + index * 8) : readU32(bytes, payload + 12 + index * 8)
-    for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+    for (let sampleIndex = 0; sampleIndex < sampleCount && values.length < limit; sampleIndex += 1) {
       values.push(value)
     }
   }
@@ -184,12 +191,11 @@ const parseSampleSizes = (bytes: Uint8Array, stsz: Mp4Box | null, stz2: Mp4Box |
   if (stsz) {
     const payload = stsz.start + stsz.headerSize
     const defaultSize = readU32(bytes, payload + 4)
-    const sampleCount = readU32(bytes, payload + 8)
-
     if (defaultSize > 0) {
-      return Array.from({ length: sampleCount }, () => defaultSize)
+      return Array.from({ length: readU32(bytes, payload + 8) }, () => defaultSize)
     }
 
+    const sampleCount = readEntryCount(bytes, stsz, payload + 8, payload + 12, 4)
     const sizes: number[] = []
     for (let index = 0; index < sampleCount; index += 1) {
       sizes.push(readU32(bytes, payload + 12 + index * 4))
@@ -200,7 +206,7 @@ const parseSampleSizes = (bytes: Uint8Array, stsz: Mp4Box | null, stz2: Mp4Box |
   if (stz2) {
     const payload = stz2.start + stz2.headerSize
     const fieldSize = bytes[payload + 4] ?? 0
-    const sampleCount = readU32(bytes, payload + 5)
+    const sampleCount = fieldSize > 0 ? readEntryCount(bytes, stz2, payload + 5, payload + 9, fieldSize / 8) : 0
     const sizes: number[] = []
 
     if (fieldSize === 16) {
@@ -233,11 +239,12 @@ const parseChunkOffsets = (bytes: Uint8Array, stco: Mp4Box | null, co64: Mp4Box 
   }
 
   const payload = box.start + box.headerSize
-  const entryCount = readU32(bytes, payload + 4)
+  const entrySize = box === stco ? 4 : 8
+  const entryCount = readEntryCount(bytes, box, payload + 4, payload + 8, entrySize)
   const offsets: number[] = []
 
   for (let index = 0; index < entryCount; index += 1) {
-    offsets.push(co64 ? readU64(bytes, payload + 8 + index * 8) : readU32(bytes, payload + 8 + index * 4))
+    offsets.push(entrySize === 8 ? readU64(bytes, payload + 8 + index * 8) : readU32(bytes, payload + 8 + index * 4))
   }
 
   return offsets
@@ -249,7 +256,7 @@ const parseStsc = (bytes: Uint8Array, stsc: Mp4Box | null): StscEntry[] => {
   }
 
   const payload = stsc.start + stsc.headerSize
-  const entryCount = readU32(bytes, payload + 4)
+  const entryCount = readEntryCount(bytes, stsc, payload + 4, payload + 8, 12)
   const entries: StscEntry[] = []
 
   for (let index = 0; index < entryCount; index += 1) {
@@ -315,7 +322,7 @@ const collectSamples = (
   return samples
 }
 
-export const analyzeMp4 = (bytes: Uint8Array): Mp4Analysis => {
+const parseMp4 = (bytes: Uint8Array): Mp4Analysis => {
   const topBoxes = parseTopLevel(bytes)
   const ftyp = findBox(topBoxes, 'ftyp') ?? null
   const moov = findBox(topBoxes, 'moov') ?? null
@@ -363,16 +370,16 @@ export const analyzeMp4 = (bytes: Uint8Array): Mp4Analysis => {
       const co64 = findBox(stblChildren, 'co64')
       const stss = findBox(stblChildren, 'stss')
 
-      const durations = stts ? expandRunValues(parseRunEntries(bytes, stts)) : []
-      const compositionOffsets = ctts ? parseCompositionOffsets(bytes, ctts) : []
       const sizes = parseSampleSizes(bytes, stsz, stz2)
+      const durations = stts ? expandRunValues(parseRunEntries(bytes, stts), sizes.length) : []
+      const compositionOffsets = ctts ? parseCompositionOffsets(bytes, ctts, sizes.length) : []
       const chunkOffsets = parseChunkOffsets(bytes, stco, co64)
       const stscEntries = parseStsc(bytes, stsc)
 
       let syncSamples: Set<number> | null = null
       if (stss) {
         const payload = stss.start + stss.headerSize
-        const entryCount = readU32(bytes, payload + 4)
+        const entryCount = readEntryCount(bytes, stss, payload + 4, payload + 8, 4)
         syncSamples = new Set()
         for (let index = 0; index < entryCount; index += 1) {
           syncSamples.add(readU32(bytes, payload + 8 + index * 4))
@@ -392,6 +399,15 @@ export const analyzeMp4 = (bytes: Uint8Array): Mp4Analysis => {
     fragmented,
     movieTimescale: mvhd ? readHeaderTimescale(bytes, mvhd) : 0,
     tracks,
+  }
+}
+
+// A malformed file reads past its own boxes; report it as "not an MP4" instead of throwing.
+export const analyzeMp4 = (bytes: Uint8Array): Mp4Analysis => {
+  try {
+    return parseMp4(bytes)
+  } catch {
+    return { bytes, ftyp: null, moov: null, fragmented: false, movieTimescale: 0, tracks: [] }
   }
 }
 
@@ -510,7 +526,7 @@ const buildStsc = (chunks: readonly { count: number; sampleDescriptionIndex: num
   let firstChunk = 1
   for (const chunk of chunks) {
     parts.push(u32b(firstChunk), u32b(chunk.count), u32b(chunk.sampleDescriptionIndex))
-    firstChunk += chunk.count
+    firstChunk += 1
   }
   return fullbox('stsc', 0, 0, concatBytes(parts))
 }
@@ -835,7 +851,8 @@ const buildCutSpecs = (
         chunks,
         keptSamples,
         sourceRanges: groupChunkRanges(keptSamples),
-        segmentDuration: Math.max(1, totalKeptDuration),
+        // tkhd durations use the movie timescale, not the track's media timescale.
+        segmentDuration: Math.max(1, Math.round((totalKeptDuration / timescale) * movieTimescale)),
       })
     }
   }
@@ -889,13 +906,17 @@ export const cutMp4 = (source: Uint8Array, spec: CutSpec): Mp4Result => {
   let payloadPosition = ftypBytes.length + moovLength + 8
   const trackOffsets = new Map<Mp4TrackInfo, number[]>()
 
+  // A track's kept samples are written back to back, so each chunk starts after the previous chunks' samples.
   for (const cutSpec of specs) {
-    const offsets: number[] = []
-    for (let index = 0; index < cutSpec.sourceRanges.length; index += 1) {
-      offsets.push(payloadPosition)
-      payloadPosition += cutSpec.sourceRanges[index]?.end ?? 0
-      payloadPosition -= cutSpec.sourceRanges[index]?.start ?? 0
-    }
+    let sampleIndex = 0
+    const offsets = cutSpec.chunks.map((chunk) => {
+      const offset = payloadPosition
+      for (const sample of cutSpec.keptSamples.slice(sampleIndex, sampleIndex + chunk.count)) {
+        payloadPosition += sample.size
+      }
+      sampleIndex += chunk.count
+      return offset
+    })
     trackOffsets.set(cutSpec.track, offsets)
   }
 
@@ -944,11 +965,11 @@ const buildMoovWithPatchedOffsets = (
           const clone = bytes.slice(child.start, child.end)
           const view = new DataView(clone.buffer)
           const entryBase = offsetTable.start + offsetTable.headerSize + 8
-          const entrySize = co64Address ? 8 : 4
+          const entrySize = offsetTable === stco ? 4 : 8
 
           for (let index = 0; index < chunkOffsets.length; index += 1) {
             const position = entryBase - child.start + index * entrySize
-            if (co64Address) {
+            if (entrySize === 8) {
               view.setBigUint64(position, BigInt(chunkOffsets[index] ?? 0), false)
             } else {
               view.setUint32(position, (chunkOffsets[index] ?? 0) >>> 0, false)
@@ -1204,7 +1225,7 @@ const stripFragmentedMp4 = (source: Uint8Array): Mp4Result => {
         continue
       }
 
-      truns.forEach((trun, index) => {
+      truns.forEach((trun) => {
         const fields = parseTrunFields(source, trun)
         const sizes = trunSampleSizes(source, fields, values.defaultSize)
         if (sizes.length !== fields.sampleCount) {
@@ -1213,7 +1234,7 @@ const stripFragmentedMp4 = (source: Uint8Array): Mp4Result => {
         }
 
         let start: number
-        if (index === 0 && fields.dataOffsetPresent) {
+        if (fields.dataOffsetPresent) {
           start = trafBase + fields.dataOffset
         } else if (dataEnd !== null) {
           start = dataEnd

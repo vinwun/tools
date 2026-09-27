@@ -1,3 +1,5 @@
+import type { VideoFailure } from '../video-utils.ts'
+
 export type VideoAudioSplitterState = {
   fileName: string
   file: File | null
@@ -8,7 +10,7 @@ export type VideoAudioSplitterState = {
   videoTrackCount: number
   audioTrackCount: number
   isProcessing: boolean
-  errorReason: string | null
+  failure: VideoFailure | null
 }
 
 export type VideoAudioSplitterElements = {

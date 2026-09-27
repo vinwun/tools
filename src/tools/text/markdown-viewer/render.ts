@@ -40,7 +40,6 @@ export const renderMarkdownViewer = (
         </label>
 
         <div class="markdown-viewer-actions">
-          <button type="submit" class="tool-action" data-markdown-viewer-render>${markdownMessages.renderAction}</button>
           <button type="button" class="tool-action" data-markdown-viewer-clear>${markdownMessages.clearAction}</button>
         </div>
       </form>

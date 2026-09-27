@@ -62,14 +62,25 @@ export const mountColorPicker: MountTool = (container, initialMessages) => {
     elements.hexCopyButton.style.setProperty('background', hex)
   }
 
-  const redrawCanvases = (): void => {
-    drawSpectrumCanvas(elements.spectrumCanvas, state.hsl.h)
-    drawHueCanvas(elements.hueCanvas)
+  let spectrumHue: number | null = null
+
+  // The spectrum is painted pixel by pixel, so it is only redrawn when its hue or size changes.
+  const redrawCanvases = (resized: boolean): void => {
+    if (resized || state.hsl.h !== spectrumHue) {
+      drawSpectrumCanvas(elements.spectrumCanvas, state.hsl.h)
+      spectrumHue = state.hsl.h
+    }
+    if (resized) {
+      drawHueCanvas(elements.hueCanvas)
+    }
     updateCanvasUI()
   }
 
   const syncInputs = (): void => {
-    elements.hexInput.value = rgbToHex(state.rgb)
+    // The hex field is not rewritten while being typed in; its blur handler normalizes it.
+    if (document.activeElement !== elements.hexInput) {
+      elements.hexInput.value = rgbToHex(state.rgb)
+    }
     elements.redInput.value = String(state.rgb.r)
     elements.greenInput.value = String(state.rgb.g)
     elements.blueInput.value = String(state.rgb.b)
@@ -78,10 +89,11 @@ export const mountColorPicker: MountTool = (container, initialMessages) => {
     elements.lightnessInput.value = String(state.hsl.l)
   }
 
-  const syncAll = (): void => {
+  const syncAll = (resized = false): void => {
     syncInputs()
-    redrawCanvases()
+    redrawCanvases(resized)
   }
+  const syncAfterResize = (): void => syncAll(true)
 
   const syncLocalizedText = (): void => {
     container.querySelectorAll<HTMLElement>('[data-color-picker-text]').forEach((element) => {
@@ -216,54 +228,22 @@ export const mountColorPicker: MountTool = (container, initialMessages) => {
     }
   })
 
-  elements.redInput.addEventListener('input', () => {
-    const rgb = readRgbFromInputs(elements)
-    if (!rgb) {
-      return
-    }
-
-    updateFromRgb(rgb)
-  })
-  elements.greenInput.addEventListener('input', () => {
-    const rgb = readRgbFromInputs(elements)
-    if (!rgb) {
-      return
-    }
-
-    updateFromRgb(rgb)
-  })
-  elements.blueInput.addEventListener('input', () => {
-    const rgb = readRgbFromInputs(elements)
-    if (!rgb) {
-      return
-    }
-
-    updateFromRgb(rgb)
-  })
-  elements.hueInput.addEventListener('input', () => {
-    const hsl = readHslFromInputs(elements)
-    if (!hsl) {
-      return
-    }
-
-    updateFromHsl(hsl)
-  })
-  elements.saturationInput.addEventListener('input', () => {
-    const hsl = readHslFromInputs(elements)
-    if (!hsl) {
-      return
-    }
-
-    updateFromHsl(hsl)
-  })
-  elements.lightnessInput.addEventListener('input', () => {
-    const hsl = readHslFromInputs(elements)
-    if (!hsl) {
-      return
-    }
-
-    updateFromHsl(hsl)
-  })
+  for (const input of [elements.redInput, elements.greenInput, elements.blueInput]) {
+    input.addEventListener('input', () => {
+      const rgb = readRgbFromInputs(elements)
+      if (rgb) updateFromRgb(rgb)
+    })
+  }
+  for (const input of [elements.hueInput, elements.saturationInput, elements.lightnessInput]) {
+    input.addEventListener('input', () => {
+      const hsl = readHslFromInputs(elements)
+      if (hsl) updateFromHsl(hsl)
+    })
+  }
+  // Out-of-range or empty values are ignored while typing and replaced by the current color on leave.
+  for (const input of [elements.redInput, elements.greenInput, elements.blueInput, elements.hueInput, elements.saturationInput, elements.lightnessInput]) {
+    input.addEventListener('blur', syncInputs)
+  }
 
   elements.hexCopyButton.addEventListener('click', async () => {
     const hex = rgbToHex(state.rgb)
@@ -277,8 +257,8 @@ export const mountColorPicker: MountTool = (container, initialMessages) => {
   })
 
   const listeners = new AbortController()
-  window.addEventListener('resize', syncAll, { signal: listeners.signal })
-  const initialFrame = window.requestAnimationFrame(syncAll)
+  window.addEventListener('resize', syncAfterResize, { signal: listeners.signal })
+  const initialFrame = window.requestAnimationFrame(syncAfterResize)
 
   return {
     updateLocale: syncLocale,

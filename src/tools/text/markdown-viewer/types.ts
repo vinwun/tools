@@ -8,11 +8,9 @@ export type MarkdownViewerState = {
 }
 
 export type MarkdownViewerElements = {
-  form: HTMLFormElement
   uploadLabel: HTMLElement
   uploadHint: HTMLElement
   input: HTMLTextAreaElement
-  renderButton: HTMLButtonElement
   clearButton: HTMLButtonElement
   downloadButton: HTMLButtonElement
   inputLabel: HTMLElement

@@ -46,6 +46,10 @@
 
 .hidden-characters-inspector-preview {
   min-height: 21.5rem;
+  height: 21.5rem;
+  overflow: auto;
+  resize: vertical;
+  overscroll-behavior: contain;
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.7;
@@ -77,6 +81,11 @@
   font-weight: 600;
   padding: 0 0.15rem;
   margin: 0 0.1rem;
+}
+
+.hidden-characters-inspector-hidden--joiner {
+  background: #e5e7eb;
+  color: #4b5563;
 }
 
 .hidden-characters-inspector-empty {

@@ -91,6 +91,8 @@ export const bootstrapApp = (): void => {
     if (!app) return
 
     app.addEventListener('click', (event) => {
+      // Modified clicks keep their browser meaning ("open in new tab / window").
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
       const target = event.target as HTMLElement
       const categoryElement = target.closest<HTMLElement>('[data-category-link]')
 

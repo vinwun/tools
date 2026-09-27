@@ -8,6 +8,10 @@ type FactorizationFormat = {
 
 const DEFAULT_DECIMAL_VALUE = '120'
 const MAX_EXPONENT = 1000
+// Trial division runs on the main thread and each step costs more the longer the number is,
+// so the budget (10 million steps on a 64-bit number) shrinks with the remaining bit length.
+const MAX_TRIAL_WORK = 10_000_000n * 64n
+const getTrialLimit = (value: bigint): bigint => MAX_TRIAL_WORK / BigInt(Math.max(64, value.toString(2).length))
 
 export const parseDecimalInput = (value: string): bigint | null => {
   const trimmedValue = value.trim()
@@ -28,12 +32,9 @@ export const parseExpandedInput = (value: string): bigint | null => {
     return null
   }
 
-  const parts = trimmedValue
-    .split('*')
-    .map((part) => part.trim())
-    .filter(Boolean)
-
-  if (parts.length === 0) {
+  // An empty segment ("2**3", "2 *") is a typo, not a factor.
+  const parts = trimmedValue.split('*').map((part) => part.trim())
+  if (parts.includes('')) {
     return null
   }
 
@@ -43,12 +44,7 @@ export const parseExpandedInput = (value: string): bigint | null => {
       return null
     }
 
-    const factor = BigInt(part)
-    if (factor === 0n) {
-      return 0n
-    }
-
-    product *= factor
+    product *= BigInt(part)
   }
 
   return product
@@ -76,12 +72,8 @@ export const parseExponentInput = (value: string): bigint | null => {
     return null
   }
 
-  const parts = trimmedValue
-    .split('*')
-    .map((part) => part.trim())
-    .filter(Boolean)
-
-  if (parts.length === 0) {
+  const parts = trimmedValue.split('*').map((part) => part.trim())
+  if (parts.includes('')) {
     return null
   }
 
@@ -105,10 +97,6 @@ export const parseExponentInput = (value: string): bigint | null => {
       return null
     }
 
-    if (base === 0n) {
-      return 0n
-    }
-
     const magnitude = powBigInt(base, exponent)
     product *= sign * magnitude
   }
@@ -116,7 +104,7 @@ export const parseExponentInput = (value: string): bigint | null => {
   return product
 }
 
-const collectPrimeFactors = (value: bigint): Map<bigint, number> => {
+const collectPrimeFactors = (value: bigint): Map<bigint, number> | null => {
   const factors = new Map<bigint, number>()
   let remaining = value
 
@@ -139,7 +127,11 @@ const collectPrimeFactors = (value: bigint): Map<bigint, number> => {
   }
 
   let factor = 3n
+  let limit = getTrialLimit(remaining)
   while (factor * factor <= remaining) {
+    if (factor > limit) {
+      return null
+    }
     count = 0
     while (remaining % factor === 0n) {
       remaining /= factor
@@ -147,6 +139,7 @@ const collectPrimeFactors = (value: bigint): Map<bigint, number> => {
     }
     if (count > 0) {
       factors.set(factor, count)
+      limit = getTrialLimit(remaining)
     }
     factor += 2n
   }
@@ -158,7 +151,8 @@ const collectPrimeFactors = (value: bigint): Map<bigint, number> => {
   return factors
 }
 
-export const formatPrimeFactorization = (value: bigint): FactorizationFormat => {
+// Returns null when the number is too large to factorize.
+export const formatPrimeFactorization = (value: bigint): FactorizationFormat | null => {
   if (value === 0n) {
     return { expanded: '0', exponent: '0' }
   }
@@ -172,6 +166,9 @@ export const formatPrimeFactorization = (value: bigint): FactorizationFormat => 
   }
 
   const factors = collectPrimeFactors(absoluteValue)
+  if (!factors) {
+    return null
+  }
   const expandedParts: string[] = []
   const exponentParts: string[] = []
 
@@ -200,7 +197,7 @@ export const createInitialPrimeFactorizerState = (): PrimeFactorizerState => {
 
   return {
     decimalValue: DEFAULT_DECIMAL_VALUE,
-    expandedValue: formatted.expanded,
-    exponentValue: formatted.exponent,
+    expandedValue: formatted?.expanded ?? '',
+    exponentValue: formatted?.exponent ?? '',
   }
 }

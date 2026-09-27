@@ -28,6 +28,8 @@ const renderSegment = (segment: PreviewSegment, messages: Messages): string => {
         return m.separatorLabel
       case 'confusable':
         return m.confusableLabel
+      case 'emojiJoiner':
+        return m.emojiJoinerLabel
       default:
         return category
     }
@@ -42,7 +44,8 @@ const renderSegment = (segment: PreviewSegment, messages: Messages): string => {
     )}</span>`
   }
   const title = `${categoryLabel} ${toCodePointHex(segment.codePoint)}`
-  return `<span class="hidden-characters-inspector-hidden" title="${escapeHtml(title)}">${escapeHtml(
+  const joinerClass = segment.category === 'emojiJoiner' ? ' hidden-characters-inspector-hidden--joiner' : ''
+  return `<span class="hidden-characters-inspector-hidden${joinerClass}" title="${escapeHtml(title)}">${escapeHtml(
     toCodePointHex(segment.codePoint),
   )}</span>`
 }

@@ -6,8 +6,10 @@ import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import { clamp, localizeDecimalSeparator, parseDecimalNumber, resolveNumberLocale } from '../../foundations/numbers.ts'
 import { createObjectUrlSlot } from '../../foundations/object-url.ts'
 import { analyzeMp4, cutMp4, getKeyframeStartSeconds, getMaxDurationSeconds, getTrackDurationSeconds, pickVideoTrack } from '../mp4-utils.ts'
-import { ACCEPTED_VIDEO_TYPES, formatVideoSeconds } from '../video-utils.ts'
+import { ACCEPTED_VIDEO_TYPES, bindSpacePlayback, describeVideoFailure, formatVideoSeconds, waitForPaint, type VideoFailure } from '../video-utils.ts'
 import type { VideoCutterElements, VideoCutterState } from './types.ts'
+
+const MIN_CUT_SECONDS = 0.1
 
 const setInputValue = (input: HTMLInputElement, value: number): void => {
   input.value = localizeDecimalSeparator(value.toFixed(2), resolveNumberLocale())
@@ -50,24 +52,35 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
     isProcessing: false,
     start: 0,
     end: 0,
+    failure: null,
   }
+  let loadToken = 0
+  let selectionPlayback = false
+  let endingPreviewTimeout: number | undefined
 
   const setStatus = (text: string): void => {
     elements.status.textContent = text
   }
 
+  const failureMessage = (failure: VideoFailure): string =>
+    failure === 'fragmented' ? messages.videoCutter.statusFragmented : describeVideoFailure(messages.videoCutter, failure)
+
+  // The reason is kept, not the text, so the message follows a locale switch.
+  const showFailure = (failure: VideoFailure): void => {
+    state.failure = failure
+    setStatus(failureMessage(failure))
+  }
+
+  const isEditable = (): boolean => state.source !== null && !state.isFragmented
+
   const syncSummary = (): void => {
-    if (state.source === null || state.isFragmented) {
+    if (!isEditable()) {
       return
     }
 
-    let start = parseDecimalNumber(elements.startInput.value) ?? 0
-    let end = parseDecimalNumber(elements.endInput.value) ?? state.duration
-    if (start < 0) start = 0
-    if (end > state.duration) end = state.duration
-    if (end < start) end = start
-
-    if (end - start < 0.001) {
+    state.failure = null
+    const { start, end } = state
+    if (end - start < MIN_CUT_SECONDS) {
       setStatus(messages.videoCutter.statusInvalidRange)
       elements.actualStartLabel.textContent = ''
       return
@@ -117,6 +130,7 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
     state.isProcessing = false
     state.start = 0
     state.end = 0
+    state.failure = null
 
     previewUrl.clear()
     elements.preview.removeAttribute('src')
@@ -151,38 +165,32 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
 
     if (state.source === null) {
       filePicker.setName(messages.videoCutter.noFileSelected)
-      setInputValue(elements.startInput, 0)
-      setInputValue(elements.endInput, 0)
+    }
+    setInputValue(elements.startInput, state.start)
+    setInputValue(elements.endInput, state.end)
+    if (state.failure) {
+      setStatus(failureMessage(state.failure))
+    } else if (state.source === null) {
       setStatus(messages.videoCutter.statusNoFile)
-      return
+    } else {
+      syncSummary()
     }
-
-    if (state.isFragmented) {
-      setInputValue(elements.startInput, state.start)
-      setInputValue(elements.endInput, state.end)
-      setStatus(messages.videoCutter.statusFragmented)
-      return
-    }
-
-    const currentStart = parseDecimalNumber(elements.startInput.value) ?? state.start
-    const currentEnd = parseDecimalNumber(elements.endInput.value) ?? state.end
-    state.start = currentStart
-    state.end = currentEnd
-    setInputValue(elements.startInput, currentStart)
-    setInputValue(elements.endInput, currentEnd)
-    syncSummary()
   }
 
   const loadFile = async (file: File): Promise<void> => {
     resetState()
+    const token = ++loadToken
     filePicker.setName(file.name)
     setStatus(messages.videoCutter.statusLoading)
 
     try {
       const source = new Uint8Array(await file.arrayBuffer())
+      if (token !== loadToken) {
+        return
+      }
       const analysis = analyzeMp4(source)
       if (!analysis.moov) {
-        setStatus(messages.videoCutter.statusUnsupported)
+        showFailure('notMp4')
         return
       }
 
@@ -199,7 +207,7 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
       elements.preview.load()
 
       if (state.isFragmented) {
-        setStatus(messages.videoCutter.statusFragmented)
+        showFailure('fragmented')
         setControlsEnabled(false)
         return
       }
@@ -209,17 +217,11 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
       setControlsEnabled(true)
       syncSummary()
     } catch {
-      setStatus(messages.videoCutter.statusUnsupported)
-      setControlsEnabled(false)
+      if (token === loadToken) {
+        showFailure('unsupported')
+        setControlsEnabled(false)
+      }
     }
-  }
-
-  const getRange = (): { startSeconds: number; endSeconds: number; valid: boolean } => {
-    const startSeconds = parseDecimalNumber(elements.startInput.value) ?? 0
-    const endSeconds = parseDecimalNumber(elements.endInput.value) ?? state.duration
-    const start = clamp(startSeconds, 0, state.duration)
-    const end = clamp(endSeconds, 0, state.duration)
-    return { startSeconds: start, endSeconds: end, valid: end - start >= 0.1 }
   }
 
   const getPreviewDuration = (): number => {
@@ -228,17 +230,19 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
   }
 
   const playEndingPreview = (): void => {
-    if (state.source === null || state.isFragmented) {
+    if (!isEditable()) {
       return
     }
-    const end = parseDecimalNumber(elements.endInput.value)
-    if (end === null) {
-      return
-    }
-    const previewDur = getPreviewDuration()
-    const seekTo = Math.max(0, end - previewDur)
-    elements.preview.currentTime = seekTo
+    elements.preview.currentTime = Math.max(0, state.end - getPreviewDuration())
+    selectionPlayback = true
     void elements.preview.play()
+  }
+
+  // Stepping or typing the end changes it many times a second; only preview once it settles.
+  const scheduleEndingPreview = (): void => {
+    elements.preview.pause()
+    window.clearTimeout(endingPreviewTimeout)
+    endingPreviewTimeout = window.setTimeout(playEndingPreview, 300)
   }
 
   const handleCutDownload = async (): Promise<void> => {
@@ -246,8 +250,7 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
       return
     }
 
-    const range = getRange()
-    if (!range.valid) {
+    if (state.end - state.start < MIN_CUT_SECONDS) {
       setStatus(messages.videoCutter.statusInvalidRange)
       return
     }
@@ -257,26 +260,26 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
     setStatus(messages.videoCutter.statusProcessing)
 
     try {
-      const result = cutMp4(state.source, { startSeconds: range.startSeconds, endSeconds: range.endSeconds })
+      await waitForPaint()
+      const result = cutMp4(state.source, { startSeconds: state.start, endSeconds: state.end })
       if (!result.ok) {
-        setStatus(result.reason === 'fragmented' ? messages.videoCutter.statusFragmented : messages.videoCutter.statusError)
+        showFailure(result.reason)
         return
       }
 
       downloadBlob(new Blob([result.bytes], { type: 'video/mp4' }), `${stripExtension(state.fileName)}_cut.mp4`)
       syncSummary()
+    } catch (error) {
+      console.error(error)
+      showFailure('error')
     } finally {
       state.isProcessing = false
       setControlsEnabled(true)
     }
   }
 
-  const stepInput = (input: HTMLInputElement, delta: number, min: number, max: number): void => {
-    const current = parseDecimalNumber(input.value) ?? min
-    const stepped = Math.round((current + delta) * 100) / 100
-    const clamped = clamp(stepped, min, max)
-    setInputValue(input, clamped)
-  }
+  const stepValue = (value: number, delta: number, min: number, max: number): number =>
+    clamp(Math.round((value + delta) * 100) / 100, min, max)
 
   const stopStepRepeats: Array<() => void> = []
 
@@ -308,164 +311,70 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
     btn.addEventListener('click', (e) => e.preventDefault())
   }
 
-  const seekToStart = (): void => {
-    if (state.source === null || state.isFragmented) return
-    const newStart = parseDecimalNumber(elements.startInput.value) ?? 0
-    let seekTo = newStart
-    if (state.analysis) {
-      seekTo = getKeyframeStartSeconds(state.analysis, newStart)
-    }
-    elements.preview.currentTime = seekTo
+  const getKeyframeStart = (): number =>
+    state.analysis ? getKeyframeStartSeconds(state.analysis, state.start) : state.start
+
+  const setStart = (value: number): void => {
+    state.start = clamp(value, 0, state.end)
+    elements.preview.currentTime = getKeyframeStart()
+    syncSummary()
   }
 
-  attachStepButton(elements.startStepDown, () => {
-    if (state.source === null || state.isFragmented) return
-    const endVal = parseDecimalNumber(elements.endInput.value) ?? state.duration
-    stepInput(elements.startInput, -0.1, 0, endVal)
-    seekToStart()
+  const setEnd = (value: number): void => {
+    state.end = clamp(value, state.start, state.duration)
+    scheduleEndingPreview()
     syncSummary()
-  })
+  }
 
-  attachStepButton(elements.startStepUp, () => {
-    if (state.source === null || state.isFragmented) return
-    const endVal = parseDecimalNumber(elements.endInput.value) ?? state.duration
-    stepInput(elements.startInput, 0.1, 0, endVal)
-    seekToStart()
-    syncSummary()
-  })
+  const stepStart = (delta: number): void => {
+    if (!isEditable()) return
+    setStart(stepValue(state.start, delta, 0, state.end))
+    setInputValue(elements.startInput, state.start)
+  }
 
-  attachStepButton(elements.endStepDown, () => {
-    if (state.source === null || state.isFragmented) return
-    const startVal = parseDecimalNumber(elements.startInput.value) ?? 0
-    stepInput(elements.endInput, -0.1, startVal, state.duration)
-    playEndingPreview()
-    syncSummary()
-  })
+  const stepEnd = (delta: number): void => {
+    if (!isEditable()) return
+    setEnd(stepValue(state.end, delta, state.start, state.duration))
+    setInputValue(elements.endInput, state.end)
+  }
 
-  attachStepButton(elements.endStepUp, () => {
-    if (state.source === null || state.isFragmented) return
-    const startVal = parseDecimalNumber(elements.startInput.value) ?? 0
-    stepInput(elements.endInput, 0.1, startVal, state.duration)
-    playEndingPreview()
-    syncSummary()
-  })
+  attachStepButton(elements.startStepDown, () => stepStart(-0.1))
+  attachStepButton(elements.startStepUp, () => stepStart(0.1))
+  attachStepButton(elements.endStepDown, () => stepEnd(-0.1))
+  attachStepButton(elements.endStepUp, () => stepEnd(0.1))
 
+  // Typing only updates the state; rewriting the field mid-typing would turn "1" + "0" into "1,000".
   elements.startInput.addEventListener('input', () => {
-    const val = parseDecimalNumber(elements.startInput.value)
-    if (val !== null) {
-      const clamped = clamp(val, 0, state.duration)
-      setInputValue(elements.startInput, clamped)
-      if (state.source !== null && !state.isFragmented) {
-        let seekTo = clamped
-        if (state.analysis) {
-          seekTo = getKeyframeStartSeconds(state.analysis, clamped)
-        }
-        elements.preview.currentTime = seekTo
-      }
-    }
-    syncSummary()
+    const value = parseDecimalNumber(elements.startInput.value)
+    if (value !== null && isEditable()) setStart(value)
   })
-
   elements.endInput.addEventListener('input', () => {
-    const val = parseDecimalNumber(elements.endInput.value)
-    if (val !== null) {
-      const clamped = clamp(val, 0, state.duration)
-      setInputValue(elements.endInput, clamped)
-      if (state.source !== null && !state.isFragmented) {
-        if (!elements.preview.paused && elements.preview.currentTime > clamped) {
-          elements.preview.pause()
-        }
-        playEndingPreview()
-      }
-    }
-    syncSummary()
+    const value = parseDecimalNumber(elements.endInput.value)
+    if (value !== null && isEditable()) setEnd(value)
   })
-
-  elements.startInput.addEventListener('blur', () => {
-    if (state.source === null || state.isFragmented) {
-      return
-    }
-    const parsed = parseDecimalNumber(elements.startInput.value)
-    if (parsed === null) {
-      setInputValue(elements.startInput, state.start)
-      return
-    }
-    const clamped = clamp(parsed, 0, state.end)
-    state.start = clamped
-    setInputValue(elements.startInput, clamped)
-    syncSummary()
-  })
-
-  elements.endInput.addEventListener('blur', () => {
-    if (state.source === null || state.isFragmented) {
-      return
-    }
-    const parsed = parseDecimalNumber(elements.endInput.value)
-    if (parsed === null) {
-      setInputValue(elements.endInput, state.end)
-      return
-    }
-    const clamped = clamp(parsed, state.start, state.duration)
-    state.end = clamped
-    setInputValue(elements.endInput, clamped)
-    syncSummary()
-  })
+  elements.startInput.addEventListener('change', () => setInputValue(elements.startInput, state.start))
+  elements.endInput.addEventListener('change', () => setInputValue(elements.endInput, state.end))
 
   elements.cutDownload.addEventListener('click', () => {
     void handleCutDownload()
   })
 
+  // Only the selection playback stops at the end; scrubbing in the player itself stays free.
   elements.preview.addEventListener('timeupdate', () => {
-    if (state.source === null || state.isFragmented) {
-      return
-    }
-    const end = parseDecimalNumber(elements.endInput.value)
-    if (end !== null && elements.preview.currentTime >= end) {
+    if (selectionPlayback && elements.preview.currentTime >= state.end) {
       elements.preview.pause()
     }
   })
-
-  elements.preview.addEventListener('ended', () => {
-    if (state.source === null || state.isFragmented) {
-      return
-    }
-    let start = parseDecimalNumber(elements.startInput.value)
-    if (start === null) {
-      return
-    }
-    if (state.analysis) {
-      start = getKeyframeStartSeconds(state.analysis, start)
-    }
-    elements.preview.currentTime = start
-  })
-
-  elements.preview.addEventListener('seeked', () => {
-    if (state.source === null || state.isFragmented) {
-      return
-    }
-    let start = parseDecimalNumber(elements.startInput.value) ?? 0
-    if (state.analysis) {
-      start = getKeyframeStartSeconds(state.analysis, start)
-    }
-    const end = parseDecimalNumber(elements.endInput.value) ?? state.duration
-    if (elements.preview.currentTime < start) {
-      elements.preview.currentTime = start
-    }
-    if (elements.preview.currentTime > end) {
-      elements.preview.currentTime = end
-    }
+  elements.preview.addEventListener('pause', () => {
+    selectionPlayback = false
   })
 
   elements.playSelection.addEventListener('click', () => {
-    if (state.source === null || state.isFragmented) {
+    if (!isEditable()) {
       return
     }
-    const range = getRange()
-    let playStart = range.startSeconds
-    if (state.analysis) {
-      playStart = getKeyframeStartSeconds(state.analysis, playStart)
-    }
-    elements.preview.currentTime = playStart
+    elements.preview.currentTime = getKeyframeStart()
+    selectionPlayback = true
     void elements.preview.play()
   })
 
@@ -473,13 +382,22 @@ export const mountVideoCutter: MountTool = (container, initialMessages) => {
     playEndingPreview()
   })
 
+  // A value that would fall back to 1 s shows that 1 s instead of staying "0" or empty.
+  elements.previewDuration.addEventListener('blur', () => {
+    elements.previewDuration.value = String(getPreviewDuration())
+  })
+
+  const unbindSpacePlayback = bindSpacePlayback(elements.preview)
+
   syncLocale(messages)
   setControlsEnabled(false)
 
   return {
     updateLocale: syncLocale,
     destroy: () => {
+      unbindSpacePlayback()
       stopStepRepeats.forEach((stop) => stop())
+      window.clearTimeout(endingPreviewTimeout)
       elements.preview.pause()
       previewUrl.clear()
     },

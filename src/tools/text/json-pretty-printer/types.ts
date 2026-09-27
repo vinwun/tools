@@ -10,12 +10,11 @@ export type JsonPrettyPrinterState = {
 }
 
 export type JsonPrettyPrinterElements = {
-  form: HTMLFormElement
   uploadLabel: HTMLElement
   uploadHint: HTMLElement
   input: HTMLTextAreaElement
+  largeFileHint: HTMLElement
   indentSelect: HTMLSelectElement
-  formatButton: HTMLButtonElement
   clearButton: HTMLButtonElement
   downloadButton: HTMLButtonElement
   inputLabel: HTMLElement

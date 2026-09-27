@@ -1,4 +1,5 @@
 import type { HiddenCharCategory } from './types.ts'
+import { splitGraphemes } from '../../foundations/text.ts'
 
 export const EXAMPLE_TEXT =
   'Zero-width:\na\u200Bb\u200Cc\u200Dd\u200Ee\u200Ff\u2060g\u2061h\u2062i\u2063j\u2064k\n\n' +
@@ -17,9 +18,17 @@ const BIDI_CODE_POINTS = new Set<number>([
   0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069,
 ])
 
-const SEPARATOR_CODE_POINTS = new Set<number>([0x2028, 0x2029, 0x00a0])
+// Spaces and blanks that look like a normal space or like nothing at all.
+const SEPARATOR_CODE_POINTS = new Set<number>([
+  0x2028, 0x2029, 0x00a0, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008,
+  0x2009, 0x200a, 0x202f, 0x3000, 0x3164, 0x2800,
+])
 
-const CONFU_SABLE_TARGETS: Record<number, string> = {
+// Invisible marks outside the Cf category: variation selectors and the combining grapheme joiner.
+const isInvisibleMark = (cp: number): boolean =>
+  (cp >= 0xfe00 && cp <= 0xfe0f) || (cp >= 0xe0100 && cp <= 0xe01ef) || cp === 0x034f
+
+const CONFUSABLE_TARGETS: Record<number, string> = {
   // Cyrillic lookalikes
   0x0410: 'A', 0x0412: 'B', 0x0415: 'E', 0x041a: 'K', 0x041c: 'M', 0x041d: 'H',
   0x041e: 'O', 0x0420: 'P', 0x0421: 'C', 0x0422: 'T', 0x0423: 'Y', 0x0425: 'X',
@@ -28,7 +37,7 @@ const CONFU_SABLE_TARGETS: Record<number, string> = {
   // Greek lookalikes
   0x0391: 'A', 0x0392: 'B', 0x0395: 'E', 0x0396: 'Z', 0x0397: 'H', 0x0399: 'I',
   0x039a: 'K', 0x039c: 'M', 0x039d: 'N', 0x039f: 'O', 0x03a1: 'P', 0x03a4: 'T',
-  0x03a5: 'Y', 0x03a7: 'X', 0x03b1: 'a', 0x03b2: 'B', 0x03b5: 'e', 0x03bf: 'o',
+  0x03a5: 'Y', 0x03a7: 'X', 0x03b1: 'a', 0x03b2: 'ß', 0x03b5: 'e', 0x03bf: 'o',
   0x03c1: 'p', 0x03c4: 't', 0x03c5: 'u', 0x03c7: 'x',
   // Fullwidth forms (look like ASCII)
   0xff21: 'A', 0xff22: 'B', 0xff23: 'C', 0xff24: 'D', 0xff25: 'E', 0xff26: 'F',
@@ -55,11 +64,11 @@ export const categorizeHiddenCharacter = (
   if (/\p{Cc}/u.test(character) && !isWhitespaceControl(cp)) {
     return { category: 'control' }
   }
-  if (/\p{Cf}/u.test(character)) {
+  if (/\p{Cf}/u.test(character) || isInvisibleMark(cp)) {
     return { category: 'zeroWidth' }
   }
-  if (cp > 0x7f && cp in CONFU_SABLE_TARGETS) {
-    return { category: 'confusable', target: CONFU_SABLE_TARGETS[cp] }
+  if (cp > 0x7f && cp in CONFUSABLE_TARGETS) {
+    return { category: 'confusable', target: CONFUSABLE_TARGETS[cp] }
   }
   return null
 }
@@ -73,11 +82,30 @@ export type PreviewSegment =
   | { type: 'text'; value: string }
   | { type: 'flagged'; value: string; codePoint: number; category: HiddenCharCategory; target?: string }
 
+const isPictographic = (value: string | undefined): boolean => value !== undefined && /\p{Extended_Pictographic}/u.test(value)
+
+// Inside an emoji the joiner (👨‍👩‍👧) is shown as harmless and the emoji style selector (❤️) not at all.
+// A joiner only counts as harmless when an emoji follows it, so "😀\u200Dabc" is still flagged.
+const categorizeInGrapheme = (cp: number, grapheme: string, next: string | undefined): ReturnType<typeof categorizeHiddenCharacter> => {
+  // Keycaps (1️⃣) end in U+20E3; the England flag is 🏴 plus invisible tag letters and a cancel tag.
+  if (!isPictographic(grapheme) && !grapheme.endsWith('⃣')) {
+    return categorizeHiddenCharacter(cp)
+  }
+  if (cp === 0x200d && isPictographic(next)) {
+    return { category: 'emojiJoiner' }
+  }
+  const isFlagTag = cp >= 0xe0020 && cp <= 0xe007f && /^\u{1F3F4}[\u{E0020}-\u{E007E}]+\u{E007F}$/u.test(grapheme)
+  return cp === 0xfe0e || cp === 0xfe0f || isFlagTag ? null : categorizeHiddenCharacter(cp)
+}
+
 export const splitSegments = (text: string): PreviewSegment[] => {
   const segments: PreviewSegment[] = []
-  for (const character of Array.from(text)) {
+  const characters = splitGraphemes(text).flatMap((grapheme) =>
+    Array.from(grapheme).map((character, index, codePoints) => ({ character, grapheme, next: codePoints[index + 1] })),
+  )
+  for (const { character, grapheme, next } of characters) {
     const codePoint = character.codePointAt(0) ?? 0
-    const result = categorizeHiddenCharacter(codePoint)
+    const result = categorizeInGrapheme(codePoint, grapheme, next)
     if (result !== null) {
       segments.push({
         type: 'flagged',
@@ -99,4 +127,4 @@ export const splitSegments = (text: string): PreviewSegment[] => {
 }
 
 export const countHiddenCharacters = (text: string): number =>
-  splitSegments(text).filter((segment) => segment.type === 'flagged').length
+  splitSegments(text).filter((segment) => segment.type === 'flagged' && segment.category !== 'emojiJoiner').length

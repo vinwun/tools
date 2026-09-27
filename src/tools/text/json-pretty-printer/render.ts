@@ -1,16 +1,16 @@
 import type { Messages } from '../../../i18n/schema.ts'
 import { renderFilePicker } from '../../foundations/file-picker/render.ts'
+import { formatAcceptList } from '../../foundations/files.ts'
 import { escapeHtml } from '../../foundations/dom.ts'
 import type { JsonPrettyPrinterState } from './types.ts'
-import { createInitialJsonPrettyPrinterState } from './utils.ts'
+import { createInitialJsonPrettyPrinterState, JSON_INPUT_ACCEPT } from './utils.ts'
 
 export const renderJsonPrettyPrinter = (
   messages: Messages,
   state: JsonPrettyPrinterState = createInitialJsonPrettyPrinterState(),
 ): string => {
   const jsonMessages = messages.jsonPrettyPrinter
-  const inputAccept = '.json,.txt'
-  const inputAcceptLabel = inputAccept.replaceAll(',', ' / ')
+  const inputAcceptLabel = formatAcceptList(JSON_INPUT_ACCEPT)
 
   return `
     <section class="tool-layout tool-layout-auto json-pretty-printer-layout" data-json-pretty-printer-root>
@@ -19,7 +19,7 @@ export const renderJsonPrettyPrinter = (
           <div class="tool-field">
             <span data-json-pretty-printer-upload-label>${jsonMessages.uploadLabel}</span>
             ${renderFilePicker({
-              accept: `${inputAccept},application/json,text/plain`,
+              accept: `${JSON_INPUT_ACCEPT},application/json,text/plain`,
               browseLabel: jsonMessages.uploadAction,
               emptyLabel: jsonMessages.noFileSelected,
             })}
@@ -37,6 +37,7 @@ export const renderJsonPrettyPrinter = (
             spellcheck="false"
             placeholder="${escapeHtml(jsonMessages.inputPlaceholder)}"
           >${state.inputValue}</textarea>
+          <p class="tool-hint json-pretty-printer-large-file-hint" data-json-pretty-printer-large-file-hint hidden>${jsonMessages.largeFileHint}</p>
         </label>
 
         <div class="json-pretty-printer-controls">
@@ -50,7 +51,6 @@ export const renderJsonPrettyPrinter = (
         </div>
 
         <div class="json-pretty-printer-actions">
-          <button type="submit" class="tool-action" data-json-pretty-printer-format>${jsonMessages.formatAction}</button>
           <button type="button" class="tool-action" data-json-pretty-printer-clear>${jsonMessages.clearAction}</button>
         </div>
       </form>

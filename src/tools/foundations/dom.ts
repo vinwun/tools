@@ -44,3 +44,22 @@ export const queryRequired = <T extends Record<string, Element>>(
 
   return elements as T
 }
+
+// Some browsers (Firefox) let any character into number fields, which then show e.g. "0def" or
+// "0+". Installed once for the whole app: digits always pass, a sign only where negative values
+// are allowed (no `min` or a negative one), a separator only where `step` allows fractions.
+export const blockLettersInNumberInputs = (): void => {
+  document.addEventListener('beforeinput', (event) => {
+    const target = event.target
+    if (!(target instanceof HTMLInputElement) || target.type !== 'number' || !event.data) {
+      return
+    }
+
+    const allowsNegative = target.min === '' || Number(target.min) < 0
+    const allowsFraction = target.step === 'any' || target.step.includes('.')
+    const allowed = new RegExp(`^[\\d${allowsFraction ? '.,' : ''}${allowsNegative ? '-' : ''}]+$`)
+    if (!allowed.test(event.data)) {
+      event.preventDefault()
+    }
+  })
+}

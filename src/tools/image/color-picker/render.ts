@@ -53,7 +53,6 @@ export const renderColorPicker = (
                   data-color-picker-hex
                   type="text"
                   inputmode="text"
-                  maxlength="7"
                   placeholder="${messages.colorPicker.hexInputPlaceholder}"
                   value="${hex}"
                   spellcheck="false"

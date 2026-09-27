@@ -6,7 +6,7 @@ import { createObjectUrlSlot } from '../../foundations/object-url.ts'
 import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import { decodeAudioFile, encodeWav, readAudioSampleRate } from '../../audio/audio-utils.ts'
 import { analyzeMp4, getMaxDurationSeconds, stripAudioTracks } from '../mp4-utils.ts'
-import { ACCEPTED_VIDEO_TYPES, formatVideoSeconds } from '../video-utils.ts'
+import { ACCEPTED_VIDEO_TYPES, bindSpacePlayback, describeVideoFailure, formatVideoSeconds, waitForPaint, type VideoFailure } from '../video-utils.ts'
 import type { VideoAudioSplitterElements, VideoAudioSplitterState } from './types.ts'
 
 export const mountVideoAudioSplitter: MountTool = (container, initialMessages) => {
@@ -42,11 +42,23 @@ export const mountVideoAudioSplitter: MountTool = (container, initialMessages) =
     videoTrackCount: 0,
     audioTrackCount: 0,
     isProcessing: false,
-    errorReason: null,
+    failure: null,
   }
+  let loadToken = 0
 
   const setStatus = (text: string): void => {
     elements.status.textContent = text
+  }
+
+  // The reason is kept, not the text, so the message follows a locale switch.
+  const showFailure = (failure: VideoFailure): void => {
+    state.failure = failure
+    setStatus(describeVideoFailure(messages.videoAudioSplitter, failure))
+  }
+
+  const showReady = (): void => {
+    state.failure = null
+    setStatus(messages.videoAudioSplitter.statusReady)
   }
 
   const previewUrl = createObjectUrlSlot()
@@ -83,7 +95,7 @@ export const mountVideoAudioSplitter: MountTool = (container, initialMessages) =
     state.videoTrackCount = 0
     state.audioTrackCount = 0
     state.isProcessing = false
-    state.errorReason = null
+    state.failure = null
 
     previewUrl.clear()
     elements.preview.removeAttribute('src')
@@ -117,10 +129,9 @@ export const mountVideoAudioSplitter: MountTool = (container, initialMessages) =
     try {
       const wavBuffer = await buildWavBuffer(state.file as File)
       downloadBlob(new Blob([wavBuffer], { type: 'audio/wav' }), `${stripExtension(state.fileName)}.wav`)
-      setStatus(messages.videoAudioSplitter.statusReady)
+      showReady()
     } catch {
-      state.errorReason = 'audio'
-      setStatus(messages.videoAudioSplitter.statusError)
+      showFailure('error')
     } finally {
       setProcessing(false)
     }
@@ -135,15 +146,18 @@ export const mountVideoAudioSplitter: MountTool = (container, initialMessages) =
     setStatus(messages.videoAudioSplitter.statusProcessing)
 
     try {
+      await waitForPaint()
       const result = stripAudioTracks(state.source)
       if (!result.ok) {
-        state.errorReason = result.reason
-        setStatus(messages.videoAudioSplitter.statusError)
+        showFailure(result.reason)
         return
       }
 
       downloadBlob(new Blob([result.bytes], { type: 'video/mp4' }), `${stripExtension(state.fileName)}_silent.mp4`)
-      setStatus(messages.videoAudioSplitter.statusReady)
+      showReady()
+    } catch (error) {
+      console.error(error)
+      showFailure('error')
     } finally {
       setProcessing(false)
     }
@@ -168,29 +182,30 @@ export const mountVideoAudioSplitter: MountTool = (container, initialMessages) =
 
     if (!state.file) {
       filePicker.setName(messages.videoAudioSplitter.noFileSelected)
-      setStatus(state.errorReason ? messages.videoAudioSplitter.statusUnsupported : messages.videoAudioSplitter.statusNoFile)
-      return
     }
-
-    if (state.errorReason) {
-      setStatus(messages.videoAudioSplitter.statusError)
-      return
+    if (state.failure) {
+      showFailure(state.failure)
+    } else if (!state.file) {
+      setStatus(messages.videoAudioSplitter.statusNoFile)
+    } else {
+      renderInfo()
     }
-
-    renderInfo()
   }
 
   const loadFile = async (file: File): Promise<void> => {
     resetState()
+    const token = ++loadToken
     filePicker.setName(file.name)
     setStatus(messages.videoAudioSplitter.statusLoading)
 
     try {
       const source = new Uint8Array(await file.arrayBuffer())
+      if (token !== loadToken) {
+        return
+      }
       const analysis = analyzeMp4(source)
       if (!analysis.moov) {
-        state.errorReason = 'unsupported'
-        setStatus(messages.videoAudioSplitter.statusUnsupported)
+        showFailure('notMp4')
         return
       }
 
@@ -209,9 +224,10 @@ export const mountVideoAudioSplitter: MountTool = (container, initialMessages) =
       setProcessing(false)
       renderInfo()
     } catch {
-      state.errorReason = 'parse'
-      setStatus(messages.videoAudioSplitter.statusUnsupported)
-      setProcessing(false)
+      if (token === loadToken) {
+        showFailure('unsupported')
+        setProcessing(false)
+      }
     }
   }
 
@@ -227,10 +243,12 @@ export const mountVideoAudioSplitter: MountTool = (container, initialMessages) =
   filePicker.setName(messages.videoAudioSplitter.noFileSelected)
   setStatus(messages.videoAudioSplitter.statusNoFile)
   setProcessing(false)
+  const unbindSpacePlayback = bindSpacePlayback(elements.preview)
 
   return {
     updateLocale: syncLocale,
     destroy: () => {
+      unbindSpacePlayback()
       elements.preview.pause()
       previewUrl.clear()
     },

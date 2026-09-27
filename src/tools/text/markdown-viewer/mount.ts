@@ -1,5 +1,5 @@
 import type { Messages } from '../../../i18n/schema.ts'
-import { downloadBlob, formatAcceptList, readFileAsText } from '../../foundations/files.ts'
+import { downloadBlob, formatAcceptList, readFileAsText, stripExtension } from '../../foundations/files.ts'
 import { queryRequired } from '../../foundations/dom.ts'
 import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
 import type { MarkdownViewerElements, MarkdownViewerState } from './types.ts'
@@ -18,7 +18,6 @@ const syncLocalizedText = (
   elements.uploadHint.textContent = `${markdownMessages.uploadHint}: ${INPUT_ACCEPT_LABEL}`
   elements.inputLabel.textContent = markdownMessages.inputLabel
   elements.input.placeholder = markdownMessages.inputPlaceholder
-  elements.renderButton.textContent = markdownMessages.renderAction
   elements.clearButton.textContent = markdownMessages.clearAction
   elements.downloadButton.textContent = markdownMessages.downloadAction
   elements.outputLabel.textContent = markdownMessages.outputLabel
@@ -76,11 +75,9 @@ const renderMarkdownInput = (
 
 export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
   const elements = queryRequired<MarkdownViewerElements>(container, {
-    form: '[data-markdown-viewer-form]',
     uploadLabel: '[data-markdown-viewer-upload-label]',
     uploadHint: '[data-markdown-viewer-upload-hint]',
     input: '[data-markdown-viewer-input]',
-    renderButton: '[data-markdown-viewer-render]',
     clearButton: '[data-markdown-viewer-clear]',
     downloadButton: '[data-markdown-viewer-download]',
     inputLabel: '[data-markdown-viewer-input-label]',
@@ -111,6 +108,19 @@ export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
     filePicker.setName(fileName ?? messages.markdownViewer.noFileSelected)
   }
 
+  const clear = (): void => {
+    state.inputValue = ''
+    state.renderedHtml = ''
+    state.status = 'empty'
+    state.selectedFileName = null
+    elements.input.value = ''
+    filePicker.input.value = ''
+    filePicker.setName(messages.markdownViewer.noFileSelected)
+    updateStatus(elements, messages, state)
+    resetOutput(elements)
+    elements.downloadButton.disabled = true
+  }
+
   const loadFile = async (file: File): Promise<void> => {
     try {
       updateFileName(file.name)
@@ -119,8 +129,8 @@ export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
       renderMarkdownInput(elements, state)
       updateStatus(elements, messages, state)
     } catch {
-      state.status = 'empty'
-      updateStatus(elements, messages, state)
+      // Keeping the previous output would pair it with the new file name.
+      clear()
     }
   }
 
@@ -139,23 +149,15 @@ export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
     scheduleRender()
   })
 
-  elements.form.addEventListener('submit', (event) => {
-    event.preventDefault()
-    renderMarkdownInput(elements, state)
-    updateStatus(elements, messages, state)
-  })
+  elements.clearButton.addEventListener('click', clear)
 
-  elements.clearButton.addEventListener('click', () => {
-    state.inputValue = ''
-    state.renderedHtml = ''
-    state.status = 'empty'
-    state.selectedFileName = null
-    elements.input.value = ''
-    filePicker.input.value = ''
-    filePicker.setName(messages.markdownViewer.noFileSelected)
-    updateStatus(elements, messages, state)
-    resetOutput(elements)
-    elements.downloadButton.disabled = true
+  // A "#heading" link would change the page URL, which the app treats as navigation.
+  elements.outputContainer.addEventListener('click', (event) => {
+    const href = (event.target as Element).closest('a')?.getAttribute('href')
+    if (href?.startsWith('#')) {
+      event.preventDefault()
+      elements.outputContainer.querySelector(`#${CSS.escape(href.slice(1))}`)?.scrollIntoView()
+    }
   })
 
   elements.downloadButton.addEventListener('click', () => {
@@ -167,7 +169,7 @@ export const mountMarkdownViewer: MountTool = (container, initialMessages) => {
     const title = elements.outputContainer.querySelector('h1, h2, h3')?.textContent?.trim() || 'Markdown'
     const html = wrapHtmlDocument(state.renderedHtml, title, document.documentElement.lang)
     const blob = new Blob([html], { type: 'text/html' })
-    downloadBlob(blob, 'markdown.html')
+    downloadBlob(blob, `${state.selectedFileName ? stripExtension(state.selectedFileName) : 'markdown'}.html`)
   })
 
   return {

@@ -51,6 +51,7 @@ export const renderPrimeFactorizer = (
         <p class="tool-hint" data-prime-factorizer-${key}-hint>${hint}</p>`,
           )
           .join('')}
+        <p class="tool-status" role="status" data-prime-factorizer-status hidden>${primeMessages.tooLargeHint}</p>
       </div>
     </section>
   `

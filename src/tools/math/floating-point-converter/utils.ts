@@ -44,71 +44,38 @@ const bitsToFloat64 = (bits: bigint): number => {
   return float64View.getFloat64(0, false)
 }
 
+// Rounds half to even, as IEEE 754 does; exact for the scaled values used below.
+const roundHalfToEven = (value: number): number => {
+  const floor = Math.floor(value)
+  const fraction = value - floor
+  return fraction > 0.5 || (fraction === 0.5 && floor % 2 !== 0) ? floor + 1 : floor
+}
+
+// Works on the float64 value directly: going through float32 first would round twice.
 const numberToHalfBits = (value: number): number => {
   if (Number.isNaN(value)) {
     return 0x7e00
   }
-  if (value === Infinity) {
-    return 0x7c00
-  }
-  if (value === -Infinity) {
-    return 0xfc00
-  }
 
-  const bits = float32ToBits(value)
-  const sign = (bits >>> 31) & 0x1
-  let exponent = (bits >>> 23) & 0xff
-  let mantissa = bits & 0x7fffff
+  const sign = value < 0 || Object.is(value, -0) ? 0x8000 : 0
+  const magnitude = Math.abs(value)
 
-  if (exponent === 0 && mantissa === 0) {
-    return sign << 15
+  if (magnitude < 2 ** -14) {
+    // A subnormal that rounds up to 0x400 carries into the smallest normal, so it stays unmasked.
+    return sign | roundHalfToEven(magnitude * 2 ** 24)
   }
 
-  if (exponent === 0xff) {
-    return (sign << 15) | 0x7c00 | (mantissa ? 0x200 : 0)
-  }
+  let exponent = Math.floor(Math.log2(magnitude))
+  if (2 ** exponent > magnitude) exponent -= 1
+  if (2 ** (exponent + 1) <= magnitude) exponent += 1
 
-  exponent = exponent - 127 + 15
-
-  if (exponent >= 0x1f) {
-    return (sign << 15) | 0x7c00
-  }
-
-  if (exponent <= 0) {
-    if (exponent < -10) {
-      return sign << 15
-    }
-
-    mantissa |= 0x800000
-    const shift = 1 - exponent
-    let halfMantissa = mantissa >> (shift + 13)
-    const roundBit = (mantissa >> (shift + 12)) & 0x1
-    const sticky = mantissa & ((1 << (shift + 12)) - 1)
-
-    if (roundBit && (sticky !== 0 || (halfMantissa & 0x1))) {
-      halfMantissa += 1
-    }
-
-    return (sign << 15) | (halfMantissa & 0x3ff)
-  }
-
-  let halfMantissa = mantissa >> 13
-  const roundBit = (mantissa >> 12) & 0x1
-  const sticky = mantissa & 0xfff
-
-  if (roundBit && (sticky !== 0 || (halfMantissa & 0x1))) {
-    halfMantissa += 1
-  }
-
-  if (halfMantissa === 0x400) {
-    halfMantissa = 0
+  let mantissa = roundHalfToEven((magnitude / 2 ** exponent - 1) * 1024)
+  if (mantissa === 1024) {
+    mantissa = 0
     exponent += 1
-    if (exponent >= 0x1f) {
-      return (sign << 15) | 0x7c00
-    }
   }
 
-  return (sign << 15) | (exponent << 10) | (halfMantissa & 0x3ff)
+  return exponent + 15 >= 0x1f ? sign | 0x7c00 : sign | ((exponent + 15) << 10) | mantissa
 }
 
 const halfBitsToNumber = (bits: number): number => {
@@ -189,8 +156,9 @@ export const parseDecimalInput = (value: string): number | null => {
   }
 
   // NaN and the infinities are typed literally here, so they bypass the numeric parser.
-  if (NON_FINITE_INPUTS.has(trimmed.toLowerCase())) {
-    return Number(trimmed)
+  const lower = trimmed.toLowerCase()
+  if (NON_FINITE_INPUTS.has(lower)) {
+    return lower === 'nan' ? Number.NaN : lower.startsWith('-') ? -Infinity : Infinity
   }
 
   return parseDecimalNumber(trimmed)
@@ -261,24 +229,6 @@ const leadingMagnitude = (value: number): number => {
   }
 
   return Math.floor(Math.log10(Math.abs(value)))
-}
-
-export const isTransientDecimalInput = (value: string): boolean => {
-  // Either separator may be mid-typing, so both count as an incomplete decimal.
-  const trimmed = value.trim().replace(',', '.')
-  if (trimmed === '' || trimmed === '-' || trimmed === '+') {
-    return true
-  }
-
-  if (trimmed.endsWith('.')) {
-    return true
-  }
-
-  if (/^[+-]?\d+\.\d*0$/.test(trimmed)) {
-    return true
-  }
-
-  return /e[+-]?$/i.test(trimmed)
 }
 
 // Emits the exact digits with a '.' separator; use `localizeDecimalNumber` for display.

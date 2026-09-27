@@ -13,7 +13,6 @@ import {
   formatDelta,
   localizeDecimalNumber,
   formatValueWithDelta,
-  isTransientDecimalInput,
   parseDecimalInput,
   getInterpretationLabel,
 } from './utils.ts'
@@ -145,11 +144,14 @@ export const mountFloatingPointConverter: MountTool = (container, initialMessage
     syncUi()
   }
 
-  const updateAllFromDecimalValue = (value: number): void => {
+  // The decimal field is left alone while it is typed in and normalized on blur.
+  const updateAllFromDecimalValue = (value: number, writeDecimalField = true): void => {
     decimalNumber = value
     state.decimalNumber = value
-    state.decimalValue = localizeDecimalNumber(value, resolveNumberLocale())
-    elements.decimalInput.value = state.decimalValue
+    if (writeDecimalField) {
+      state.decimalValue = localizeDecimalNumber(value, resolveNumberLocale())
+      elements.decimalInput.value = state.decimalValue
+    }
 
     for (const format of FLOATING_POINT_FORMATS) {
       state.formats[format.id] = buildFormatDisplayFromNumber(format, value)
@@ -173,15 +175,12 @@ export const mountFloatingPointConverter: MountTool = (container, initialMessage
 
   const handleDecimalInput = (): void => {
     state.decimalValue = elements.decimalInput.value
-    if (isTransientDecimalInput(state.decimalValue)) {
-      return
-    }
     const parsed = parseDecimalInput(state.decimalValue)
     if (parsed === null) {
       return
     }
 
-    updateAllFromDecimalValue(parsed)
+    updateAllFromDecimalValue(parsed, false)
     updateLastValid()
   }
 
@@ -210,15 +209,10 @@ export const mountFloatingPointConverter: MountTool = (container, initialMessage
   }
 
   const revertDecimalIfInvalid = (): void => {
-    if (isTransientDecimalInput(elements.decimalInput.value)) {
-      const parsed = parseDecimalInput(elements.decimalInput.value)
-      if (parsed !== null) {
-        updateAllFromDecimalValue(parsed)
-        updateLastValid()
-      }
-      return
-    }
-    if (parseDecimalInput(elements.decimalInput.value) !== null) {
+    const parsed = parseDecimalInput(elements.decimalInput.value)
+    if (parsed !== null) {
+      updateAllFromDecimalValue(parsed)
+      updateLastValid()
       return
     }
 

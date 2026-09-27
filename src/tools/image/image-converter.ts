@@ -36,6 +36,23 @@ const canvasToBlob = (canvas: HTMLCanvasElement, mimeType: string, quality?: num
     )
   })
 
+const FALLBACK_SVG_SIZE = 1024
+
+// An SVG without width/height has no intrinsic size in some browsers; its viewBox still gives the
+// aspect ratio.
+const getCanvasSize = async (file: File, image: HTMLImageElement): Promise<{ width: number; height: number }> => {
+  if (image.naturalWidth > 0 && image.naturalHeight > 0) {
+    return { width: image.naturalWidth, height: image.naturalHeight }
+  }
+
+  const viewBox = (await file.text()).match(/viewBox\s*=\s*["']([^"']*)["']/)?.[1] ?? ''
+  const [, , viewBoxWidth, viewBoxHeight] = viewBox.trim().split(/[\s,]+/).map(Number)
+  const ratio = viewBoxWidth > 0 && viewBoxHeight > 0 ? viewBoxWidth / viewBoxHeight : 1
+  return ratio >= 1
+    ? { width: FALLBACK_SVG_SIZE, height: Math.round(FALLBACK_SVG_SIZE / ratio) }
+    : { width: Math.round(FALLBACK_SVG_SIZE * ratio), height: FALLBACK_SVG_SIZE }
+}
+
 const getImageFormatId = (file: File): string | null => {
   const extension = getFileExtension(file.name)
 
@@ -49,8 +66,8 @@ const getImageFormatId = (file: File): string | null => {
 const convertImageFile = async (file: File, outputFormatId: string): Promise<ConverterResult> => {
   const formatMap = {
     png: { mimeType: 'image/png', extension: 'png' },
-    jpg: { mimeType: 'image/jpeg', extension: 'jpg', quality: 1 },
-    webp: { mimeType: 'image/webp', extension: 'webp', quality: 1 },
+    jpg: { mimeType: 'image/jpeg', extension: 'jpg', quality: 0.92 },
+    webp: { mimeType: 'image/webp', extension: 'webp', quality: 0.92 },
   } as const
 
   if (!(outputFormatId in formatMap)) {
@@ -74,15 +91,22 @@ const convertImageFile = async (file: File, outputFormatId: string): Promise<Con
 
     const image = await loadImage(file)
     const canvas = document.createElement('canvas')
-    canvas.width = image.naturalWidth
-    canvas.height = image.naturalHeight
+    const { width, height } = await getCanvasSize(file, image)
+    canvas.width = width
+    canvas.height = height
 
     const context = canvas.getContext('2d')
     if (!context) {
       return { ok: false, reason: 'conversionFailed' }
     }
 
-    context.drawImage(image, 0, 0)
+    // JPEG has no alpha channel, so transparent areas would otherwise turn black.
+    if (outputFormat.mimeType === 'image/jpeg') {
+      context.fillStyle = '#FFFFFF'
+      context.fillRect(0, 0, width, height)
+    }
+
+    context.drawImage(image, 0, 0, width, height)
     const quality = 'quality' in outputFormat ? outputFormat.quality : undefined
     const blob = await canvasToBlob(canvas, outputFormat.mimeType, quality)
 

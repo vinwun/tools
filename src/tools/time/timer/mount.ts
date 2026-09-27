@@ -138,6 +138,7 @@ export const mountTimer: MountTool = (container, initialMessages) => {
   const beeper = createBeeper()
   let rafId: number | null = null
   let completionTimeoutId: number | null = null
+  let displayedMarkup = ''
 
   const cancelRaf = (): void => {
     if (rafId !== null) {
@@ -165,7 +166,12 @@ export const mountTimer: MountTool = (container, initialMessages) => {
     const isActive = state.status !== 'idle'
     // A running timer shows whole seconds rounded up, so 00:00:00 only appears at completion.
     const displayMs = isActive ? Math.ceil(boundedMs / 1000) * 1000 : boundedMs
-    elements.display.innerHTML = renderTimerDisplayMarkup(displayMs, isActive)
+    const markup = renderTimerDisplayMarkup(displayMs, isActive)
+    // Called every frame while running, but the digits change only once per second.
+    if (markup !== displayedMarkup) {
+      elements.display.innerHTML = markup
+      displayedMarkup = markup
+    }
     elements.display.classList.toggle('disabled', isActive)
   }
 
@@ -324,6 +330,8 @@ export const mountTimer: MountTool = (container, initialMessages) => {
 
     updateButtons()
     rafId = requestAnimationFrame(tick)
+    // Background tabs pause animation frames, so the end must not depend on `tick`.
+    completionTimeoutId = window.setTimeout(complete, state.remainingMs)
     elements.display.removeEventListener('wheel', handleDisplayWheel)
   }
 

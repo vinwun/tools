@@ -1,13 +1,12 @@
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, type PDFPage } from 'pdf-lib'
 import { getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
 import type { Messages } from '../../../i18n/schema.ts'
 import type { MountTool } from '../../types.ts'
 import { configurePdfWorker } from '../pdf-worker.ts'
-import { keepSelectedEntries, moveSelectedEntries, removeSelectedEntries, type PdfPageEntry, PDF_THUMBNAIL_SCALE, buildSelectionRange, countSelectedEntries } from './utils.ts'
+import { canShiftSelection, keepSelectedEntries, moveSelectedEntries, removeSelectedEntries, shiftSelectedEntries, type PdfPageEntry, PDF_THUMBNAIL_SCALE, buildSelectionRange, countSelectedEntries } from './utils.ts'
 import { createUniqueId, escapeHtml, formatMessage, queryRequired } from '../../foundations/dom.ts'
 import { wireFilePicker } from '../../foundations/file-picker/mount.ts'
-import { downloadBlob, formatAcceptList } from '../../foundations/files.ts'
-import { clamp } from '../../foundations/numbers.ts'
+import { downloadBlob, formatAcceptList, stripExtension } from '../../foundations/files.ts'
 import { ACCEPTED_PDF_TYPES, isPdfFile } from '../pdf-utils.ts'
 
 type PdfDropTarget =
@@ -20,6 +19,7 @@ type PdfWorkspaceState = {
   selectedIndices: Set<number>
   anchorIndex: number | null
   isBusy: boolean
+  notice: 'uploadingStatus' | 'loadFailed' | 'exportFailed' | null
   dragIndex: number | null
   dropTarget: PdfDropTarget
 }
@@ -44,9 +44,14 @@ type PdfPageOrganizerElements = {
   downloadButton: HTMLButtonElement
 }
 
+// Rendering every thumbnail at once freezes the tab on large PDFs.
+const MAX_PARALLEL_THUMBNAILS = 3
+
 const isEditableTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   (target.matches('input, textarea, select') || target.isContentEditable)
+
+const hasFiles = (event: DragEvent): boolean => event.dataTransfer?.types.includes('Files') ?? false
 
 const getCardIndex = (event: Event): { card: HTMLElement; index: number } | null => {
   const card = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('[data-pdf-page-index]') : null
@@ -54,8 +59,8 @@ const getCardIndex = (event: Event): { card: HTMLElement; index: number } | null
   return card && !Number.isNaN(index) ? { card, index } : null
 }
 
-const updateEntry = (entries: PdfPageEntry[], entryId: string, patch: Partial<PdfPageEntry>): PdfPageEntry[] =>
-  entries.map((entry) => (entry.id === entryId ? { ...entry, ...patch } : entry))
+const revokeThumbnails = (entries: readonly PdfPageEntry[]): void =>
+  entries.forEach((entry) => entry.thumbnailUrl && URL.revokeObjectURL(entry.thumbnailUrl))
 
 const renderThumbnailMarkup = (entry: PdfPageEntry, messages: Messages): string => {
   if (entry.thumbnailState === 'ready' && entry.thumbnailUrl) {
@@ -69,22 +74,22 @@ const renderThumbnailMarkup = (entry: PdfPageEntry, messages: Messages): string 
   return `<div class="pdf-page-organizer-page-thumbnail-fallback">${escapeHtml(messages.pdfPageOrganizer.thumbnailLoading)}</div>`
 }
 
-const renderPageCard = (entry: PdfPageEntry, index: number, selected: boolean, dropTarget: PdfDropTarget, messages: Messages): string => {
+// Selection and drop target are applied by `syncCardStates`, so they never need a re-render.
+const renderPageCard = (entry: PdfPageEntry, index: number, messages: Messages): string => {
   const entryLabel = formatMessage(messages.pdfPageOrganizer.pageEntryLabel, {
     fileName: entry.fileName,
     page: entry.pageNumber,
     pageCount: entry.pageCount,
   })
-  const dropBeforeClass = dropTarget.kind === 'before' && dropTarget.index === index ? ' is-drop-target' : ''
 
   return `
     <div
-      class="tool-card pdf-page-organizer-page-card${selected ? ' is-selected' : ''}${dropBeforeClass}"
+      class="tool-card pdf-page-organizer-page-card"
       data-pdf-page-index="${index}"
+      data-pdf-page-id="${entry.id}"
       role="option"
       draggable="true"
       tabindex="0"
-      aria-selected="${selected ? 'true' : 'false'}"
       aria-label="${escapeHtml(entryLabel)}"
     >
       <div class="pdf-page-organizer-page-thumbnail">
@@ -97,8 +102,15 @@ const renderPageCard = (entry: PdfPageEntry, index: number, selected: boolean, d
   `
 }
 
-const renderPageList = (state: PdfWorkspaceState, messages: Messages): string =>
-  state.entries.map((entry, index) => renderPageCard(entry, index, state.selectedIndices.has(index), state.dropTarget, messages)).join('')
+const syncCardStates = (elements: PdfPageOrganizerElements, state: PdfWorkspaceState): void => {
+  Array.from(elements.pageList.children).forEach((card, index) => {
+    const selected = state.selectedIndices.has(index)
+    card.classList.toggle('is-selected', selected)
+    card.classList.toggle('is-drop-target', state.dropTarget.kind === 'before' && state.dropTarget.index === index)
+    card.setAttribute('aria-selected', String(selected))
+  })
+  elements.endDropTarget.classList.toggle('is-dragover', state.dropTarget.kind === 'end')
+}
 
 const setSelection = (state: PdfWorkspaceState, indices: readonly number[], anchorIndex: number | null): void => {
   state.selectedIndices = new Set(indices)
@@ -118,10 +130,11 @@ const renderWorkspace = (
 ): void => {
   const pdfMessages = messages.pdfPageOrganizer
   root.classList.toggle('pdf-page-organizer-has-pages', state.entries.length > 0)
-  elements.pageList.innerHTML = renderPageList(state, messages)
+  syncCardStates(elements, state)
+  elements.summary.classList.toggle('is-error', state.notice === 'loadFailed' || state.notice === 'exportFailed')
   elements.summary.textContent =
-    state.isBusy
-      ? pdfMessages.uploadingStatus
+    state.notice
+      ? pdfMessages[state.notice]
       : state.entries.length === 0
       ? pdfMessages.emptyState
       : formatMessage(pdfMessages.documentsSummary, {
@@ -134,15 +147,13 @@ const renderWorkspace = (
 
   const hasEntries = state.entries.length > 0
   const hasSelection = state.selectedIndices.size > 0
-  const blockIndex = hasSelection ? Math.min(...state.selectedIndices) : 0
-  const remainingCount = state.entries.length - state.selectedIndices.size
 
   elements.keepButton.disabled = state.isBusy || !hasSelection
   elements.removeButton.disabled = state.isBusy || !hasSelection
   elements.downloadButton.disabled = state.isBusy || !hasEntries
   elements.clearButton.disabled = state.isBusy || !hasEntries
-  elements.moveLeftButton.disabled = state.isBusy || !hasSelection || blockIndex === 0
-  elements.moveRightButton.disabled = state.isBusy || !hasSelection || blockIndex >= remainingCount
+  elements.moveLeftButton.disabled = state.isBusy || !canShiftSelection(state.entries.length, state.selectedIndices, -1)
+  elements.moveRightButton.disabled = state.isBusy || !canShiftSelection(state.entries.length, state.selectedIndices, 1)
 }
 
 const syncStaticTexts = (elements: PdfPageOrganizerElements, browseButton: HTMLButtonElement, messages: Messages): void => {
@@ -196,15 +207,18 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
   const { listShell, pageList, endDropTarget } = elements
   const listeners = new AbortController()
   const loadedDocuments: PDFDocumentProxy[] = []
+  const documentByFile = new Map<File, PDFDocumentProxy>()
+  // Thumbnails are only rendered for cards in or near the visible part of the list.
+  const nearbyEntryIds = new Set<string>()
+  const renderingEntryIds = new Set<string>()
   let messages = initialMessages
-  // Bumped on every load, clear and destroy, so thumbnails of a stale batch are discarded.
-  let generation = 0
 
   const state: PdfWorkspaceState = {
     entries: [],
     selectedIndices: new Set(),
     anchorIndex: null,
     isBusy: false,
+    notice: null,
     dragIndex: null,
     dropTarget: { kind: 'none' },
   }
@@ -221,67 +235,110 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
   }
 
   const sync = (): void => {
-    const scroll = { left: listShell.scrollLeft, top: listShell.scrollTop }
     renderWorkspace(root, elements, state, messages)
+  }
+
+  const releaseDocuments = (): void => {
+    documentByFile.clear()
+    loadedDocuments.splice(0).forEach((pdfDocument) => void pdfDocument.destroy())
+  }
+
+  const loadThumbnail = async (entry: PdfPageEntry): Promise<void> => {
+    // Removed or cleared meanwhile: the result is dropped and the document may already be destroyed.
+    const isStale = (): boolean => listeners.signal.aborted || !state.entries.includes(entry)
+    try {
+      const pdfDocument = documentByFile.get(entry.file)
+      if (!pdfDocument) {
+        return
+      }
+
+      const page = await pdfDocument.getPage(entry.pageNumber)
+      const viewport = page.getViewport({ scale: PDF_THUMBNAIL_SCALE })
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+      if (!context) {
+        throw new Error('Canvas context unavailable')
+      }
+
+      canvas.width = Math.max(1, Math.floor(viewport.width))
+      canvas.height = Math.max(1, Math.floor(viewport.height))
+      await page.render({ canvas, canvasContext: context, viewport }).promise
+      page.cleanup()
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve))
+      if (isStale()) {
+        return
+      }
+
+      entry.thumbnailState = blob ? 'ready' : 'failed'
+      entry.thumbnailUrl = blob ? URL.createObjectURL(blob) : null
+    } catch (error) {
+      if (isStale()) {
+        return
+      }
+
+      entry.thumbnailState = 'failed'
+      console.error(error)
+    }
+
+    const thumbnail = pageList.querySelector(`[data-pdf-page-id="${entry.id}"] .pdf-page-organizer-page-thumbnail`)
+    if (thumbnail) {
+      thumbnail.innerHTML = renderThumbnailMarkup(entry, messages)
+    }
+  }
+
+  const pumpThumbnails = (): void => {
+    for (const entryId of nearbyEntryIds) {
+      if (renderingEntryIds.size >= MAX_PARALLEL_THUMBNAILS) {
+        return
+      }
+
+      nearbyEntryIds.delete(entryId)
+      const entry = state.entries.find((candidate) => candidate.id === entryId)
+      if (!entry || entry.thumbnailState !== 'loading' || renderingEntryIds.has(entryId)) {
+        continue
+      }
+
+      renderingEntryIds.add(entryId)
+      void loadThumbnail(entry).finally(() => {
+        renderingEntryIds.delete(entryId)
+        pumpThumbnails()
+      })
+    }
+  }
+
+  // The margin of one list width on each side preloads neighbors before they scroll into view.
+  const thumbnailObserver = new IntersectionObserver((changes) => {
+    changes.forEach(({ target, isIntersecting }) => {
+      const entryId = (target as HTMLElement).dataset.pdfPageId ?? ''
+      if (isIntersecting) {
+        nearbyEntryIds.add(entryId)
+      } else {
+        nearbyEntryIds.delete(entryId)
+      }
+    })
+    pumpThumbnails()
+  }, { root: listShell, rootMargin: '0px 100%' })
+
+  // Only needed when entries change; selection and drop target updates go through `sync`.
+  const renderList = (): void => {
+    const scroll = { left: listShell.scrollLeft, top: listShell.scrollTop }
+    const cards = (): HTMLElement[] => Array.from(pageList.children) as HTMLElement[]
+    const focusedIndex = cards().indexOf(document.activeElement as HTMLElement)
+    thumbnailObserver.disconnect()
+    nearbyEntryIds.clear()
+    pageList.innerHTML = state.entries.map((entry, index) => renderPageCard(entry, index, messages)).join('')
+    cards().forEach((card) => thumbnailObserver.observe(card))
+    sync()
     restoreListScroll(scroll)
+    if (focusedIndex >= 0) {
+      cards()[Math.min(focusedIndex, cards().length - 1)]?.focus({ preventScroll: true })
+    }
   }
 
   const syncLocale = (nextMessages: Messages): void => {
     messages = nextMessages
     syncStaticTexts(elements, filePicker.browseButton, messages)
-    sync()
-  }
-
-  const releaseDocuments = (): void => {
-    loadedDocuments.splice(0).forEach((pdfDocument) => void pdfDocument.destroy())
-  }
-
-  const loadThumbnail = async (
-    pdfDocument: PDFDocumentProxy,
-    entryId: string,
-    pageNumber: number,
-    thumbnailGeneration: number,
-  ): Promise<void> => {
-    try {
-      const page = await pdfDocument.getPage(pageNumber)
-      const viewport = page.getViewport({ scale: PDF_THUMBNAIL_SCALE })
-      const canvas = document.createElement('canvas')
-      const context = canvas.getContext('2d')
-
-      if (!context) {
-        state.entries = updateEntry(state.entries, entryId, {
-          thumbnailState: 'failed',
-          thumbnailUrl: null,
-        })
-        sync()
-        return
-      }
-
-      canvas.width = Math.max(1, Math.floor(viewport.width))
-      canvas.height = Math.max(1, Math.floor(viewport.height))
-
-      await page.render({ canvas, canvasContext: context, viewport }).promise
-      if (thumbnailGeneration !== generation) {
-        return
-      }
-
-      state.entries = updateEntry(state.entries, entryId, {
-        thumbnailState: 'ready',
-        thumbnailUrl: canvas.toDataURL('image/png'),
-      })
-      sync()
-    } catch (error) {
-      if (thumbnailGeneration !== generation) {
-        return
-      }
-
-      state.entries = updateEntry(state.entries, entryId, {
-        thumbnailState: 'failed',
-        thumbnailUrl: null,
-      })
-      console.error(error)
-      sync()
-    }
+    renderList()
   }
 
   const clearSelection = (): void => {
@@ -297,7 +354,7 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
 
   const setDropTarget = (dropTarget: PdfDropTarget): void => {
     state.dropTarget = dropTarget
-    sync()
+    syncCardStates(elements, state)
   }
 
   const resetDropTarget = (): void => {
@@ -306,7 +363,11 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
 
   const handlePageListWheel = (event: WheelEvent): void => {
     const horizontalScroll = event.deltaX !== 0 ? event.deltaX : event.deltaY
-    if (horizontalScroll === 0 || listShell.scrollWidth <= listShell.clientWidth) {
+    // At either end the wheel scrolls the page again instead of being swallowed.
+    const canScroll = horizontalScroll < 0
+      ? listShell.scrollLeft > 0
+      : horizontalScroll > 0 && listShell.scrollLeft < listShell.scrollWidth - listShell.clientWidth - 1
+    if (!canScroll) {
       return
     }
 
@@ -334,9 +395,12 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
   }
 
   const replaceEntries = (entries: PdfPageEntry[]): void => {
+    revokeThumbnails(state.entries.filter((entry) => !entries.includes(entry)))
     state.entries = entries
+    state.notice = null
+    state.dropTarget = { kind: 'none' }
     clearSelection()
-    resetDropTarget()
+    renderList()
   }
 
   const applyKeep = (): void => {
@@ -358,71 +422,65 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
   }
 
   // HTML5 drag and drop never fires for touch input, so reordering needs buttons too.
-  const applyMoveBy = (offset: number): void => {
-    if (state.selectedIndices.size === 0) {
+  const applyMoveBy = (offset: -1 | 1): void => {
+    if (!canShiftSelection(state.entries.length, state.selectedIndices, offset)) {
       return
     }
 
-    const selectedCount = state.selectedIndices.size
-    const blockIndex = Math.min(...state.selectedIndices)
-    const remainingCount = state.entries.length - selectedCount
-    const targetIndex = clamp(blockIndex + offset, 0, remainingCount)
-
-    if (targetIndex === blockIndex) {
-      return
-    }
-
-    state.entries = moveSelectedEntries(state.entries, state.selectedIndices, targetIndex)
-    setSelection(
-      state,
-      Array.from({ length: selectedCount }, (_, position) => targetIndex + position),
-      targetIndex,
-    )
-    resetDropTarget()
+    const shifted = shiftSelectedEntries(state.entries, state.selectedIndices, offset)
+    state.entries = shifted.entries
+    setSelection(state, shifted.selectedIndices, shifted.selectedIndices[0])
+    state.dropTarget = { kind: 'none' }
+    renderList()
   }
 
   const exportPdf = async (): Promise<void> => {
-    if (state.entries.length === 0) {
+    const { entries } = state
+    if (entries.length === 0 || state.isBusy) {
       return
     }
 
+    setBusy(true)
+    state.notice = null
+    sync()
     try {
+      const pageIndicesByFile = new Map<File, number[]>()
+      entries.forEach((entry) => {
+        pageIndicesByFile.set(entry.file, [...(pageIndicesByFile.get(entry.file) ?? []), entry.pageNumber - 1])
+      })
+
+      // One copy per source document, so resources its pages share (fonts, images) are copied once.
       const exportDocument = await PDFDocument.create()
-      const sourceDocuments = new Map<File, PDFDocument>()
-      const copiedPages = [] as Awaited<ReturnType<PDFDocument['copyPages']>>
-
-      for (const entry of state.entries) {
-        let sourceDocument = sourceDocuments.get(entry.file)
-        if (!sourceDocument) {
-          const sourceBuffer = await entry.file.arrayBuffer()
-          sourceDocument = await PDFDocument.load(sourceBuffer)
-          sourceDocuments.set(entry.file, sourceDocument)
-        }
-
-        const [copiedPage] = await exportDocument.copyPages(sourceDocument, [entry.pageNumber - 1])
-        copiedPages.push(copiedPage)
+      const copiedPagesByFile = new Map<File, PDFPage[]>()
+      for (const [file, pageIndices] of pageIndicesByFile) {
+        const sourceDocument = await PDFDocument.load(await file.arrayBuffer())
+        copiedPagesByFile.set(file, await exportDocument.copyPages(sourceDocument, pageIndices))
       }
-
-      copiedPages.forEach((page) => exportDocument.addPage(page))
+      entries.forEach((entry) => exportDocument.addPage(copiedPagesByFile.get(entry.file)!.shift()!))
 
       const pdfBytes = await exportDocument.save()
       const pdfArrayBuffer = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer
       const blob = new Blob([pdfArrayBuffer], { type: 'application/pdf' })
-      downloadBlob(blob, 'pdf-page-organizer-export.pdf')
+      downloadBlob(blob, `${stripExtension(entries[0].fileName)}-organized.pdf`)
     } catch (error) {
+      state.notice = 'exportFailed'
       console.error(error)
     }
+
+    setBusy(false)
+    sync()
   }
 
   const appendFiles = async (files: readonly File[]): Promise<void> => {
     const pdfFiles = files.filter(isPdfFile)
-    if (pdfFiles.length === 0) {
+    if (pdfFiles.length === 0 || state.isBusy) {
       return
     }
 
-    const batchGeneration = ++generation
     setBusy(true)
+    state.notice = 'uploadingStatus'
     sync()
+    let hasFailed = false
 
     for (const file of pdfFiles) {
       try {
@@ -434,11 +492,11 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
         }
 
         loadedDocuments.push(pdfDocument)
+        documentByFile.set(file, pdfDocument)
         const pageCount = pdfDocument.numPages
-        const nextEntries: PdfPageEntry[] = []
 
         for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
-          const entry: PdfPageEntry = {
+          state.entries.push({
             id: createUniqueId(),
             file,
             fileName: file.name,
@@ -446,27 +504,22 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
             pageCount,
             thumbnailState: 'loading',
             thumbnailUrl: null,
-          }
-
-          state.entries.push(entry)
-          nextEntries.push(entry)
+          })
         }
-        sync()
-
-        for (const entry of nextEntries) {
-          void loadThumbnail(pdfDocument, entry.id, entry.pageNumber, batchGeneration)
-        }
+        renderList()
       } catch (error) {
+        hasFailed = true
         console.error(error)
       }
     }
 
     setBusy(false)
-    resetDropTarget()
+    state.notice = hasFailed ? 'loadFailed' : null
+    state.dropTarget = { kind: 'none' }
+    sync()
   }
 
   elements.clearButton.addEventListener('click', () => {
-    generation += 1
     releaseDocuments()
     replaceEntries([])
   })
@@ -511,6 +564,7 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
 
     if (!state.selectedIndices.has(hit.index)) {
       setSingleSelection(state, hit.index)
+      sync()
     }
 
     state.dragIndex = hit.index
@@ -524,36 +578,38 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
     resetDropTarget()
   })
 
-  pageList.addEventListener('dragover', (event) => {
-    const hit = getCardIndex(event)
-    if (!hit) {
+  const isOverEndTarget = (event: Event): boolean => event.target instanceof Node && endDropTarget.contains(event.target)
+
+  // Files dropped anywhere on the list are added (and never opened by the browser), not treated as a move.
+  listShell.addEventListener('dragover', (event) => {
+    if (hasFiles(event)) {
+      event.preventDefault()
       return
     }
 
-    event.preventDefault()
-    if (state.dropTarget.kind !== 'before' || state.dropTarget.index !== hit.index) {
-      setDropTarget({ kind: 'before', index: hit.index })
-    }
-  })
-
-  pageList.addEventListener('drop', (event) => {
     const hit = getCardIndex(event)
-    if (!hit) {
-      return
+    if (isOverEndTarget(event)) {
+      event.preventDefault()
+      setDropTarget({ kind: 'end' })
+    } else if (hit) {
+      event.preventDefault()
+      if (state.dropTarget.kind !== 'before' || state.dropTarget.index !== hit.index) {
+        setDropTarget({ kind: 'before', index: hit.index })
+      }
     }
-
-    event.preventDefault()
-    applyMove(hit.index)
   })
 
-  endDropTarget.addEventListener('dragover', (event) => {
+  listShell.addEventListener('drop', (event) => {
     event.preventDefault()
-    setDropTarget({ kind: 'end' })
-  })
-
-  endDropTarget.addEventListener('drop', (event) => {
-    event.preventDefault()
-    applyMove(null)
+    const files = event.dataTransfer?.files
+    const hit = getCardIndex(event)
+    if (state.isBusy) {
+      resetDropTarget()
+    } else if (files && files.length > 0) {
+      void appendFiles([...files])
+    } else if (hit || isOverEndTarget(event)) {
+      applyMove(hit ? hit.index : null)
+    }
   })
 
   document.addEventListener('keydown', (event) => {
@@ -564,7 +620,8 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
     if (event.key === 'Escape') {
       event.preventDefault()
       clearSelection()
-      resetDropTarget()
+      state.dropTarget = { kind: 'none' }
+      sync()
       return
     }
 
@@ -574,13 +631,17 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
     }
   }, { signal: listeners.signal })
 
+  // The move buttons act on the selection, so clicking them must not count as clicking outside.
+  const selectionTargets: EventTarget[] = [pageList, elements.moveLeftButton, elements.moveRightButton]
   document.addEventListener('click', (event) => {
-    if (event.composedPath().includes(pageList) || state.selectedIndices.size === 0) {
+    const path = event.composedPath()
+    if (selectionTargets.some((target) => path.includes(target)) || state.selectedIndices.size === 0) {
       return
     }
 
     clearSelection()
-    resetDropTarget()
+    state.dropTarget = { kind: 'none' }
+    sync()
   }, { signal: listeners.signal })
 
   sync()
@@ -588,8 +649,9 @@ export const mountPdfPageOrganizer: MountTool = (container, initialMessages) => 
   return {
     updateLocale: syncLocale,
     destroy: () => {
-      generation += 1
       listeners.abort()
+      thumbnailObserver.disconnect()
+      revokeThumbnails(state.entries)
       releaseDocuments()
     },
   }

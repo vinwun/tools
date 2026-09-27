@@ -88,6 +88,11 @@ export const mountLoremIpsumGenerator: MountTool = (container, initialMessages) 
     elements.copyButton.disabled = state.outputValue.length === 0
   }
 
+  // Shows the amount that is actually used instead of leaving "0", "-2" or an empty field.
+  elements.amountInput.addEventListener('blur', () => {
+    elements.amountInput.value = String(parseAmount(elements.amountInput.value))
+  })
+
   elements.form.addEventListener('submit', (event) => {
     event.preventDefault()
     generate()
