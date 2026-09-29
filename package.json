@@ -2,7 +2,17 @@
   "name": "tools",
   "private": true,
   "version": "0.0.0",
+  "description": "Browser tools for images, PDFs, audio, video, random numbers, time, math and text that run locally without uploads.",
+  "homepage": "https://vinwun.github.io/tools/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vinwun/tools.git"
+  },
+  "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

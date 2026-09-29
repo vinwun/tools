@@ -1,12 +1,17 @@
 # Tools
 
-A TypeScript + Vite project for a collection of browser-based utility tools.
+A collection of small browser-based utility tools, written in TypeScript with Vite.
 
-## Current Features
+- Home dashboard, category pages and tool subpages
+- English and German interface
+- Desktop and mobile browser support
 
-- Home dashboard with tool category cards: Image, PDF, Audio, Video, RNG, Time, Math, Text
-- Category pages and tool subpages with path (`tools/<category>/<tool>/`)
-- Internationalized UI text system with external dictionaries (`en`, `de`) and language switcher
+Everything runs locally in the browser without any file uploads or server-side processing.
+Only the language and a few tool preferences are kept in the local storage.
+
+**Live:** https://vinwun.github.io/tools/
+
+![Tool overview](.github/website.png)
 
 ## Tools
 
@@ -42,3 +47,35 @@ A TypeScript + Vite project for a collection of browser-based utility tools.
   - `Lorem Ipsum Generator`: generate placeholder text with a specific length
   - `Unicode Converter`: convert characters between code points and encodings
   - `Hidden Characters Inspector`: find zero-width, bidi, invisible space and confusable characters
+
+## Development
+
+Requires Node.js 22.12+ or 24+.
+
+```sh
+npm install
+npm run dev      # dev server with hot reload
+npm test         # unit tests (Vitest)
+npm run build    # type check and production build into dist/
+npm run preview  # serve the production build locally
+```
+
+## Architecture
+
+- **Vanilla TypeScript.** Each tool is a small, self-contained page with a few inputs and outputs, so a framework is not needed.
+- **Tool lifecycle.** Each tool holds resources only while it is open and releases everything when you leave. Heavy libraries (PDF) load on first use.
+- **i18n.** All user-facing text lives in `src/i18n/locales` (`en`, `de`). A language switch only replaces the page chrome and asks the mounted tool to relabel itself.
+- **Routing.** Client-side routing with the History API. On GitHub Pages, `public/404.html` redirects deep links back to `index.html`.
+
+## License
+
+[MIT](LICENSE) © vinwun
+
+### Third-party libraries
+
+| Library | Used for | License |
+| --- | --- | --- |
+| [pdf-lib](https://github.com/Hopding/pdf-lib) | PDF Page Organizer | MIT |
+| [pdfjs-dist](https://github.com/mozilla/pdf.js) | PDF rendering and text extraction | Apache-2.0 |
+
+The full license texts of all bundled dependencies are generated at build time and published at [third-party-licenses.md](https://vinwun.github.io/tools/third-party-licenses.md).

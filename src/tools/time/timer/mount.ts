@@ -7,6 +7,8 @@ import {
 } from './utils.ts'
 import { queryRequired } from '../../foundations/dom.ts'
 import type { MountTool } from '../../types.ts'
+// Inlined as a data URL: Firefox on Windows delays the toast by 1-2 s while it fetches a URL icon.
+import notificationIconUrl from './notification-icon.png?inline'
 
 declare global {
   interface Window {
@@ -99,10 +101,10 @@ const requestNotificationPermission = async (): Promise<NotificationPermission> 
   }
 }
 
-const showCompletionNotification = (title: string, body: string, icon: string): void => {
+const showCompletionNotification = (title: string, body: string): void => {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
   try {
-    new Notification(title, { body, icon, silent: true })
+    new Notification(title, { body, icon: notificationIconUrl, silent: true })
   } catch {}
 }
 
@@ -282,8 +284,7 @@ export const mountTimer: MountTool = (container, initialMessages) => {
     }
 
     if (readPref(NOTIFY_PREF_KEY, true)) {
-      const iconUrl = new URL(`${import.meta.env.BASE_URL}images/tool.png`, location.origin).href
-      showCompletionNotification(messages.tools.timer.name, messages.timer.completedNotification, iconUrl)
+      showCompletionNotification(messages.tools.timer.name, messages.timer.completedNotification)
     }
 
     // Show 0 for a moment, then return to the adjustable idle display.
